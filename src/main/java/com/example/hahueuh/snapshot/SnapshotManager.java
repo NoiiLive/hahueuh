@@ -2,9 +2,12 @@ package com.example.hahueuh.snapshot;
 
 import com.example.hahueuh.Config;
 import com.example.hahueuh.HahUeuh;
+import com.example.hahueuh.ModEffects;
 import com.example.hahueuh.ModGameRules;
 import com.example.hahueuh.ModSounds;
 import com.example.hahueuh.HahUeuhAbilities;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import com.example.hahueuh.network.AbilityCooldownPayload;
 import com.example.hahueuh.network.DeathFadePayload;
 import com.example.hahueuh.network.DeathFadeState;
@@ -213,6 +216,7 @@ public class SnapshotManager {
         this.domain.clear();
         this.deactivateDomainState();
         this.domainCooldownUntilTick.clear();
+        this.pendingMiasmaBump.clear();
         this.unseenHands.clear();
         this.authorityManager.load(this.server);
         this.ueuhPlayAtTick = -1;
@@ -524,9 +528,10 @@ public class SnapshotManager {
         sendDomainStateTo(player);
         sendAuthoritiesTo(player);
         sendActiveUnseenHandsTo(player);
-        int cooldownTicksLeft = domainCooldownRemainingTicks(player.getUUID());
+        int cooldownTicksLeft = player.isCreative() ? 0 : domainCooldownRemainingTicks(player.getUUID());
         if (cooldownTicksLeft > 0) {
-            PacketDistributor.sendToPlayer(player, new AbilityCooldownPayload(HahUeuhAbilities.DOMAIN_ABILITY, cooldownTicksLeft));
+            PacketDistributor.sendToPlayer(player, new AbilityCooldownPayload(HahUeuhAbilities.DOMAIN_VICTIM_ABILITY, cooldownTicksLeft));
+            PacketDistributor.sendToPlayer(player, new AbilityCooldownPayload(HahUeuhAbilities.DOMAIN_AGGRESSOR_ABILITY, cooldownTicksLeft));
         }
         if (rbd.snapshot == null) return;
 
@@ -630,6 +635,18 @@ public class SnapshotManager {
 
         if (authorityManager.canReturnByDeath(uuid) && rbd.isActive()) {
             healAndSignal(player);
+            // Creative/spectator players can trigger RBD via the chat phrase without ever being in
+            // real danger, so they're excluded from Witch's Miasma entirely.
+            if (!player.isCreative() && !player.isSpectator()) {
+                // Read the CURRENT (pre-rollback) level now, before the scheduled rollback reverts
+                // this player's active effects back to whatever the checkpoint captured — reading it
+                // after the revert would always see "no effect" and reset to level I instead of
+                // incrementing. The computed target level is queued and force-applied verbatim once
+                // the rollback has actually finished restoring player state, so it survives the revert.
+                MobEffectInstance existing = player.getEffect(ModEffects.WITCH_MIASMA);
+                int amplifier = existing != null ? Math.min(existing.getAmplifier() + 1, MIASMA_MAX_AMPLIFIER) : 0;
+                pendingMiasmaBump.put(uuid, amplifier);
+            }
             scheduleRollback(rbd);
             return true;
         }
@@ -641,6 +658,26 @@ public class SnapshotManager {
         if (entity instanceof ServerPlayer player) {
             playPersonalSound(player, BuiltInRegistries.SOUND_EVENT.wrapAsHolder(SoundEvents.WARDEN_HEARTBEAT));
         }
+    }
+
+    private final Map<UUID, Integer> pendingMiasmaBump = new HashMap<>();
+    private static final int MIASMA_MAX_AMPLIFIER = 4;
+    private static final int MIASMA_DURATION_TICKS = 5 * 60 * 20;
+
+    /** Force-applies a specific Witch's Miasma level, bypassing merge-with-existing semantics entirely. */
+    private void applyMiasmaLevel(ServerPlayer player, int amplifier) {
+        player.forceAddEffect(new MobEffectInstance(ModEffects.WITCH_MIASMA, MIASMA_DURATION_TICKS, amplifier, false, false, true), null);
+    }
+
+    /** Witch's Miasma steps down a level instead of disappearing outright when its duration runs out. */
+    @SubscribeEvent
+    public void onMobEffectExpired(MobEffectEvent.Expired event) {
+        MobEffectInstance instance = event.getEffectInstance();
+        if (instance == null || !instance.is(ModEffects.WITCH_MIASMA) || !(event.getEntity() instanceof ServerPlayer player)) return;
+        int amplifier = instance.getAmplifier();
+        if (amplifier <= 0) return;
+        event.setCanceled(true);
+        applyMiasmaLevel(player, amplifier - 1);
     }
 
     private void scheduleRollback(CheckpointSlot slot) {
@@ -1153,7 +1190,7 @@ public class SnapshotManager {
         return names;
     }
 
-    public void toggleDomain(ServerPlayer player) {
+    public void toggleDomain(ServerPlayer player, boolean aggressor) {
         if (server == null) return;
 
         if (isDomainOwner(player.getUUID())) {
@@ -1182,7 +1219,19 @@ public class SnapshotManager {
             return;
         }
 
-        LivingEntity target = raycastTargetEntity(player, domainSphereRadius());
+        // Victim always binds to themself — Aggressor always binds to something else, first
+        // whatever they're looking at, falling back to the nearest living entity within 5 blocks,
+        // and refusing to open at all if neither turns up anything.
+        LivingEntity target = null;
+        if (aggressor) {
+            target = raycastTargetEntity(player, domainSphereRadius());
+            if (target == null) target = nearestEntityWithin(player, 5.0);
+            if (target == null) {
+                player.displayClientMessage(Component.translatable("hahueuh.message.domain_no_target")
+                        .withStyle(ChatFormatting.RED), true);
+                return;
+            }
+        }
         LivingEntity subject = target != null ? target : player;
 
         domainOwnerUuid = player.getUUID();
@@ -1220,6 +1269,23 @@ public class SnapshotManager {
         return null;
     }
 
+    /** Aggressor's fallback when not looking at anything: the closest living entity within range. */
+    private LivingEntity nearestEntityWithin(ServerPlayer player, double radius) {
+        AABB box = player.getBoundingBox().inflate(radius);
+        List<LivingEntity> candidates = player.level().getEntitiesOfClass(LivingEntity.class, box,
+                e -> e.isAlive() && e != player && !e.isSpectator());
+        LivingEntity closest = null;
+        double closestDistSq = radius * radius;
+        for (LivingEntity e : candidates) {
+            double distSq = e.distanceToSqr(player);
+            if (distSq <= closestDistSq) {
+                closest = e;
+                closestDistSq = distSq;
+            }
+        }
+        return closest;
+    }
+
     private void deactivateDomain(String reason) {
         if (!isDomainActive()) return;
         UUID formerOwner = domainOwnerUuid;
@@ -1229,11 +1295,14 @@ public class SnapshotManager {
 
         int cooldownSeconds = Config.DOMAIN_COOLDOWN_SECONDS.getAsInt();
         if (cooldownSeconds > 0 && server != null) {
-            int untilTick = server.getTickCount() + cooldownSeconds * 20;
-            domainCooldownUntilTick.put(formerOwner, untilTick);
             ServerPlayer cooldownOwner = server.getPlayerList().getPlayer(formerOwner);
-            if (cooldownOwner != null) {
-                PacketDistributor.sendToPlayer(cooldownOwner, new AbilityCooldownPayload(HahUeuhAbilities.DOMAIN_ABILITY, cooldownSeconds * 20));
+            if (cooldownOwner == null || !cooldownOwner.isCreative()) {
+                int untilTick = server.getTickCount() + cooldownSeconds * 20;
+                domainCooldownUntilTick.put(formerOwner, untilTick);
+                if (cooldownOwner != null) {
+                    PacketDistributor.sendToPlayer(cooldownOwner, new AbilityCooldownPayload(HahUeuhAbilities.DOMAIN_VICTIM_ABILITY, cooldownSeconds * 20));
+                    PacketDistributor.sendToPlayer(cooldownOwner, new AbilityCooldownPayload(HahUeuhAbilities.DOMAIN_AGGRESSOR_ABILITY, cooldownSeconds * 20));
+                }
             }
         }
         if (server != null) {
@@ -1467,6 +1536,19 @@ public class SnapshotManager {
                 }
             }
             stepStart = logStepTime("restore online players", stepStart);
+
+            // Apply the Witch's Miasma level computed at death time now that player state has
+            // actually been restored — applying it any earlier would just get overwritten the
+            // moment this same rollback reverts the player back to their pre-death effects.
+            if (!pendingMiasmaBump.isEmpty()) {
+                for (Map.Entry<UUID, Integer> entry : pendingMiasmaBump.entrySet()) {
+                    ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+                    if (player != null && !player.isCreative() && !player.isSpectator()) {
+                        applyMiasmaLevel(player, entry.getValue());
+                    }
+                }
+                pendingMiasmaBump.clear();
+            }
 
             authorityManager.load(server);
             HahUeuh.SLOTH_COMPAT.reload();

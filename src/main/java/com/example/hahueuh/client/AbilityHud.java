@@ -9,6 +9,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 
 public final class AbilityHud {
     private static final ResourceLocation PANEL = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "textures/gui/hud_panel.png");
@@ -30,22 +31,30 @@ public final class AbilityHud {
     private static final int COOLDOWN_TEXT_COLOR = 0x555555;
     private static final int NORMAL_TEXT_COLOR = 0xFFFFFF;
     private static final int COOLDOWN_NUMBER_COLOR = 0xFF3B3B;
+    private static final int HIDDEN_X = -(PANEL_WIDTH + 40);
+    private static final float SLIDE_SECONDS = 0.25f;
+
+    private static boolean slideInitialized;
+    private static float slideProgress;
+    private static long lastSlideNanos;
 
     private AbilityHud() {}
 
     public static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
-        if (AbilitySlots.hudHidden()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) return;
 
-        int x = MARGIN_X;
+        float progress = advanceSlide();
+        if (progress <= 0.001f) return;
+
+        int x = (int) Mth.lerp(progress, HIDDEN_X, MARGIN_X);
         int y = (graphics.guiHeight() - PANEL_HEIGHT) / 2;
 
         graphics.blit(PANEL, x, y, PANEL_WIDTH, PANEL_HEIGHT, 0f, 0f, PANEL_WIDTH, PANEL_HEIGHT, PANEL_WIDTH, PANEL_HEIGHT);
 
         int group = AbilitySlots.cycleGroup();
         graphics.drawCenteredString(mc.font, Component.literal((group + 1) + "/" + AbilitySlots.GROUP_COUNT),
-                x + PANEL_WIDTH / 2, y + 2, NORMAL_TEXT_COLOR);
+                x + PANEL_WIDTH / 2, y + 3, NORMAL_TEXT_COLOR);
 
         boolean[] keyDown = {
                 AbilityClient.SLOT_KEY_1.isDown(),
@@ -83,5 +92,23 @@ public final class AbilityHud {
         if (onCooldown) {
             graphics.drawCenteredString(font, Integer.toString(cooldown), sx + SLOT_SIZE / 2, sy + 6, COOLDOWN_NUMBER_COLOR);
         }
+    }
+
+    private static float advanceSlide() {
+        if (!slideInitialized) {
+            slideProgress = AbilitySlots.hudHidden() ? 0f : 1f;
+            slideInitialized = true;
+        }
+
+        long now = System.nanoTime();
+        float dt = lastSlideNanos == 0L ? 0f : (now - lastSlideNanos) / 1_000_000_000f;
+        lastSlideNanos = now;
+        dt = Math.min(dt, 0.1f);
+
+        float target = AbilitySlots.hudHidden() ? 0f : 1f;
+        float rate = 1f / SLIDE_SECONDS;
+        if (slideProgress < target) slideProgress = Math.min(target, slideProgress + rate * dt);
+        else if (slideProgress > target) slideProgress = Math.max(target, slideProgress - rate * dt);
+        return slideProgress;
     }
 }

@@ -30,7 +30,9 @@ public final class AbilitySlots {
     public static Ability get(int index) {
         ensureLoaded();
         ResourceLocation id = slots[index];
-        return id == null ? null : AbilityRegistry.get(id).orElse(null);
+        if (id == null) return null;
+        Ability ability = AbilityRegistry.get(id).orElse(null);
+        return (ability != null && ability.isAvailable()) ? ability : null;
     }
 
     public static void bind(int index, Ability ability) {
@@ -90,6 +92,10 @@ public final class AbilitySlots {
                         migrated = true;
                         if (raw == null) continue;
                     }
+                    if (raw.equals(HahUeuhAbilities.SLOTH_HAND_ABILITY.toString())) {
+                        raw = HahUeuhAbilities.SUMMON_HAND_ABILITY.toString();
+                        migrated = true;
+                    }
                     try {
                         slots[i] = ResourceLocation.parse(raw);
                     } catch (Exception ignored) {
@@ -106,7 +112,8 @@ public final class AbilitySlots {
 
     private static String legacyIdFor(String enumName) {
         return switch (enumName) {
-            case "DOMAIN" -> HahUeuhAbilities.DOMAIN_ABILITY.toString();
+            // "DOMAIN" has no single replacement now that it's split into Victim/Aggressor — an old
+            // binding to it just resolves to empty, same as any other unrecognized/uninstalled id.
             case "RETURN_BY_DEATH" -> HahUeuhAbilities.RETURN_BY_DEATH_ABILITY.toString();
             case "SLOTH_HAND" -> HahUeuhAbilities.SLOTH_HAND_ABILITY.toString();
             default -> null;

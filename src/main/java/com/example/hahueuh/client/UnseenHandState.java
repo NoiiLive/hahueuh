@@ -13,6 +13,7 @@ public final class UnseenHandState {
     private static volatile double maxRange = 8.0;
     private static volatile double liveDistance;
     private static volatile boolean mobility;
+    private static volatile float speedBoost = 1f;
 
     private UnseenHandState() {}
 
@@ -39,6 +40,9 @@ public final class UnseenHandState {
 
     public static boolean isMobility() { return mobility; }
     public static void setMobility(boolean value) { mobility = value; }
+
+    public static float speedBoost() { return speedBoost; }
+    public static void setSpeedBoost(float value) { speedBoost = value; }
 
     private static double configCeiling() {
         return Config.SLOTH_MAX_DISTANCE.getAsInt() * ClientSlothState.slothVariant().reachMultiplier;

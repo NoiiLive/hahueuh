@@ -27,7 +27,6 @@
   "hahueuh.configuration.unseenHandsMax": "Mains Invisibles : nombre maximum",
   "hahueuh.configuration.unseenHandsMobilitySpeed": "Mains Invisibles : vitesse de glisse (blocs/s)",
   "key.categories.hahueuh": "Hah! Ueuh~",
-  "key.categories.hahueuh.interface": "Hah! Ueuh~ Interface",
   "key.hahueuh.open_gui": "Ouvrir le menu des autorités",
   "key.hahueuh.cycle_slots": "Changer de groupe d'emplacements",
   "key.hahueuh.slot_1": "Activer l'emplacement 1",
@@ -40,6 +39,17 @@
   "hahueuh.authority.domain": "Domaine",
   "hahueuh.authority.return_by_death": "Retour par la Mort",
   "hahueuh.authority.sloth": "Paresse",
+
+  "hahueuh.ability.domain_victim": "Victime",
+  "hahueuh.ability.domain_aggressor": "Agresseur",
+  "hahueuh.ability.return": "Retour",
+  "hahueuh.ability.summon_hand": "Invocation de la Main",
+  "hahueuh.ability.quick_strike": "Frappe Rapide",
+  "hahueuh.ability.quick_grasp": "Saisie Rapide",
+  "hahueuh.ability.hidden_interaction": "Interaction Discrète",
+  "hahueuh.ability.self_propel": "Auto-Propulsion",
+
+  "effect.hahueuh.witch_miasma": "Miasme de la Sorcière",
 
   "hahueuh.variant.invisible_providence": "Providence Invisible",
   "hahueuh.variant.unseen_hands": "Mains Invisibles",
@@ -60,6 +70,7 @@
   "hahueuh.message.no_domain_authority": "Vous ne possédez pas l'autorité du Domaine.",
   "hahueuh.message.domain_cooldown": "Votre esprit a besoin de repos. Recharge : %ss",
   "hahueuh.message.domain_interference": "Un autre Domaine est déjà actif — l'espace ne cédera pas.",
+  "hahueuh.message.domain_no_target": "Rien à proximité pour lier votre Domaine.",
   "hahueuh.message.domain_cast_on_target": "Domaine lancé sur %s — sa mort remontera le temps.",
   "hahueuh.message.domain_bound_target": "Un Domaine vous lie — votre mort remontera le temps.",
   "hahueuh.message.domain_deployed": "Domaine déployé. Matrice ancrée.",

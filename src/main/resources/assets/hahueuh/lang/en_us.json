@@ -27,7 +27,6 @@
   "hahueuh.configuration.unseenHandsMax": "Unseen Hands: Maximum Count",
   "hahueuh.configuration.unseenHandsMobilitySpeed": "Unseen Hands: Mobility Glide Speed (blocks/sec)",
   "key.categories.hahueuh": "Hah! Ueuh~",
-  "key.categories.hahueuh.interface": "Hah! Ueuh~ Interface",
   "key.hahueuh.open_gui": "Open Ability Menu",
   "key.hahueuh.cycle_slots": "Cycle Ability Slots",
   "key.hahueuh.slot_1": "Activate Slot 1",
@@ -40,6 +39,17 @@
   "hahueuh.authority.domain": "Domain",
   "hahueuh.authority.return_by_death": "Return by Death",
   "hahueuh.authority.sloth": "Sloth",
+
+  "hahueuh.ability.domain_victim": "Victim",
+  "hahueuh.ability.domain_aggressor": "Aggressor",
+  "hahueuh.ability.return": "Return",
+  "hahueuh.ability.summon_hand": "Summon Hand",
+  "hahueuh.ability.quick_strike": "Quick Strike",
+  "hahueuh.ability.quick_grasp": "Quick Grasp",
+  "hahueuh.ability.hidden_interaction": "Hidden Interaction",
+  "hahueuh.ability.self_propel": "Self Propel",
+
+  "effect.hahueuh.witch_miasma": "Witch's Miasma",
 
   "hahueuh.variant.invisible_providence": "Invisible Providence",
   "hahueuh.variant.unseen_hands": "Unseen Hands",
@@ -60,6 +70,7 @@
   "hahueuh.message.no_domain_authority": "You do not possess the Domain authority.",
   "hahueuh.message.domain_cooldown": "Your mind needs a break. CD: %ss",
   "hahueuh.message.domain_interference": "Another Domain is already active — the space will not yield.",
+  "hahueuh.message.domain_no_target": "Nothing nearby to bind your domain to.",
   "hahueuh.message.domain_cast_on_target": "Domain cast on %s — their death rewinds time.",
   "hahueuh.message.domain_bound_target": "A Domain binds you — your death will rewind time.",
   "hahueuh.message.domain_deployed": "Domain deployed. Matrix anchored.",

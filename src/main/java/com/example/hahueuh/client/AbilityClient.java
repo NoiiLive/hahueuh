@@ -23,17 +23,17 @@ public final class AbilityClient {
     private AbilityClient() {}
 
     public static final KeyMapping OPEN_GUI_KEY = new KeyMapping(
-            "key.hahueuh.open_gui", GLFW.GLFW_KEY_G, "key.categories.hahueuh.interface");
+            "key.hahueuh.open_gui", GLFW.GLFW_KEY_G, "key.categories.hahueuh");
     public static final KeyMapping CYCLE_SLOTS_KEY = new KeyMapping(
-            "key.hahueuh.cycle_slots", GLFW.GLFW_KEY_Z, "key.categories.hahueuh.interface");
+            "key.hahueuh.cycle_slots", GLFW.GLFW_KEY_Z, "key.categories.hahueuh");
     public static final KeyMapping SLOT_KEY_1 = new KeyMapping(
-            "key.hahueuh.slot_1", GLFW.GLFW_KEY_X, "key.categories.hahueuh.interface");
+            "key.hahueuh.slot_1", GLFW.GLFW_KEY_X, "key.categories.hahueuh");
     public static final KeyMapping SLOT_KEY_2 = new KeyMapping(
-            "key.hahueuh.slot_2", GLFW.GLFW_KEY_C, "key.categories.hahueuh.interface");
+            "key.hahueuh.slot_2", GLFW.GLFW_KEY_C, "key.categories.hahueuh");
     public static final KeyMapping SLOT_KEY_3 = new KeyMapping(
-            "key.hahueuh.slot_3", GLFW.GLFW_KEY_V, "key.categories.hahueuh.interface");
+            "key.hahueuh.slot_3", GLFW.GLFW_KEY_V, "key.categories.hahueuh");
     public static final KeyMapping HIDE_HUD_KEY = new KeyMapping(
-            "key.hahueuh.hide_hud", GLFW.GLFW_KEY_GRAVE_ACCENT, "key.categories.hahueuh.interface");
+            "key.hahueuh.hide_hud", GLFW.GLFW_KEY_GRAVE_ACCENT, "key.categories.hahueuh");
 
     private static final KeyMapping[] SLOT_KEYS = {SLOT_KEY_1, SLOT_KEY_2, SLOT_KEY_3};
     private static final boolean[] slotTapHandledThisHold = new boolean[SLOT_KEYS.length];
@@ -93,7 +93,7 @@ public final class AbilityClient {
         }
 
         for (Ability ability : AbilityRegistry.all()) {
-            if (!ability.holdBased()) continue;
+            if (!ability.holdBased() || !ability.isAvailable()) continue;
             boolean down = false;
             for (int i = 0; i < SLOT_KEYS.length; i++) {
                 if (slotAbility[i] == ability && slotDown[i]) {
@@ -103,6 +103,8 @@ public final class AbilityClient {
             }
             ability.onHeldTick(new SlotContext(player, ability, down), down);
         }
+
+        SlothHandController.INSTANCE.tick(player);
     }
 
     @SubscribeEvent
@@ -143,17 +145,17 @@ public final class AbilityClient {
 
         @Override
         public boolean isOnCooldown() {
-            return AbilityCooldowns.secondsRemaining(ability.id()) > 0;
+            return AbilityCooldowns.secondsRemaining(ability.cooldownId()) > 0;
         }
 
         @Override
         public int cooldownSecondsRemaining() {
-            return AbilityCooldowns.secondsRemaining(ability.id());
+            return AbilityCooldowns.secondsRemaining(ability.cooldownId());
         }
 
         @Override
         public void startCooldown(double seconds) {
-            AbilityCooldowns.startCooldown(ability.id(), seconds);
+            AbilityCooldowns.startCooldown(ability.cooldownId(), seconds);
         }
 
         @Override

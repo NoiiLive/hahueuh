@@ -45,6 +45,7 @@ public class HahUeuh {
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         ModSounds.SOUND_EVENTS.register(modEventBus);
+        ModEffects.MOB_EFFECTS.register(modEventBus);
 
         NeoForge.EVENT_BUS.register(SNAPSHOT_MANAGER);
         NeoForge.EVENT_BUS.register(SLOTH_COMPAT);
@@ -105,7 +106,7 @@ public class HahUeuh {
                 ActivateAuthorityPayload.STREAM_CODEC,
                 (payload, context) -> {
                     if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
-                        SNAPSHOT_MANAGER.toggleDomain(sp);
+                        SNAPSHOT_MANAGER.toggleDomain(sp, payload.aggressor());
                     }
                 });
 

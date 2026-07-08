@@ -27,7 +27,6 @@
   "hahueuh.configuration.unseenHandsMax": "見えざる手：最大本数",
   "hahueuh.configuration.unseenHandsMobilitySpeed": "見えざる手：滑空移動速度（ブロック/秒）",
   "key.categories.hahueuh": "Hah! Ueuh~",
-  "key.categories.hahueuh.interface": "Hah! Ueuh~ インターフェース",
   "key.hahueuh.open_gui": "権能メニューを開く",
   "key.hahueuh.cycle_slots": "スロットグループ切替",
   "key.hahueuh.slot_1": "スロット1を発動",
@@ -40,6 +39,17 @@
   "hahueuh.authority.domain": "領域",
   "hahueuh.authority.return_by_death": "死に戻り",
   "hahueuh.authority.sloth": "怠惰",
+
+  "hahueuh.ability.domain_victim": "被害者",
+  "hahueuh.ability.domain_aggressor": "加害者",
+  "hahueuh.ability.return": "帰還",
+  "hahueuh.ability.summon_hand": "手の召喚",
+  "hahueuh.ability.quick_strike": "クイックストライク",
+  "hahueuh.ability.quick_grasp": "クイックグラスプ",
+  "hahueuh.ability.hidden_interaction": "隠れた干渉",
+  "hahueuh.ability.self_propel": "自己推進",
+
+  "effect.hahueuh.witch_miasma": "魔女の瘴気",
 
   "hahueuh.variant.invisible_providence": "インビジブル・プロビデンス",
   "hahueuh.variant.unseen_hands": "見えざる手",
@@ -60,6 +70,7 @@
   "hahueuh.message.no_domain_authority": "領域の権能を持っていません。",
   "hahueuh.message.domain_cooldown": "精神に休息が必要。クールダウン：%s秒",
   "hahueuh.message.domain_interference": "他の領域が既に展開中——この空間は譲らない。",
+  "hahueuh.message.domain_no_target": "近くに領域を紐付ける対象がいません。",
   "hahueuh.message.domain_cast_on_target": "%sに領域を展開した——その死が時を巻き戻す。",
   "hahueuh.message.domain_bound_target": "領域に縛られた——あなたの死が時を巻き戻す。",
   "hahueuh.message.domain_deployed": "領域を展開した。基点を固定。",

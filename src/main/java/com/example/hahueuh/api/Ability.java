@@ -16,6 +16,8 @@ public final class Ability {
     private final Supplier<ResourceLocation> iconLocation;
     private final AbilityBehavior.Tap onActivate;
     private final AbilityBehavior.Held onHeldTick;
+    private final Supplier<Boolean> availabilityCheck;
+    private final ResourceLocation cooldownId;
 
     private Ability(Builder builder) {
         this.id = builder.id;
@@ -26,6 +28,8 @@ public final class Ability {
         this.iconLocation = builder.iconLocation;
         this.onActivate = builder.onActivate;
         this.onHeldTick = builder.onHeldTick;
+        this.availabilityCheck = builder.availabilityCheck;
+        this.cooldownId = builder.cooldownId != null ? builder.cooldownId : builder.id;
     }
 
     public ResourceLocation id() { return id; }
@@ -34,6 +38,8 @@ public final class Ability {
     public String translationKey() { return translationKey.get(); }
     public String shortLabel() { return shortLabel.get(); }
     public ResourceLocation iconLocation() { return iconLocation.get(); }
+    public boolean isAvailable() { return availabilityCheck.get(); }
+    public ResourceLocation cooldownId() { return cooldownId; }
 
     public void onActivate(AbilityContext ctx) {
         if (onActivate != null) onActivate.onActivate(ctx);
@@ -44,7 +50,7 @@ public final class Ability {
     }
 
     public int cooldownSecondsRemaining() {
-        return AbilityCooldowns.secondsRemaining(id);
+        return AbilityCooldowns.secondsRemaining(cooldownId);
     }
 
     public static Builder builder(ResourceLocation id, ResourceLocation authorityId) {
@@ -68,6 +74,8 @@ public final class Ability {
         private Supplier<ResourceLocation> iconLocation;
         private AbilityBehavior.Tap onActivate;
         private AbilityBehavior.Held onHeldTick;
+        private Supplier<Boolean> availabilityCheck = () -> true;
+        private ResourceLocation cooldownId;
 
         private Builder(ResourceLocation id, ResourceLocation authorityId) {
             this.id = Objects.requireNonNull(id, "id");
@@ -111,6 +119,16 @@ public final class Ability {
 
         public Builder onHeldTick(AbilityBehavior.Held onHeldTick) {
             this.onHeldTick = onHeldTick;
+            return this;
+        }
+
+        public Builder availableWhen(Supplier<Boolean> availabilityCheck) {
+            this.availabilityCheck = availabilityCheck;
+            return this;
+        }
+
+        public Builder sharesCooldownWith(ResourceLocation cooldownId) {
+            this.cooldownId = cooldownId;
             return this;
         }
 

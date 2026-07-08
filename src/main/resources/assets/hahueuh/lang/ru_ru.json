@@ -27,7 +27,6 @@
   "hahueuh.configuration.unseenHandsMax": "Незримые руки: максимальное количество",
   "hahueuh.configuration.unseenHandsMobilitySpeed": "Незримые руки: скорость скольжения (блоков/сек)",
   "key.categories.hahueuh": "Hah! Ueuh~",
-  "key.categories.hahueuh.interface": "Hah! Ueuh~ Интерфейс",
   "key.hahueuh.open_gui": "Открыть меню полномочий",
   "key.hahueuh.cycle_slots": "Переключить группу слотов",
   "key.hahueuh.slot_1": "Активировать слот 1",
@@ -40,6 +39,17 @@
   "hahueuh.authority.domain": "Владение",
   "hahueuh.authority.return_by_death": "Возвращение смертью",
   "hahueuh.authority.sloth": "Лень",
+
+  "hahueuh.ability.domain_victim": "Жертва",
+  "hahueuh.ability.domain_aggressor": "Агрессор",
+  "hahueuh.ability.return": "Возвращение",
+  "hahueuh.ability.summon_hand": "Призыв руки",
+  "hahueuh.ability.quick_strike": "Быстрый удар",
+  "hahueuh.ability.quick_grasp": "Быстрый захват",
+  "hahueuh.ability.hidden_interaction": "Скрытое взаимодействие",
+  "hahueuh.ability.self_propel": "Самодвижение",
+
+  "effect.hahueuh.witch_miasma": "Миазм ведьмы",
 
   "hahueuh.variant.invisible_providence": "Невидимое провидение",
   "hahueuh.variant.unseen_hands": "Незримые руки",
@@ -60,6 +70,7 @@
   "hahueuh.message.no_domain_authority": "У вас нет полномочия Владения.",
   "hahueuh.message.domain_cooldown": "Разуму нужен отдых. Перезарядка: %sс",
   "hahueuh.message.domain_interference": "Другое Владение уже активно — пространство не уступит.",
+  "hahueuh.message.domain_no_target": "Поблизости никого нет, чтобы привязать Владение.",
   "hahueuh.message.domain_cast_on_target": "Владение наложено на %s — их смерть отмотает время назад.",
   "hahueuh.message.domain_bound_target": "Владение связывает вас — ваша смерть отмотает время назад.",
   "hahueuh.message.domain_deployed": "Владение развёрнуто. Матрица закреплена.",

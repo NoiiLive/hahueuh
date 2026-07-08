@@ -135,11 +135,12 @@ public final class UnseenHandRenderer {
             Player owner = e.getKey().equals(self) ? mc.player : mc.level.getPlayerByUUID(e.getKey());
             if (owner == null) continue;
             addInstances(instances, e.getKey(), owner, e.getValue().distance(),
-                    e.getValue().mode(), SlothVariant.byOrdinal(e.getValue().variant()), e.getValue().mobility());
+                    e.getValue().mode(), SlothVariant.byOrdinal(e.getValue().variant()), e.getValue().mobility(), 1f);
         }
         if (UnseenHandState.isActive()) {
             addInstances(instances, self, mc.player, (float) UnseenHandState.maxRange(),
-                    UnseenHandState.mode().ordinal(), ClientSlothState.slothVariant(), UnseenHandState.isMobility());
+                    UnseenHandState.mode().ordinal(), ClientSlothState.slothVariant(), UnseenHandState.isMobility(),
+                    UnseenHandState.speedBoost());
         }
 
         Set<VisualKey> all = new HashSet<>(instances.keySet());
@@ -192,16 +193,16 @@ public final class UnseenHandRenderer {
     }
 
     private static void addInstances(Map<VisualKey, Instance> out, UUID id, Player owner,
-                                     float target, int modeId, SlothVariant variant, boolean mobility) {
+                                     float target, int modeId, SlothVariant variant, boolean mobility, float extraSpeedMul) {
         if (variant == SlothVariant.SEKHMET) {
             float size = SlothVariant.sekhmetSize(id);
             float off = SlothVariant.sekhmetShoulderOffset(size);
             float splay = SlothVariant.sekhmetHandSplay(size);
             float back = (float) SlothVariant.SEKHMET_BACK_OFFSET;
             float height = (float) SlothVariant.SEKHMET_SHOULDER_HEIGHT;
-            out.put(new VisualKey(id, 0), new Instance(owner, target, modeId, size, SEKHMET_SPEED_MUL, true,
+            out.put(new VisualKey(id, 0), new Instance(owner, target, modeId, size, SEKHMET_SPEED_MUL * extraSpeedMul, true,
                     new HandShape(height, -off, back, 0f, -splay, 0f, -(splay + 0.3f * size), -0.2f, 0f, 0f, 0), false));
-            out.put(new VisualKey(id, 1), new Instance(owner, target, modeId, size, SEKHMET_SPEED_MUL, false,
+            out.put(new VisualKey(id, 1), new Instance(owner, target, modeId, size, SEKHMET_SPEED_MUL * extraSpeedMul, false,
                     new HandShape(height, off, back, 0f, splay, 0f, splay + 0.3f * size, 0.2f, 0f, 0f, 0), false));
         } else if (variant == SlothVariant.UNSEEN_HANDS) {
             int count = SlothVariant.unseenHandCount(id);
@@ -219,10 +220,10 @@ public final class UnseenHandRenderer {
                         SlothVariant.unseenHandStepPhase(id, i, count),
                         i);
                 boolean mirror = SlothVariant.unseenHandSide(i) < 0f;
-                out.put(new VisualKey(id, i), new Instance(owner, target, modeId, 1f, 1f, mirror, shape, mobility));
+                out.put(new VisualKey(id, i), new Instance(owner, target, modeId, 1f, extraSpeedMul, mirror, shape, mobility));
             }
         } else {
-            out.put(new VisualKey(id, 0), new Instance(owner, target, modeId, 1f, 1f, false, HandShape.CHEST, false));
+            out.put(new VisualKey(id, 0), new Instance(owner, target, modeId, 1f, extraSpeedMul, false, HandShape.CHEST, false));
         }
     }
 

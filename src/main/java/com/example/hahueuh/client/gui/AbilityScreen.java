@@ -73,7 +73,8 @@ public final class AbilityScreen extends Screen {
 
         Ability hoveredAbilityButton = null;
         if (selectedAuthority != null) {
-            List<Ability> abilities = AbilityRegistry.forAuthority(selectedAuthority.id());
+            List<Ability> abilities = AbilityRegistry.forAuthority(selectedAuthority.id()).stream()
+                    .filter(Ability::isAvailable).toList();
             for (int i = 0; i < abilities.size(); i++) {
                 Ability ability = abilities.get(i);
                 int by = listY + i * (BUTTON_HEIGHT + BUTTON_GAP);
@@ -127,7 +128,8 @@ public final class AbilityScreen extends Screen {
             }
 
             if (selectedAuthority != null) {
-                List<Ability> abilities = AbilityRegistry.forAuthority(selectedAuthority.id());
+                List<Ability> abilities = AbilityRegistry.forAuthority(selectedAuthority.id()).stream()
+                        .filter(Ability::isAvailable).toList();
                 for (int i = 0; i < abilities.size(); i++) {
                     int by = listY + i * (BUTTON_HEIGHT + BUTTON_GAP);
                     if (isHovering(mouseX, mouseY, rightColumnX, by, COLUMN_WIDTH, BUTTON_HEIGHT)) {

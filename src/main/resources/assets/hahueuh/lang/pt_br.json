@@ -27,7 +27,6 @@
   "hahueuh.configuration.unseenHandsMax": "Mãos Invisíveis: Quantidade Máxima",
   "hahueuh.configuration.unseenHandsMobilitySpeed": "Mãos Invisíveis: Velocidade de Deslize (blocos/seg)",
   "key.categories.hahueuh": "Hah! Ueuh~",
-  "key.categories.hahueuh.interface": "Hah! Ueuh~ Interface",
   "key.hahueuh.open_gui": "Abrir Menu de Autoridades",
   "key.hahueuh.cycle_slots": "Alternar Grupo de Slots",
   "key.hahueuh.slot_1": "Ativar Slot 1",
@@ -40,6 +39,17 @@
   "hahueuh.authority.domain": "Domínio",
   "hahueuh.authority.return_by_death": "Retorno pela Morte",
   "hahueuh.authority.sloth": "Preguiça",
+
+  "hahueuh.ability.domain_victim": "Vítima",
+  "hahueuh.ability.domain_aggressor": "Agressor",
+  "hahueuh.ability.return": "Retorno",
+  "hahueuh.ability.summon_hand": "Invocar Mão",
+  "hahueuh.ability.quick_strike": "Golpe Rápido",
+  "hahueuh.ability.quick_grasp": "Agarrão Rápido",
+  "hahueuh.ability.hidden_interaction": "Interação Oculta",
+  "hahueuh.ability.self_propel": "Auto-Propulsão",
+
+  "effect.hahueuh.witch_miasma": "Miasma da Bruxa",
 
   "hahueuh.variant.invisible_providence": "Providência Invisível",
   "hahueuh.variant.unseen_hands": "Mãos Invisíveis",
@@ -60,6 +70,7 @@
   "hahueuh.message.no_domain_authority": "Você não possui a autoridade do Domínio.",
   "hahueuh.message.domain_cooldown": "Sua mente precisa descansar. Recarga: %ss",
   "hahueuh.message.domain_interference": "Outro Domínio já está ativo — o espaço não cederá.",
+  "hahueuh.message.domain_no_target": "Não há nada por perto para vincular seu Domínio.",
   "hahueuh.message.domain_cast_on_target": "Domínio lançado sobre %s — a morte dele(a) reverte o tempo.",
   "hahueuh.message.domain_bound_target": "Um Domínio o(a) prende — sua morte reverterá o tempo.",
   "hahueuh.message.domain_deployed": "Domínio implantado. Matriz ancorada.",
