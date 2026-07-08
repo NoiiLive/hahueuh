@@ -1,0 +1,165 @@
+package com.example.hahueuh.command;
+
+import com.example.hahueuh.Config;
+import com.example.hahueuh.HahUeuh;
+import com.example.hahueuh.network.SlothVariant;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.portal.DimensionTransition;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+
+import java.util.Set;
+
+public class RezeroCommand {
+    private static final float HALF_HEART = 1.0f;
+
+    public static void register(RegisterCommandsEvent event) {
+        register(event.getDispatcher());
+    }
+
+    private static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(Commands.literal("rezero")
+                .then(Commands.literal("checkpoint")
+                        .requires(source -> source.hasPermission(2))
+                        .executes(RezeroCommand::runCheckpoint))
+                .then(Commands.literal("halfheart")
+                        .executes(RezeroCommand::runHalfHeart))
+                .then(Commands.literal("authority")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.literal("returnbydeath")
+                                        .then(Commands.argument("value", BoolArgumentType.bool())
+                                                .executes(RezeroCommand::runAuthority)))
+                                .then(Commands.literal("domain")
+                                        .then(Commands.argument("value", BoolArgumentType.bool())
+                                                .executes(RezeroCommand::runDomainAuthority)))
+                                .then(Commands.literal("sloth")
+                                        .then(Commands.argument("value", BoolArgumentType.bool())
+                                                .executes(RezeroCommand::runSlothAuthority))
+                                        .then(Commands.literal("compatibility")
+                                                .executes(RezeroCommand::runGetSlothCompat)
+                                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                        .executes(RezeroCommand::runSetSlothCompat)))
+                                        .then(Commands.literal("invisibleprovidence")
+                                                .executes(ctx -> runSlothVariant(ctx, SlothVariant.INVISIBLE_PROVIDENCE)))
+                                        .then(Commands.literal("unseenhands")
+                                                .executes(ctx -> runSlothVariant(ctx, SlothVariant.UNSEEN_HANDS)))
+                                        .then(Commands.literal("sekhmet")
+                                                .executes(ctx -> runSlothVariant(ctx, SlothVariant.SEKHMET))))))
+                .then(Commands.literal("revive")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .executes(RezeroCommand::runRevive))));
+    }
+
+    private static int runCheckpoint(CommandContext<CommandSourceStack> ctx) {
+        HahUeuh.SNAPSHOT_MANAGER.createSnapshot("command");
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.checkpoint_created")
+                .withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int runHalfHeart(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        player.setHealth(HALF_HEART);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.half_heart")
+                .withStyle(ChatFormatting.RED), false);
+        return 1;
+    }
+
+    private static int runAuthority(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        boolean value = BoolArgumentType.getBool(ctx, "value");
+        HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager().setReturnByDeath(target.getUUID(), value);
+        HahUeuh.SNAPSHOT_MANAGER.sendAuthoritiesTo(target);
+
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.rbd_authority_set",
+                target.getName(), value
+        ).withStyle(value ? ChatFormatting.GREEN : ChatFormatting.RED), true);
+        return 1;
+    }
+
+    private static int runDomainAuthority(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        boolean value = BoolArgumentType.getBool(ctx, "value");
+        HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager().setDomain(target.getUUID(), value);
+        HahUeuh.SNAPSHOT_MANAGER.sendAuthoritiesTo(target);
+
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.domain_authority_set",
+                target.getName(), value
+        ).withStyle(value ? ChatFormatting.GREEN : ChatFormatting.RED), true);
+        return 1;
+    }
+
+    private static int runSlothAuthority(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        boolean value = BoolArgumentType.getBool(ctx, "value");
+        HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager().setSloth(target.getUUID(), value);
+        HahUeuh.SNAPSHOT_MANAGER.sendAuthoritiesTo(target);
+
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.sloth_authority_set",
+                target.getName(), value
+        ).withStyle(value ? ChatFormatting.GREEN : ChatFormatting.RED), true);
+        return 1;
+    }
+
+    private static int runSlothVariant(CommandContext<CommandSourceStack> ctx, SlothVariant variant) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager().setSloth(target.getUUID(), true);
+        HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager().setSlothVariant(target.getUUID(), variant);
+        HahUeuh.SNAPSHOT_MANAGER.sendAuthoritiesTo(target);
+
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.sloth_variant_set",
+                target.getName(), Component.translatable(variant.translationKey)
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), true);
+        return 1;
+    }
+
+    private static int runGetSlothCompat(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int score = HahUeuh.SLOTH_COMPAT.getScore(target.getUUID());
+        int threshold = Config.SLOTH_COMPAT_THRESHOLD.getAsInt();
+        ctx.getSource().sendSuccess(() -> Component.translatable(
+                score >= threshold ? "hahueuh.command.sloth_compat_get_compatible" : "hahueuh.command.sloth_compat_get",
+                target.getName(), score, threshold
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return score;
+    }
+
+    private static int runSetSlothCompat(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        HahUeuh.SLOTH_COMPAT.setScore(target.getUUID(), amount);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.sloth_compat_set",
+                target.getName(), amount
+        ).withStyle(ChatFormatting.GREEN), true);
+        return amount;
+    }
+
+    private static int runRevive(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+
+        boolean keepInventory = target.serverLevel().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY);
+        DimensionTransition transition = target.findRespawnPositionAndUseSpawnBlock(keepInventory, DimensionTransition.DO_NOTHING);
+
+        target.setGameMode(GameType.SURVIVAL);
+        target.teleportTo(transition.newLevel(), transition.pos().x, transition.pos().y, transition.pos().z,
+                Set.of(), transition.yRot(), transition.xRot());
+        target.setHealth(target.getMaxHealth());
+
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.revived", target.getName())
+                .withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+}
