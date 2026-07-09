@@ -13,6 +13,7 @@ public final class HahUeuhAbilities {
     public static final ResourceLocation DOMAIN_AUTHORITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "domain");
     public static final ResourceLocation RETURN_BY_DEATH_AUTHORITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "return_by_death");
     public static final ResourceLocation SLOTH_AUTHORITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "sloth");
+    public static final ResourceLocation GREED_AUTHORITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "greed");
 
     public static final ResourceLocation DOMAIN_VICTIM_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "domain_victim");
     public static final ResourceLocation DOMAIN_AGGRESSOR_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "domain_aggressor");
@@ -26,6 +27,8 @@ public final class HahUeuhAbilities {
     public static final ResourceLocation SELF_PROPEL_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "self_propel");
     public static final ResourceLocation SLOTH_COOLDOWN_KEY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "sloth_hand_cooldown");
 
+    public static final ResourceLocation LIONS_HEART_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "lions_heart");
+
     @SubscribeEvent
     static void onRegisterAuthorities(RegisterAuthoritiesEvent event) {
         event.register(Authority.builder(DOMAIN_AUTHORITY)
@@ -36,6 +39,9 @@ public final class HahUeuhAbilities {
                 .build());
         event.register(Authority.builder(SLOTH_AUTHORITY)
                 .translationKey("hahueuh.authority.sloth")
+                .build());
+        event.register(Authority.builder(GREED_AUTHORITY)
+                .translationKey("hahueuh.authority.greed")
                 .build());
     }
 }

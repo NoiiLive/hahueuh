@@ -9,11 +9,15 @@ import com.example.hahueuh.api.event.RegisterAuthoritiesEvent;
 import com.example.hahueuh.command.RezeroCommand;
 import com.example.hahueuh.network.AbilityCooldownPayload;
 import com.example.hahueuh.network.ActivateAuthorityPayload;
+import com.example.hahueuh.network.ClientGreedState;
 import com.example.hahueuh.network.ClientSlothState;
 import com.example.hahueuh.network.DeathFadePayload;
 import com.example.hahueuh.network.DeathFadeState;
 import com.example.hahueuh.network.DomainRenderState;
 import com.example.hahueuh.network.DomainStatePayload;
+import com.example.hahueuh.network.ClientLionsHeartState;
+import com.example.hahueuh.network.LionsHeartStatePayload;
+import com.example.hahueuh.network.LionsHeartTogglePayload;
 import com.example.hahueuh.network.PlayerAuthoritiesPayload;
 import com.example.hahueuh.network.RemoteUnseenHands;
 import com.example.hahueuh.network.UnseenHandGrabSyncPayload;
@@ -40,6 +44,8 @@ public class HahUeuh {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     public static final SnapshotManager SNAPSHOT_MANAGER = new SnapshotManager();
     public static final SlothCompatibility SLOTH_COMPAT = new SlothCompatibility();
+    public static final GreedCompatibility GREED_COMPAT = new GreedCompatibility();
+    public static final LionsHeart LIONS_HEART = new LionsHeart();
 
     public HahUeuh(IEventBus modEventBus, ModContainer modContainer) {
         BLOCKS.register(modEventBus);
@@ -49,6 +55,8 @@ public class HahUeuh {
 
         NeoForge.EVENT_BUS.register(SNAPSHOT_MANAGER);
         NeoForge.EVENT_BUS.register(SLOTH_COMPAT);
+        NeoForge.EVENT_BUS.register(GREED_COMPAT);
+        NeoForge.EVENT_BUS.register(LIONS_HEART);
 
         NeoForge.EVENT_BUS.addListener(RezeroCommand::register);
 
@@ -88,6 +96,8 @@ public class HahUeuh {
                     OwnershipState.setAuthorityOwned(HahUeuhAbilities.DOMAIN_AUTHORITY, payload.domain());
                     OwnershipState.setAuthorityOwned(HahUeuhAbilities.SLOTH_AUTHORITY, payload.sloth());
                     ClientSlothState.update(payload.sloth(), payload.slothVariant());
+                    OwnershipState.setAuthorityOwned(HahUeuhAbilities.GREED_AUTHORITY, payload.greed());
+                    ClientGreedState.update(payload.greed(), payload.greedVariant());
                 });
 
         registrar.playToClient(
@@ -109,6 +119,20 @@ public class HahUeuh {
                         SNAPSHOT_MANAGER.toggleDomain(sp, payload.aggressor());
                     }
                 });
+
+        registrar.playToServer(
+                LionsHeartTogglePayload.TYPE,
+                LionsHeartTogglePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        LIONS_HEART.toggle(sp);
+                    }
+                });
+
+        registrar.playToClient(
+                LionsHeartStatePayload.TYPE,
+                LionsHeartStatePayload.STREAM_CODEC,
+                (payload, context) -> ClientLionsHeartState.setActive(payload.active()));
 
         registrar.playToServer(
                 UnseenHandPayload.TYPE,

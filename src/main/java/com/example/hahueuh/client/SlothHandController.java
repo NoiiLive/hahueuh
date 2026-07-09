@@ -1,7 +1,6 @@
 package com.example.hahueuh.client;
 
 import com.example.hahueuh.Config;
-import com.example.hahueuh.HahUeuh;
 import com.example.hahueuh.HahUeuhAbilities;
 import com.example.hahueuh.api.AbilityCooldowns;
 import com.example.hahueuh.network.ClientSlothState;
@@ -20,12 +19,6 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Coordinates all 5 Sloth abilities (Summon Hand, Quick Strike, Quick Grasp, Hidden Interaction,
- * Self Propel) into one unified hand state, since they all drive the same underlying
- * {@link UnseenHandState} / server hand. Each ability's behavior just reports raw input intent
- * here; {@link #tick(LocalPlayer)} resolves it once per client tick.
- */
 final class SlothHandController {
     static final SlothHandController INSTANCE = new SlothHandController();
 
@@ -52,8 +45,6 @@ final class SlothHandController {
     private HandMode lastSentHandMode = HandMode.NONE;
     private boolean lastSentMobility;
     private int handSyncCounter;
-
-    private static final java.lang.reflect.Field LOCAL_CROUCHING_FIELD = resolveLocalCrouchingField();
 
     private SlothHandController() {}
 
@@ -105,9 +96,6 @@ final class SlothHandController {
                 quickMode = pendingQuickMode;
                 quickRetracting = wantsSummon;
                 if (wantsSummon) {
-                    // Summon Hand was actively held — cancel it outright rather than letting it
-                    // resume on this same continuous hold once the quick action's fast retract
-                    // finishes; the player must release and re-press Summon Hand to reactivate it.
                     summonSuppressedUntilRelease = true;
                     retractingGrab = false;
                     lastModeWhileHeld = HandMode.NONE;
@@ -186,23 +174,8 @@ final class SlothHandController {
         }
     }
 
-    private static java.lang.reflect.Field resolveLocalCrouchingField() {
-        try {
-            java.lang.reflect.Field f = LocalPlayer.class.getDeclaredField("crouching");
-            f.setAccessible(true);
-            return f;
-        } catch (Exception e) {
-            HahUeuh.LOGGER.warn("Could not resolve LocalPlayer.crouching field; mobility idle-pose will show a crouch bend", e);
-            return null;
-        }
-    }
-
     private void forceLocalNotCrouching(LocalPlayer player) {
-        if (LOCAL_CROUCHING_FIELD == null) return;
-        try {
-            LOCAL_CROUCHING_FIELD.setBoolean(player, false);
-        } catch (Exception ignored) {
-        }
+        player.crouching = false;
     }
 
     private void syncUnseenHandToServer(Minecraft mc) {

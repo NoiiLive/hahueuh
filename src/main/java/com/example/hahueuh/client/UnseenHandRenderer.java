@@ -49,6 +49,7 @@ public final class UnseenHandRenderer {
     private static final float BEND_RATE = 5f;
     private static final float ANIM_BLEND_RATE = 14f;
     private static final float TIP_TRANSITION_RATE = 10f;
+    private static final float MAX_TIP_LAG_FRACTION = 0.2f;
 
     private static final float EXTEND_SPEED = 8f;
     private static final float RETRACT_SPEED = 24f;
@@ -238,6 +239,9 @@ public final class UnseenHandRenderer {
         private float releaseFade;
         private float animTimeMs;
         private int lastModeId = -1;
+        private int lastLagModeId = Integer.MIN_VALUE;
+        private boolean lastLagMobility;
+        private boolean settledSinceTransition = true;
         private final Map<ModelPart, float[]> blendPose = new java.util.IdentityHashMap<>();
         float scale = 1f;
         HandShape shape = HandShape.CHEST;
@@ -343,6 +347,12 @@ public final class UnseenHandRenderer {
                         .add(0, shape.tipRise(), 0);
             }
 
+            if (modeId != lastLagModeId || mobility != lastLagMobility) {
+                lastLagModeId = modeId;
+                lastLagMobility = mobility;
+                settledSinceTransition = false;
+            }
+
             if (smoothedTip == null) {
                 smoothedTip = p2;
             } else {
@@ -351,6 +361,15 @@ public final class UnseenHandRenderer {
                         Mth.lerp(tipBlend, smoothedTip.x, p2.x),
                         Mth.lerp(tipBlend, smoothedTip.y, p2.y),
                         Mth.lerp(tipBlend, smoothedTip.z, p2.z));
+                Vec3 lag = smoothedTip.subtract(p2);
+                double maxLag = dist * MAX_TIP_LAG_FRACTION;
+                double lagLen = lag.length();
+                if (!settledSinceTransition && lagLen <= maxLag) {
+                    settledSinceTransition = true;
+                }
+                if (settledSinceTransition && lagLen > maxLag && lagLen > 1.0e-6) {
+                    smoothedTip = p2.add(lag.scale(maxLag / lagLen));
+                }
             }
             p2 = smoothedTip;
 
@@ -437,10 +456,11 @@ public final class UnseenHandRenderer {
                 float zFill = (float) (chordLen / UnseenTendrilModel.SEGMENT_LENGTH);
                 Vec3 origin = pBase.add(chordDir.scale(chordLen / 6.0));
                 boolean isHand = i == nSlots - 1;
+                float zScale = isHand ? (float) (segLen / UnseenTendrilModel.SEGMENT_LENGTH) : zFill;
                 pose.pushPose();
                 pose.translate(origin.x - camPos.x, origin.y - camPos.y, origin.z - camPos.z);
                 pose.mulPose(chainOrientation(chordDir));
-                pose.scale(isHand && mirror ? scale : -scale, -scale, zFill);
+                pose.scale(isHand && mirror ? scale : -scale, -scale, zScale);
                 drawPart(isHand ? hand.root() : tendril, pose, main, outline, mainColor);
                 pose.popPose();
                 pBase = pTip;

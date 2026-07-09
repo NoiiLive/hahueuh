@@ -5,7 +5,10 @@ import com.example.hahueuh.HahUeuhAbilities;
 import com.example.hahueuh.api.Ability;
 import com.example.hahueuh.api.event.RegisterAbilitiesEvent;
 import com.example.hahueuh.network.ActivateAuthorityPayload;
+import com.example.hahueuh.network.ClientGreedState;
 import com.example.hahueuh.network.ClientSlothState;
+import com.example.hahueuh.network.GreedVariant;
+import com.example.hahueuh.network.LionsHeartTogglePayload;
 import com.example.hahueuh.network.SlothVariant;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -82,6 +85,13 @@ public final class HahUeuhClientAbilities {
                 .sharesCooldownWith(HahUeuhAbilities.SLOTH_COOLDOWN_KEY)
                 .availableWhen(() -> ClientSlothState.slothVariant() == SlothVariant.UNSEEN_HANDS)
                 .onHeldTick(new SelfPropelBehavior())
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.LIONS_HEART_ABILITY, HahUeuhAbilities.GREED_AUTHORITY)
+                .translationKey("hahueuh.ability.lions_heart")
+                .shortLabel(() -> "LIO")
+                .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.LIONSHEART)
+                .onActivate(ctx -> PacketDistributor.sendToServer(LionsHeartTogglePayload.INSTANCE))
                 .build());
     }
 }

@@ -105,6 +105,12 @@ public final class AbilityClient {
         }
 
         SlothHandController.INSTANCE.tick(player);
+
+        boolean onRealGround = player.onGround()
+                && !player.getBlockStateOn().getCollisionShape(player.level(), player.getOnPos()).isEmpty();
+        com.example.hahueuh.network.ClientLionsHeartState.updateFloor(
+                player.getY(), player.onGround(), onRealGround,
+                mc.options.keyJump.isDown(), mc.options.keyShift.isDown(), player.isUnderWater());
     }
 
     @SubscribeEvent

@@ -50,7 +50,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -635,16 +634,10 @@ public class SnapshotManager {
 
         if (authorityManager.canReturnByDeath(uuid) && rbd.isActive()) {
             healAndSignal(player);
-            // Creative/spectator players can trigger RBD via the chat phrase without ever being in
-            // real danger, so they're excluded from Witch's Miasma entirely.
-            if (!player.isCreative() && !player.isSpectator()) {
-                // Read the CURRENT (pre-rollback) level now, before the scheduled rollback reverts
-                // this player's active effects back to whatever the checkpoint captured — reading it
-                // after the revert would always see "no effect" and reset to level I instead of
-                // incrementing. The computed target level is queued and force-applied verbatim once
-                // the rollback has actually finished restoring player state, so it survives the revert.
+            if (Config.WITCH_MIASMA_ENABLED.get() && !player.isCreative() && !player.isSpectator()) {
                 MobEffectInstance existing = player.getEffect(ModEffects.WITCH_MIASMA);
-                int amplifier = existing != null ? Math.min(existing.getAmplifier() + 1, MIASMA_MAX_AMPLIFIER) : 0;
+                int maxAmplifier = Config.WITCH_MIASMA_MAX_LEVEL.getAsInt() - 1;
+                int amplifier = existing != null ? Math.min(existing.getAmplifier() + 1, maxAmplifier) : 0;
                 pendingMiasmaBump.put(uuid, amplifier);
             }
             scheduleRollback(rbd);
@@ -661,15 +654,12 @@ public class SnapshotManager {
     }
 
     private final Map<UUID, Integer> pendingMiasmaBump = new HashMap<>();
-    private static final int MIASMA_MAX_AMPLIFIER = 4;
     private static final int MIASMA_DURATION_TICKS = 5 * 60 * 20;
 
-    /** Force-applies a specific Witch's Miasma level, bypassing merge-with-existing semantics entirely. */
     private void applyMiasmaLevel(ServerPlayer player, int amplifier) {
         player.forceAddEffect(new MobEffectInstance(ModEffects.WITCH_MIASMA, MIASMA_DURATION_TICKS, amplifier, false, false, true), null);
     }
 
-    /** Witch's Miasma steps down a level instead of disappearing outright when its duration runs out. */
     @SubscribeEvent
     public void onMobEffectExpired(MobEffectEvent.Expired event) {
         MobEffectInstance instance = event.getEffectInstance();
@@ -811,7 +801,7 @@ public class SnapshotManager {
         if (hand.mode == HandMode.ATTACK) {
             hand.grabbed[0] = null;
             for (Entity e : level.getEntities(owner, reach, e -> e instanceof LivingEntity && e.isAlive() && e != owner)) {
-                e.hurt(owner.damageSources().playerAttack(owner), 1.0f);
+                e.hurt(owner.damageSources().indirectMagic(owner, owner), 2.0f);
             }
         } else if (hand.mode == HandMode.GRAB) {
             hand.grabbed[0] = dragGrab(owner, level, tip, hand.grabbed[0], reach,
@@ -843,7 +833,7 @@ public class SnapshotManager {
                 targets.addAll(level.getEntities(owner, new AABB(tip, tip).inflate(0.9),
                         e -> e instanceof LivingEntity && e.isAlive() && e != owner));
             }
-            for (Entity e : targets) e.hurt(owner.damageSources().playerAttack(owner), 1.0f);
+            for (Entity e : targets) e.hurt(owner.damageSources().indirectMagic(owner, owner), 1.0f);
         } else if (hand.mode == HandMode.GRAB) {
             Vec3[] tips = new Vec3[count];
             for (int i = 0; i < count; i++) tips[i] = unseenHandTip(owner, i, hand.distance);
@@ -1012,7 +1002,7 @@ public class SnapshotManager {
         double kbHoriz = 0.4 + 0.125 * size;
         double kbUp = 0.225 + 0.05 * size;
         for (Entity e : level.getEntities(owner, reach, e -> e instanceof LivingEntity && e.isAlive() && e != owner)) {
-            e.hurt(owner.damageSources().playerAttack(owner), damage);
+            e.hurt(owner.damageSources().indirectMagic(owner, owner), damage);
             Vec3 away = e.position().add(0, e.getBbHeight() * 0.5, 0).subtract(tip);
             away = new Vec3(away.x, 0, away.z);
             away = away.lengthSqr() > 1.0e-4 ? away.normalize() : new Vec3(owner.getViewVector(1.0f).x, 0, owner.getViewVector(1.0f).z).normalize();
@@ -1127,16 +1117,13 @@ public class SnapshotManager {
         if (stand.isMarker()) return;
 
         Vec3 relative = tip.subtract(stand.position());
-        ItemStack heldBefore = owner.getItemInHand(InteractionHand.MAIN_HAND);
-        InteractionResult result = stand.interactAt(owner, relative, InteractionHand.MAIN_HAND);
-        if (result != InteractionResult.SUCCESS) return;
-
-        ItemStack heldAfter = owner.getItemInHand(InteractionHand.MAIN_HAND);
-        if (!ItemStack.matches(heldAfter, heldBefore)) {
-            owner.setItemInHand(InteractionHand.MAIN_HAND, heldBefore);
-            if (!heldAfter.isEmpty() && !owner.getInventory().add(heldAfter)) {
-                owner.drop(heldAfter, false);
-            }
+        ItemStack realHeld = owner.getItemInHand(InteractionHand.MAIN_HAND);
+        owner.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        stand.interactAt(owner, relative, InteractionHand.MAIN_HAND);
+        ItemStack takenFromStand = owner.getItemInHand(InteractionHand.MAIN_HAND);
+        owner.setItemInHand(InteractionHand.MAIN_HAND, realHeld);
+        if (!takenFromStand.isEmpty() && !owner.getInventory().add(takenFromStand)) {
+            owner.drop(takenFromStand, false);
         }
     }
 
@@ -1146,7 +1133,9 @@ public class SnapshotManager {
                 authorityManager.canReturnByDeath(player.getUUID()),
                 authorityManager.canUseDomain(player.getUUID()),
                 authorityManager.canUseSloth(player.getUUID()),
-                authorityManager.getSlothVariant(player.getUUID()).ordinal()));
+                authorityManager.getSlothVariant(player.getUUID()).ordinal(),
+                authorityManager.canUseGreed(player.getUUID()),
+                authorityManager.getGreedVariant(player.getUUID()).ordinal()));
     }
 
 
@@ -1219,9 +1208,6 @@ public class SnapshotManager {
             return;
         }
 
-        // Victim always binds to themself — Aggressor always binds to something else, first
-        // whatever they're looking at, falling back to the nearest living entity within 5 blocks,
-        // and refusing to open at all if neither turns up anything.
         LivingEntity target = null;
         if (aggressor) {
             target = raycastTargetEntity(player, domainSphereRadius());
@@ -1269,7 +1255,6 @@ public class SnapshotManager {
         return null;
     }
 
-    /** Aggressor's fallback when not looking at anything: the closest living entity within range. */
     private LivingEntity nearestEntityWithin(ServerPlayer player, double radius) {
         AABB box = player.getBoundingBox().inflate(radius);
         List<LivingEntity> candidates = player.level().getEntitiesOfClass(LivingEntity.class, box,
@@ -1537,9 +1522,6 @@ public class SnapshotManager {
             }
             stepStart = logStepTime("restore online players", stepStart);
 
-            // Apply the Witch's Miasma level computed at death time now that player state has
-            // actually been restored — applying it any earlier would just get overwritten the
-            // moment this same rollback reverts the player back to their pre-death effects.
             if (!pendingMiasmaBump.isEmpty()) {
                 for (Map.Entry<UUID, Integer> entry : pendingMiasmaBump.entrySet()) {
                     ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
@@ -1554,6 +1536,7 @@ public class SnapshotManager {
             HahUeuh.SLOTH_COMPAT.reload();
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 sendAuthoritiesTo(player);
+                HahUeuh.LIONS_HEART.forceResetOnRollback(player);
             }
             stepStart = logStepTime("reload authorities + compatibility", stepStart);
 

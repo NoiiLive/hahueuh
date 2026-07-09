@@ -26,6 +26,9 @@
   "hahueuh.configuration.unseenHandsMin": "Mãos Invisíveis: Quantidade Mínima",
   "hahueuh.configuration.unseenHandsMax": "Mãos Invisíveis: Quantidade Máxima",
   "hahueuh.configuration.unseenHandsMobilitySpeed": "Mãos Invisíveis: Velocidade de Deslize (blocos/seg)",
+  "hahueuh.configuration.witchMiasmaEnabled": "Miasma da Bruxa Ativado",
+  "hahueuh.configuration.witchMiasmaMaxLevel": "Nível Máximo do Miasma da Bruxa",
+  "hahueuh.configuration.lionsHeartCooldownSeconds": "Recarga do Coração de Leão (segundos)",
   "key.categories.hahueuh": "Hah! Ueuh~",
   "key.hahueuh.open_gui": "Abrir Menu de Autoridades",
   "key.hahueuh.cycle_slots": "Alternar Grupo de Slots",
@@ -39,6 +42,7 @@
   "hahueuh.authority.domain": "Domínio",
   "hahueuh.authority.return_by_death": "Retorno pela Morte",
   "hahueuh.authority.sloth": "Preguiça",
+  "hahueuh.authority.greed": "Ganância",
 
   "hahueuh.ability.domain_victim": "Vítima",
   "hahueuh.ability.domain_aggressor": "Agressor",
@@ -48,12 +52,15 @@
   "hahueuh.ability.quick_grasp": "Agarrão Rápido",
   "hahueuh.ability.hidden_interaction": "Interação Oculta",
   "hahueuh.ability.self_propel": "Auto-Propulsão",
+  "hahueuh.ability.lions_heart": "Coração de Leão",
 
   "effect.hahueuh.witch_miasma": "Miasma da Bruxa",
 
   "hahueuh.variant.invisible_providence": "Providência Invisível",
   "hahueuh.variant.unseen_hands": "Mãos Invisíveis",
   "hahueuh.variant.sekhmet": "Sekhmet",
+  "hahueuh.variant.lionsheart": "Coração de Leão",
+  "hahueuh.variant.corleonis": "Cor Leonis",
 
   "hahueuh.reason.companion_kill": "abate feito por um companheiro",
   "hahueuh.reason.night_sleep": "pular a noite dormindo",
@@ -77,6 +84,12 @@
   "hahueuh.message.checkpoint_saved": "☑ Ponto de controle salvo!",
   "hahueuh.message.sloth_attunement": "Sintonia com a Preguiça +%s (%s/%s) — %s",
   "hahueuh.message.sloth_compatible": "Você agora é compatível com a Autoridade da Preguiça.",
+  "hahueuh.message.no_greed_authority": "Você não possui a autoridade da Ganância.",
+  "hahueuh.message.lions_heart_cooldown": "Seu coração precisa se recuperar. Recarga: %ss",
+  "hahueuh.message.lions_heart_activated": "O Coração de Leão ruge à vida — você é imparável.",
+  "hahueuh.message.lions_heart_strain": "Seu coração começa a se esforçar...",
+  "hahueuh.message.lions_heart_deactivated": "O Coração de Leão se aquieta.",
+  "hahueuh.message.lions_heart_burnout": "Seu coração não aguentou mais a tensão.",
 
   "hahueuh.command.checkpoint_created": "Ponto de controle criado.",
   "hahueuh.command.half_heart": "Definido para meio coração.",
@@ -87,5 +100,9 @@
   "hahueuh.command.sloth_compat_get": "Compatibilidade de Preguiça de %s: %s/%s",
   "hahueuh.command.sloth_compat_get_compatible": "Compatibilidade de Preguiça de %s: %s/%s (compatível)",
   "hahueuh.command.sloth_compat_set": "Compatibilidade de Preguiça de %s definida para %s",
+  "hahueuh.command.greed_authority_set": "Autoridade da Ganância de %s definida para %s",
+  "hahueuh.command.greed_variant_set": "Autoridade da Ganância de %s definida para %s",
+  "hahueuh.command.greed_compat_get": "Compatibilidade de Ganância de %s: %s",
+  "hahueuh.command.greed_compat_set": "Compatibilidade de Ganância de %s definida para %s",
   "hahueuh.command.revived": "%s foi revivido(a)."
 }

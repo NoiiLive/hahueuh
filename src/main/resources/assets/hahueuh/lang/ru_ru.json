@@ -26,6 +26,9 @@
   "hahueuh.configuration.unseenHandsMin": "Незримые руки: минимальное количество",
   "hahueuh.configuration.unseenHandsMax": "Незримые руки: максимальное количество",
   "hahueuh.configuration.unseenHandsMobilitySpeed": "Незримые руки: скорость скольжения (блоков/сек)",
+  "hahueuh.configuration.witchMiasmaEnabled": "Миазм ведьмы включён",
+  "hahueuh.configuration.witchMiasmaMaxLevel": "Максимальный уровень Миазма ведьмы",
+  "hahueuh.configuration.lionsHeartCooldownSeconds": "Перезарядка Сердца льва (секунды)",
   "key.categories.hahueuh": "Hah! Ueuh~",
   "key.hahueuh.open_gui": "Открыть меню полномочий",
   "key.hahueuh.cycle_slots": "Переключить группу слотов",
@@ -39,6 +42,7 @@
   "hahueuh.authority.domain": "Владение",
   "hahueuh.authority.return_by_death": "Возвращение смертью",
   "hahueuh.authority.sloth": "Лень",
+  "hahueuh.authority.greed": "Алчность",
 
   "hahueuh.ability.domain_victim": "Жертва",
   "hahueuh.ability.domain_aggressor": "Агрессор",
@@ -48,12 +52,15 @@
   "hahueuh.ability.quick_grasp": "Быстрый захват",
   "hahueuh.ability.hidden_interaction": "Скрытое взаимодействие",
   "hahueuh.ability.self_propel": "Самодвижение",
+  "hahueuh.ability.lions_heart": "Сердце льва",
 
   "effect.hahueuh.witch_miasma": "Миазм ведьмы",
 
   "hahueuh.variant.invisible_providence": "Невидимое провидение",
   "hahueuh.variant.unseen_hands": "Незримые руки",
   "hahueuh.variant.sekhmet": "Сехмет",
+  "hahueuh.variant.lionsheart": "Сердце льва",
+  "hahueuh.variant.corleonis": "Кор Леонис",
 
   "hahueuh.reason.companion_kill": "убийство руками питомца",
   "hahueuh.reason.night_sleep": "пропуск ночи во сне",
@@ -77,6 +84,12 @@
   "hahueuh.message.checkpoint_saved": "☑ Контрольная точка сохранена!",
   "hahueuh.message.sloth_attunement": "Настрой Лени +%s (%s/%s) — %s",
   "hahueuh.message.sloth_compatible": "Теперь вы совместимы с Властью Лени.",
+  "hahueuh.message.no_greed_authority": "У вас нет полномочия Алчности.",
+  "hahueuh.message.lions_heart_cooldown": "Вашему сердцу нужно восстановиться. Перезарядка: %sс",
+  "hahueuh.message.lions_heart_activated": "Сердце льва оживает — вы неудержимы.",
+  "hahueuh.message.lions_heart_strain": "Ваше сердце начинает надрываться...",
+  "hahueuh.message.lions_heart_deactivated": "Сердце льва затихает.",
+  "hahueuh.message.lions_heart_burnout": "Ваше сердце не выдержало напряжения.",
 
   "hahueuh.command.checkpoint_created": "Контрольная точка создана.",
   "hahueuh.command.half_heart": "Здоровье установлено на пол-сердца.",
@@ -87,5 +100,9 @@
   "hahueuh.command.sloth_compat_get": "Совместимость Лени у %s: %s/%s",
   "hahueuh.command.sloth_compat_get_compatible": "Совместимость Лени у %s: %s/%s (совместим)",
   "hahueuh.command.sloth_compat_set": "Совместимость Лени у %s установлена на %s",
+  "hahueuh.command.greed_authority_set": "Полномочие Алчности для %s установлено: %s",
+  "hahueuh.command.greed_variant_set": "Полномочие Алчности для %s установлено: %s",
+  "hahueuh.command.greed_compat_get": "Совместимость Алчности у %s: %s",
+  "hahueuh.command.greed_compat_set": "Совместимость Алчности у %s установлена на %s",
   "hahueuh.command.revived": "%s возвращён к жизни."
 }

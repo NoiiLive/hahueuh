@@ -18,4 +18,10 @@ public class ModSounds {
 
     public static final DeferredHolder<SoundEvent, SoundEvent> EUHEUH = SOUND_EVENTS.register("euheuh",
             () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "euheuh")));
+
+    public static final DeferredHolder<SoundEvent, SoundEvent> LIONSHEART_ACTIVATE = SOUND_EVENTS.register("lionsheart_activate",
+            () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "lionsheart_activate")));
+
+    public static final DeferredHolder<SoundEvent, SoundEvent> LIONSHEART_DEACTIVATE = SOUND_EVENTS.register("lionsheart_deactivate",
+            () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "lionsheart_deactivate")));
 }

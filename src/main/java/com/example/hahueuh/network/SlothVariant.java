@@ -8,7 +8,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
-import java.lang.reflect.Field;
 import java.util.UUID;
 
 public enum SlothVariant {
@@ -150,26 +149,9 @@ public enum SlothVariant {
         return Double.NaN;
     }
 
-    private static final Field WALK_ANIM_POSITION_FIELD = resolveWalkAnimPositionField();
-
-    private static Field resolveWalkAnimPositionField() {
-        try {
-            Field f = net.minecraft.world.entity.WalkAnimationState.class.getDeclaredField("position");
-            f.setAccessible(true);
-            return f;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     public static void freezeWalkAnimation(LivingEntity entity) {
         entity.walkAnimation.setSpeed(0f);
-        if (WALK_ANIM_POSITION_FIELD != null) {
-            try {
-                WALK_ANIM_POSITION_FIELD.setFloat(entity.walkAnimation, 0f);
-            } catch (Exception ignored) {
-            }
-        }
+        entity.walkAnimation.position = 0f;
     }
 
     private static float rnd(UUID uuid, int index, int salt) {

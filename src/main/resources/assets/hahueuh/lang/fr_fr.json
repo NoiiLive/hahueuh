@@ -26,6 +26,9 @@
   "hahueuh.configuration.unseenHandsMin": "Mains Invisibles : nombre minimum",
   "hahueuh.configuration.unseenHandsMax": "Mains Invisibles : nombre maximum",
   "hahueuh.configuration.unseenHandsMobilitySpeed": "Mains Invisibles : vitesse de glisse (blocs/s)",
+  "hahueuh.configuration.witchMiasmaEnabled": "Miasme de la Sorcière activé",
+  "hahueuh.configuration.witchMiasmaMaxLevel": "Niveau maximal du Miasme de la Sorcière",
+  "hahueuh.configuration.lionsHeartCooldownSeconds": "Recharge du Cœur de Lion (secondes)",
   "key.categories.hahueuh": "Hah! Ueuh~",
   "key.hahueuh.open_gui": "Ouvrir le menu des autorités",
   "key.hahueuh.cycle_slots": "Changer de groupe d'emplacements",
@@ -39,6 +42,7 @@
   "hahueuh.authority.domain": "Domaine",
   "hahueuh.authority.return_by_death": "Retour par la Mort",
   "hahueuh.authority.sloth": "Paresse",
+  "hahueuh.authority.greed": "Cupidité",
 
   "hahueuh.ability.domain_victim": "Victime",
   "hahueuh.ability.domain_aggressor": "Agresseur",
@@ -48,12 +52,15 @@
   "hahueuh.ability.quick_grasp": "Saisie Rapide",
   "hahueuh.ability.hidden_interaction": "Interaction Discrète",
   "hahueuh.ability.self_propel": "Auto-Propulsion",
+  "hahueuh.ability.lions_heart": "Cœur de Lion",
 
   "effect.hahueuh.witch_miasma": "Miasme de la Sorcière",
 
   "hahueuh.variant.invisible_providence": "Providence Invisible",
   "hahueuh.variant.unseen_hands": "Mains Invisibles",
   "hahueuh.variant.sekhmet": "Sekhmet",
+  "hahueuh.variant.lionsheart": "Cœur de Lion",
+  "hahueuh.variant.corleonis": "Cor Leonis",
 
   "hahueuh.reason.companion_kill": "une mise à mort par un compagnon",
   "hahueuh.reason.night_sleep": "passer la nuit en dormant",
@@ -77,6 +84,12 @@
   "hahueuh.message.checkpoint_saved": "☑ Point de contrôle sauvegardé !",
   "hahueuh.message.sloth_attunement": "Accord avec la Paresse +%s (%s/%s) — %s",
   "hahueuh.message.sloth_compatible": "Vous êtes désormais compatible avec l'Autorité de la Paresse.",
+  "hahueuh.message.no_greed_authority": "Vous ne possédez pas l'autorité de la Cupidité.",
+  "hahueuh.message.lions_heart_cooldown": "Votre cœur a besoin de récupérer. Recharge : %ss",
+  "hahueuh.message.lions_heart_activated": "Le Cœur de Lion rugit à la vie — vous êtes inarrêtable.",
+  "hahueuh.message.lions_heart_strain": "Votre cœur commence à peiner...",
+  "hahueuh.message.lions_heart_deactivated": "Le Cœur de Lion se tait.",
+  "hahueuh.message.lions_heart_burnout": "Votre cœur n'a pas pu supporter la tension plus longtemps.",
 
   "hahueuh.command.checkpoint_created": "Point de contrôle créé.",
   "hahueuh.command.half_heart": "Réglé sur un demi-cœur.",
@@ -87,5 +100,9 @@
   "hahueuh.command.sloth_compat_get": "Compatibilité de Paresse de %s : %s/%s",
   "hahueuh.command.sloth_compat_get_compatible": "Compatibilité de Paresse de %s : %s/%s (compatible)",
   "hahueuh.command.sloth_compat_set": "Compatibilité de Paresse de %s définie sur %s",
+  "hahueuh.command.greed_authority_set": "Autorité de la Cupidité de %s définie sur %s",
+  "hahueuh.command.greed_variant_set": "Autorité de la Cupidité de %s définie sur %s",
+  "hahueuh.command.greed_compat_get": "Compatibilité de Cupidité de %s : %s",
+  "hahueuh.command.greed_compat_set": "Compatibilité de Cupidité de %s définie sur %s",
   "hahueuh.command.revived": "%s a été ressuscité(e)."
 }

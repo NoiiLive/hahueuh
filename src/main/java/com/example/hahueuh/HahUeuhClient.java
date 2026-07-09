@@ -1,9 +1,11 @@
 package com.example.hahueuh;
 
+import com.example.hahueuh.client.AbilitySlots;
 import com.example.hahueuh.network.DeathFadeState;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -45,7 +47,18 @@ public class HahUeuhClient {
         DeathFadeState.reset();
         com.example.hahueuh.network.DomainRenderState.clear();
         com.example.hahueuh.network.RemoteUnseenHands.clear();
+        com.example.hahueuh.network.ClientLionsHeartState.clear();
         com.example.hahueuh.api.AbilityCooldowns.reset();
+        AbilitySlots.reload(currentWorldKey());
+    }
+
+    private static String currentWorldKey() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.isLocalServer() && mc.getSingleplayerServer() != null) {
+            return "sp-" + mc.getSingleplayerServer().getWorldData().getLevelName();
+        }
+        ServerData serverData = mc.getCurrentServer();
+        return serverData != null ? "mp-" + serverData.ip : "unknown";
     }
 
     private static void renderDeathFade(GuiGraphics graphics, DeltaTracker deltaTracker) {

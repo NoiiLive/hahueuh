@@ -1,5 +1,6 @@
 package com.example.hahueuh.snapshot;
 
+import com.example.hahueuh.network.GreedVariant;
 import com.example.hahueuh.network.SlothVariant;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -28,33 +29,46 @@ public class PlayerAuthorityManager {
     private static final String DOMAIN_FILE_NAME = "hahueuh_domain_authority.json";
     private static final String SLOTH_FILE_NAME = "hahueuh_sloth_authority.json";
     private static final String SLOTH_VARIANT_FILE_NAME = "hahueuh_sloth_variant.json";
+    private static final String GREED_FILE_NAME = "hahueuh_greed_authority.json";
+    private static final String GREED_VARIANT_FILE_NAME = "hahueuh_greed_variant.json";
 
     private final Map<UUID, Boolean> returnByDeath = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> domain = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> sloth = new ConcurrentHashMap<>();
     private final Map<UUID, SlothVariant> slothVariant = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> greed = new ConcurrentHashMap<>();
+    private final Map<UUID, GreedVariant> greedVariant = new ConcurrentHashMap<>();
     private Path filePath;
     private Path domainFilePath;
     private Path slothFilePath;
     private Path slothVariantFilePath;
+    private Path greedFilePath;
+    private Path greedVariantFilePath;
 
     public void load(MinecraftServer server) {
         returnByDeath.clear();
         domain.clear();
         sloth.clear();
         slothVariant.clear();
+        greed.clear();
+        greedVariant.clear();
         Path root = server.getWorldPath(LevelResource.ROOT);
         filePath = root.resolve(FILE_NAME);
         domainFilePath = root.resolve(DOMAIN_FILE_NAME);
         slothFilePath = root.resolve(SLOTH_FILE_NAME);
         slothVariantFilePath = root.resolve(SLOTH_VARIANT_FILE_NAME);
+        greedFilePath = root.resolve(GREED_FILE_NAME);
+        greedVariantFilePath = root.resolve(GREED_VARIANT_FILE_NAME);
         loadInto(filePath, returnByDeath);
         loadInto(domainFilePath, domain);
         loadInto(slothFilePath, sloth);
-        loadVariants(slothVariantFilePath);
+        loadInto(greedFilePath, greed);
+        loadVariants(slothVariantFilePath, slothVariant, SlothVariant::byId, v -> v.id);
+        loadVariants(greedVariantFilePath, greedVariant, GreedVariant::byId, v -> v.id);
     }
 
-    private void loadVariants(Path path) {
+    private <T> void loadVariants(Path path, Map<UUID, T> target, java.util.function.Function<String, T> byId,
+                                   java.util.function.Function<T, String> toId) {
         if (path == null || !Files.exists(path)) return;
         try {
             String json = Files.readString(path, StandardCharsets.UTF_8);
@@ -62,25 +76,25 @@ public class PlayerAuthorityManager {
             if (raw != null) {
                 raw.forEach((uuidStr, value) -> {
                     try {
-                        slothVariant.put(UUID.fromString(uuidStr), SlothVariant.byId(value));
+                        target.put(UUID.fromString(uuidStr), byId.apply(value));
                     } catch (IllegalArgumentException e) {
                         LOGGER.warn("Ignoring malformed UUID '{}' in {}", uuidStr, path);
                     }
                 });
             }
         } catch (IOException e) {
-            LOGGER.error("Failed to load Sloth variant data from {}", path, e);
+            LOGGER.error("Failed to load variant data from {}", path, e);
         }
     }
 
-    private void saveVariants() {
-        if (slothVariantFilePath == null) return;
+    private <T> void saveVariants(Path path, Map<UUID, T> source, java.util.function.Function<T, String> toId) {
+        if (path == null) return;
         try {
             Map<String, String> raw = new HashMap<>();
-            slothVariant.forEach((uuid, v) -> raw.put(uuid.toString(), v.id));
-            Files.writeString(slothVariantFilePath, GSON.toJson(raw, STRING_MAP_TYPE), StandardCharsets.UTF_8);
+            source.forEach((uuid, v) -> raw.put(uuid.toString(), toId.apply(v)));
+            Files.writeString(path, GSON.toJson(raw, STRING_MAP_TYPE), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            LOGGER.error("Failed to save Sloth variant data", e);
+            LOGGER.error("Failed to save variant data to {}", path, e);
         }
     }
 
@@ -115,7 +129,7 @@ public class PlayerAuthorityManager {
     }
 
     public boolean canReturnByDeath(UUID uuid) {
-        return returnByDeath.getOrDefault(uuid, true);
+        return returnByDeath.getOrDefault(uuid, false);
     }
 
     public void setReturnByDeath(UUID uuid, boolean value) {
@@ -147,6 +161,24 @@ public class PlayerAuthorityManager {
 
     public void setSlothVariant(UUID uuid, SlothVariant variant) {
         slothVariant.put(uuid, variant);
-        saveVariants();
+        saveVariants(slothVariantFilePath, slothVariant, v -> v.id);
+    }
+
+    public boolean canUseGreed(UUID uuid) {
+        return greed.getOrDefault(uuid, false);
+    }
+
+    public void setGreed(UUID uuid, boolean value) {
+        greed.put(uuid, value);
+        saveMap(greedFilePath, greed);
+    }
+
+    public GreedVariant getGreedVariant(UUID uuid) {
+        return greedVariant.getOrDefault(uuid, GreedVariant.LIONSHEART);
+    }
+
+    public void setGreedVariant(UUID uuid, GreedVariant variant) {
+        greedVariant.put(uuid, variant);
+        saveVariants(greedVariantFilePath, greedVariant, v -> v.id);
     }
 }

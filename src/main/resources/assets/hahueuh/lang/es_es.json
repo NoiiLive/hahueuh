@@ -26,6 +26,9 @@
   "hahueuh.configuration.unseenHandsMin": "Manos Invisibles: cantidad mínima",
   "hahueuh.configuration.unseenHandsMax": "Manos Invisibles: cantidad máxima",
   "hahueuh.configuration.unseenHandsMobilitySpeed": "Manos Invisibles: velocidad de deslizamiento (bloques/s)",
+  "hahueuh.configuration.witchMiasmaEnabled": "Miasma de la Bruja Activado",
+  "hahueuh.configuration.witchMiasmaMaxLevel": "Nivel Máximo del Miasma de la Bruja",
+  "hahueuh.configuration.lionsHeartCooldownSeconds": "Reutilización del Corazón de León (segundos)",
   "key.categories.hahueuh": "Hah! Ueuh~",
   "key.hahueuh.open_gui": "Abrir menú de autoridades",
   "key.hahueuh.cycle_slots": "Cambiar grupo de ranuras",
@@ -39,6 +42,7 @@
   "hahueuh.authority.domain": "Dominio",
   "hahueuh.authority.return_by_death": "Retorno por la Muerte",
   "hahueuh.authority.sloth": "Pereza",
+  "hahueuh.authority.greed": "Codicia",
 
   "hahueuh.ability.domain_victim": "Víctima",
   "hahueuh.ability.domain_aggressor": "Agresor",
@@ -48,12 +52,15 @@
   "hahueuh.ability.quick_grasp": "Agarre Rápido",
   "hahueuh.ability.hidden_interaction": "Interacción Oculta",
   "hahueuh.ability.self_propel": "Auto-Propulsión",
+  "hahueuh.ability.lions_heart": "Corazón de León",
 
   "effect.hahueuh.witch_miasma": "Miasma de la Bruja",
 
   "hahueuh.variant.invisible_providence": "Providencia Invisible",
   "hahueuh.variant.unseen_hands": "Manos Invisibles",
   "hahueuh.variant.sekhmet": "Sekhmet",
+  "hahueuh.variant.lionsheart": "Corazón de León",
+  "hahueuh.variant.corleonis": "Cor Leonis",
 
   "hahueuh.reason.companion_kill": "una muerte a manos de un compañero",
   "hahueuh.reason.night_sleep": "pasar la noche durmiendo",
@@ -77,6 +84,12 @@
   "hahueuh.message.checkpoint_saved": "☑ ¡Punto de control guardado!",
   "hahueuh.message.sloth_attunement": "Sintonía con la Pereza +%s (%s/%s) — %s",
   "hahueuh.message.sloth_compatible": "Ahora eres compatible con la Autoridad de la Pereza.",
+  "hahueuh.message.no_greed_authority": "No posees la autoridad de la Codicia.",
+  "hahueuh.message.lions_heart_cooldown": "Tu corazón necesita recuperarse. Reutilización: %ss",
+  "hahueuh.message.lions_heart_activated": "El Corazón de León ruge con vida — eres imparable.",
+  "hahueuh.message.lions_heart_strain": "Tu corazón comienza a esforzarse...",
+  "hahueuh.message.lions_heart_deactivated": "El Corazón de León se apaga.",
+  "hahueuh.message.lions_heart_burnout": "Tu corazón no pudo soportar más la tensión.",
 
   "hahueuh.command.checkpoint_created": "Punto de control creado.",
   "hahueuh.command.half_heart": "Establecido a medio corazón.",
@@ -87,5 +100,9 @@
   "hahueuh.command.sloth_compat_get": "Compatibilidad de Pereza de %s: %s/%s",
   "hahueuh.command.sloth_compat_get_compatible": "Compatibilidad de Pereza de %s: %s/%s (compatible)",
   "hahueuh.command.sloth_compat_set": "Compatibilidad de Pereza de %s establecida en %s",
+  "hahueuh.command.greed_authority_set": "Autoridad de la Codicia de %s establecida en %s",
+  "hahueuh.command.greed_variant_set": "Autoridad de la Codicia de %s establecida en %s",
+  "hahueuh.command.greed_compat_get": "Compatibilidad de Codicia de %s: %s",
+  "hahueuh.command.greed_compat_set": "Compatibilidad de Codicia de %s establecida en %s",
   "hahueuh.command.revived": "%s ha sido revivido(a)."
 }

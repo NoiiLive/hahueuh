@@ -24,8 +24,23 @@ public final class AbilitySlots {
     private static int cycleGroup;
     private static boolean hudHidden;
     private static boolean loaded;
+    private static String worldKey = "unknown";
 
     private AbilitySlots() {}
+
+    public static void reload(String key) {
+        worldKey = sanitize(key);
+        for (int i = 0; i < SLOT_COUNT; i++) slots[i] = null;
+        cycleGroup = 0;
+        hudHidden = false;
+        loaded = false;
+        ensureLoaded();
+    }
+
+    private static String sanitize(String key) {
+        String cleaned = key == null ? "unknown" : key.replaceAll("[^A-Za-z0-9._-]", "_");
+        return cleaned.isEmpty() ? "unknown" : cleaned;
+    }
 
     public static Ability get(int index) {
         ensureLoaded();
@@ -71,7 +86,7 @@ public final class AbilitySlots {
 
 
     private static Path file() {
-        return FMLPaths.CONFIGDIR.get().resolve("hahueuh_ability_slots.json");
+        return FMLPaths.CONFIGDIR.get().resolve("hahueuh").resolve("ability_slots").resolve(worldKey + ".json");
     }
 
     private static void ensureLoaded() {
@@ -112,8 +127,6 @@ public final class AbilitySlots {
 
     private static String legacyIdFor(String enumName) {
         return switch (enumName) {
-            // "DOMAIN" has no single replacement now that it's split into Victim/Aggressor — an old
-            // binding to it just resolves to empty, same as any other unrecognized/uninstalled id.
             case "RETURN_BY_DEATH" -> HahUeuhAbilities.RETURN_BY_DEATH_ABILITY.toString();
             case "SLOTH_HAND" -> HahUeuhAbilities.SLOTH_HAND_ABILITY.toString();
             default -> null;
@@ -128,7 +141,9 @@ public final class AbilitySlots {
             }
             data.cycleGroup = cycleGroup;
             data.hudHidden = hudHidden;
-            Files.writeString(file(), GSON.toJson(data), StandardCharsets.UTF_8);
+            Path path = file();
+            Files.createDirectories(path.getParent());
+            Files.writeString(path, GSON.toJson(data), StandardCharsets.UTF_8);
         } catch (Exception e) {
             HahUeuh.LOGGER.warn("Failed to save ability slot bindings", e);
         }

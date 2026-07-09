@@ -2,6 +2,7 @@ package com.example.hahueuh.command;
 
 import com.example.hahueuh.Config;
 import com.example.hahueuh.HahUeuh;
+import com.example.hahueuh.network.GreedVariant;
 import com.example.hahueuh.network.SlothVariant;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
@@ -39,24 +40,45 @@ public class RezeroCommand {
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.argument("player", EntityArgument.player())
                                 .then(Commands.literal("returnbydeath")
-                                        .then(Commands.argument("value", BoolArgumentType.bool())
-                                                .executes(RezeroCommand::runAuthority)))
+                                        .then(Commands.literal("acquired")
+                                                .then(Commands.argument("value", BoolArgumentType.bool())
+                                                        .executes(RezeroCommand::runAuthority))))
                                 .then(Commands.literal("domain")
-                                        .then(Commands.argument("value", BoolArgumentType.bool())
-                                                .executes(RezeroCommand::runDomainAuthority)))
+                                        .then(Commands.literal("acquired")
+                                                .then(Commands.argument("value", BoolArgumentType.bool())
+                                                        .executes(RezeroCommand::runDomainAuthority))))
                                 .then(Commands.literal("sloth")
-                                        .then(Commands.argument("value", BoolArgumentType.bool())
-                                                .executes(RezeroCommand::runSlothAuthority))
+                                        .then(Commands.literal("acquired")
+                                                .then(Commands.argument("value", BoolArgumentType.bool())
+                                                        .executes(RezeroCommand::runSlothAuthority)))
+                                        .then(Commands.literal("variant")
+                                                .then(Commands.literal("invisibleprovidence")
+                                                        .executes(ctx -> runSlothVariant(ctx, SlothVariant.INVISIBLE_PROVIDENCE)))
+                                                .then(Commands.literal("unseenhands")
+                                                        .executes(ctx -> runSlothVariant(ctx, SlothVariant.UNSEEN_HANDS)))
+                                                .then(Commands.literal("sekhmet")
+                                                        .executes(ctx -> runSlothVariant(ctx, SlothVariant.SEKHMET))))
                                         .then(Commands.literal("compatibility")
-                                                .executes(RezeroCommand::runGetSlothCompat)
-                                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
-                                                        .executes(RezeroCommand::runSetSlothCompat)))
-                                        .then(Commands.literal("invisibleprovidence")
-                                                .executes(ctx -> runSlothVariant(ctx, SlothVariant.INVISIBLE_PROVIDENCE)))
-                                        .then(Commands.literal("unseenhands")
-                                                .executes(ctx -> runSlothVariant(ctx, SlothVariant.UNSEEN_HANDS)))
-                                        .then(Commands.literal("sekhmet")
-                                                .executes(ctx -> runSlothVariant(ctx, SlothVariant.SEKHMET))))))
+                                                .then(Commands.literal("get")
+                                                        .executes(RezeroCommand::runGetSlothCompat))
+                                                .then(Commands.literal("set")
+                                                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                                .executes(RezeroCommand::runSetSlothCompat)))))
+                                .then(Commands.literal("greed")
+                                        .then(Commands.literal("acquired")
+                                                .then(Commands.argument("value", BoolArgumentType.bool())
+                                                        .executes(RezeroCommand::runGreedAuthority)))
+                                        .then(Commands.literal("variant")
+                                                .then(Commands.literal("lionsheart")
+                                                        .executes(ctx -> runGreedVariant(ctx, GreedVariant.LIONSHEART)))
+                                                .then(Commands.literal("corleonis")
+                                                        .executes(ctx -> runGreedVariant(ctx, GreedVariant.CORLEONIS))))
+                                        .then(Commands.literal("compatibility")
+                                                .then(Commands.literal("get")
+                                                        .executes(RezeroCommand::runGetGreedCompat))
+                                                .then(Commands.literal("set")
+                                                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                                .executes(RezeroCommand::runSetGreedCompat)))))))
                 .then(Commands.literal("revive")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.argument("player", EntityArgument.player())
@@ -142,6 +164,49 @@ public class RezeroCommand {
         int amount = IntegerArgumentType.getInteger(ctx, "amount");
         HahUeuh.SLOTH_COMPAT.setScore(target.getUUID(), amount);
         ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.sloth_compat_set",
+                target.getName(), amount
+        ).withStyle(ChatFormatting.GREEN), true);
+        return amount;
+    }
+
+    private static int runGreedAuthority(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        boolean value = BoolArgumentType.getBool(ctx, "value");
+        HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager().setGreed(target.getUUID(), value);
+        HahUeuh.SNAPSHOT_MANAGER.sendAuthoritiesTo(target);
+
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.greed_authority_set",
+                target.getName(), value
+        ).withStyle(value ? ChatFormatting.GREEN : ChatFormatting.RED), true);
+        return 1;
+    }
+
+    private static int runGreedVariant(CommandContext<CommandSourceStack> ctx, GreedVariant variant) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager().setGreed(target.getUUID(), true);
+        HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager().setGreedVariant(target.getUUID(), variant);
+        HahUeuh.SNAPSHOT_MANAGER.sendAuthoritiesTo(target);
+
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.greed_variant_set",
+                target.getName(), Component.translatable(variant.translationKey)
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), true);
+        return 1;
+    }
+
+    private static int runGetGreedCompat(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int score = HahUeuh.GREED_COMPAT.getScore(target.getUUID());
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.greed_compat_get",
+                target.getName(), score
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return score;
+    }
+
+    private static int runSetGreedCompat(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        HahUeuh.GREED_COMPAT.setScore(target.getUUID(), amount);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.greed_compat_set",
                 target.getName(), amount
         ).withStyle(ChatFormatting.GREEN), true);
         return amount;

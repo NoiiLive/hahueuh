@@ -84,6 +84,11 @@ public class Config {
                      "again. Set to 0 to disable. Default: 10. Range: 0 to 3600.")
             .defineInRange("slothCooldownSeconds", 10, 0, 3600);
 
+    public static final ModConfigSpec.IntValue LIONS_HEART_COOLDOWN_SECONDS = BUILDER
+            .comment("Cooldown (in seconds) after Lion's Heart is toggled off before it can be used again.",
+                     "Set to 0 to disable. Default: 10. Range: 0 to 3600.")
+            .defineInRange("lionsHeartCooldownSeconds", 10, 0, 3600);
+
     public static final ModConfigSpec.BooleanValue SLOTH_COMPAT_ENABLED = BUILDER
             .comment("If true, Sloth users must earn 'compatibility' with the authority; using the Unseen",
                      "Hand before reaching the threshold inflicts drawbacks (blindness, hunger, nausea,",
@@ -148,6 +153,17 @@ public class Config {
                     List.of("minecraft:mineable/shovel", "minecraft:mineable/hoe"),
                     () -> "minecraft:mineable/shovel",
                     obj -> obj instanceof String s && ResourceLocation.tryParse(s) != null);
+
+
+    public static final ModConfigSpec.BooleanValue WITCH_MIASMA_ENABLED = BUILDER
+            .comment("If true, using Return by Death inflicts a stacking 'Witch's Miasma' effect that",
+                     "draws nearby hostile mobs toward the player. Creative/spectator players are always",
+                     "excluded. Default: true.")
+            .define("witchMiasmaEnabled", true);
+
+    public static final ModConfigSpec.IntValue WITCH_MIASMA_MAX_LEVEL = BUILDER
+            .comment("Highest level Witch's Miasma can stack to (level I = 1). Default: 5. Range: 1 to 20.")
+            .defineInRange("witchMiasmaMaxLevel", 5, 1, 20);
 
 
     public static final ModConfigSpec.BooleanValue SHOW_CHECKPOINT_NOTIFICATION = BUILDER
