@@ -315,6 +315,8 @@ public class SnapshotManager {
         Map<UUID, Integer> domainCooldownRemaining = new HashMap<>();
         Map<UUID, Integer> lionsHeartCooldownRemaining = new HashMap<>();
         Map<UUID, Integer> littleKingCooldownRemaining = new HashMap<>();
+        Map<UUID, Integer> materialPhaseCooldownRemaining = new HashMap<>();
+        Map<UUID, Integer> objectFreezeCooldownRemaining = new HashMap<>();
 
         Path metaFile = checkpointDir.resolve(PLAYER_SNAPSHOTS_FILE_NAME);
         if (Files.exists(metaFile)) {
@@ -345,6 +347,8 @@ public class SnapshotManager {
                     domainCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("Domain"));
                     lionsHeartCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("LionsHeart"));
                     littleKingCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("LittleKing"));
+                    materialPhaseCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("MaterialPhase"));
+                    objectFreezeCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("ObjectFreeze"));
                 }
             } catch (Exception e) {
                 LOGGER.warn("Failed to read snapshot metadata from {}", metaFile, e);
@@ -355,7 +359,8 @@ public class SnapshotManager {
                 checkpointDir, entityData, loadedChunks, playerData,
                 gameTime, dayTime, raining, thundering,
                 clearWeatherTime, rainTime, thunderTime, fileTimestamps,
-                domainCooldownRemaining, lionsHeartCooldownRemaining, littleKingCooldownRemaining
+                domainCooldownRemaining, lionsHeartCooldownRemaining, littleKingCooldownRemaining,
+                materialPhaseCooldownRemaining, objectFreezeCooldownRemaining
         );
     }
 
@@ -442,6 +447,8 @@ public class SnapshotManager {
             cooldowns.put("Domain", cooldownsToNbt(snapshot.domainCooldownRemaining()));
             cooldowns.put("LionsHeart", cooldownsToNbt(snapshot.lionsHeartCooldownRemaining()));
             cooldowns.put("LittleKing", cooldownsToNbt(snapshot.littleKingCooldownRemaining()));
+            cooldowns.put("MaterialPhase", cooldownsToNbt(snapshot.materialPhaseCooldownRemaining()));
+            cooldowns.put("ObjectFreeze", cooldownsToNbt(snapshot.objectFreezeCooldownRemaining()));
             root.put("Cooldowns", cooldowns);
 
             NbtIo.write(root, checkpointDir.resolve(PLAYER_SNAPSHOTS_FILE_NAME));
@@ -587,6 +594,8 @@ public class SnapshotManager {
         sendAuthoritiesTo(player);
         sendAbilitySlotsTo(player);
         sendActiveUnseenHandsTo(player);
+        HahUeuh.LIONS_HEART.restoreOnLogin(player);
+        HahUeuh.MATERIAL_PHASE.restoreOnLogin(player);
         int cooldownTicksLeft = player.isCreative() ? 0 : domainCooldownRemainingTicks(player.getUUID());
         if (cooldownTicksLeft > 0) {
             PacketDistributor.sendToPlayer(player, new AbilityCooldownPayload(HahUeuhAbilities.DOMAIN_VICTIM_ABILITY, cooldownTicksLeft));
@@ -1106,7 +1115,7 @@ public class SnapshotManager {
                     if (state.getDestroySpeed(level, pos) < 0) continue;
                     boolean breakable = full ? matchesAnyTag(state, allowedTags) : isInconsequentialFoliage(state);
                     if (breakable) {
-                        level.destroyBlock(pos.immutable(), false);
+                        level.destroyBlock(pos.immutable(), ModGameRules.rollDrops(level));
                     }
                 }
             }
@@ -1480,7 +1489,9 @@ public class SnapshotManager {
                     fileTimestamps,
                     captureRemaining(domainCooldownUntilTick),
                     HahUeuh.LIONS_HEART.captureCooldownRemaining(),
-                    HahUeuh.LITTLE_KING.captureCooldownRemaining()
+                    HahUeuh.LITTLE_KING.captureCooldownRemaining(),
+                    HahUeuh.MATERIAL_PHASE.captureCooldownRemaining(),
+                    HahUeuh.OBJECT_FREEZE.captureCooldownRemaining()
             );
             saveSnapshotMetadataToDisk(checkpointDir, slot.snapshot);
 
@@ -1605,17 +1616,23 @@ public class SnapshotManager {
 
             authorityManager.load(server);
             abilitySlotsManager.load(server);
+            HahUeuh.LIONS_HEART.reloadPersisted();
+            HahUeuh.MATERIAL_PHASE.reloadPersisted();
             HahUeuh.SLOTH_COMPAT.reload();
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 sendAuthoritiesTo(player);
                 sendAbilitySlotsTo(player);
                 HahUeuh.LIONS_HEART.forceResetOnRollback(player);
+                HahUeuh.MATERIAL_PHASE.forceResetOnRollback(player);
+                HahUeuh.OBJECT_FREEZE.forceResetOnRollback(player);
             }
             HahUeuh.LITTLE_KING.refreshAllOnRollback();
             restoreCooldowns(domainCooldownUntilTick, snapshot.domainCooldownRemaining(),
                     HahUeuhAbilities.DOMAIN_VICTIM_ABILITY, HahUeuhAbilities.DOMAIN_AGGRESSOR_ABILITY);
             HahUeuh.LIONS_HEART.restoreCooldownRemaining(snapshot.lionsHeartCooldownRemaining());
             HahUeuh.LITTLE_KING.restoreCooldownRemaining(snapshot.littleKingCooldownRemaining());
+            HahUeuh.MATERIAL_PHASE.restoreCooldownRemaining(snapshot.materialPhaseCooldownRemaining());
+            HahUeuh.OBJECT_FREEZE.restoreCooldownRemaining(snapshot.objectFreezeCooldownRemaining());
             stepStart = logStepTime("reload authorities + compatibility", stepStart);
 
             ServerLevel overworld = server.overworld();

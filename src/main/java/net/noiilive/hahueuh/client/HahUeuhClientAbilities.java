@@ -10,6 +10,8 @@ import net.noiilive.hahueuh.network.ClientSlothState;
 import net.noiilive.hahueuh.network.GreedVariant;
 import net.noiilive.hahueuh.network.LionsHeartTogglePayload;
 import net.noiilive.hahueuh.network.LittleKingImplantPayload;
+import net.noiilive.hahueuh.network.MaterialPhaseTogglePayload;
+import net.noiilive.hahueuh.network.ObjectFreezeActivatePayload;
 import net.noiilive.hahueuh.network.SlothVariant;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -100,6 +102,20 @@ public final class HahUeuhClientAbilities {
                 .shortLabel(() -> "KIN")
                 .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.LIONSHEART)
                 .onActivate(ctx -> PacketDistributor.sendToServer(LittleKingImplantPayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.MATERIAL_PHASE_ABILITY, HahUeuhAbilities.GREED_AUTHORITY)
+                .translationKey("hahueuh.ability.material_phase")
+                .shortLabel(() -> "PHA")
+                .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.LIONSHEART)
+                .onActivate(ctx -> PacketDistributor.sendToServer(MaterialPhaseTogglePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.OBJECT_FREEZE_ABILITY, HahUeuhAbilities.GREED_AUTHORITY)
+                .translationKey("hahueuh.ability.object_freeze")
+                .shortLabel(() -> "FRZ")
+                .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.LIONSHEART)
+                .onActivate(ctx -> PacketDistributor.sendToServer(ObjectFreezeActivatePayload.INSTANCE))
                 .build());
     }
 }

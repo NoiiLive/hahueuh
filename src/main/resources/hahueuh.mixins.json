@@ -5,7 +5,9 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "hahueuh.refmap.json",
   "mixins": [
-    "EntityIgnoresBlockTriggersMixin"
+    "EntityIgnoresBlockTriggersMixin",
+    "ServerMovementPhaseMixin",
+    "ServerEntityPhaseMixin"
   ],
   "client": [
     "EntityCollideMixin"

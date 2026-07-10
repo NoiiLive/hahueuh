@@ -25,6 +25,8 @@ public record WorldSnapshot(
         Map<Path, Long> fileTimestamps,
         Map<UUID, Integer> domainCooldownRemaining,
         Map<UUID, Integer> lionsHeartCooldownRemaining,
-        Map<UUID, Integer> littleKingCooldownRemaining
+        Map<UUID, Integer> littleKingCooldownRemaining,
+        Map<UUID, Integer> materialPhaseCooldownRemaining,
+        Map<UUID, Integer> objectFreezeCooldownRemaining
 ) {
 }

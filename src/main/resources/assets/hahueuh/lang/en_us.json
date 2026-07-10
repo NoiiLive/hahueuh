@@ -41,6 +41,9 @@
   "hahueuh.configuration.littleKingRangeBlocks": "Little King Heart Range (blocks)",
   "hahueuh.configuration.littleKingIndefinite": "Little King Indefinite When Fully Implanted",
   "hahueuh.configuration.littleKingImplantableEntities": "Little King Implantable Entities",
+  "hahueuh.configuration.materialPhaseCooldownSeconds": "Material Phase Cooldown (seconds)",
+  "hahueuh.configuration.objectFreezeCooldownSeconds": "Object Freeze Cooldown (seconds)",
+  "hahueuh.configuration.greedProjectileDistance": "Greed Projectile Distance (blocks)",
   "key.categories.hahueuh": "Hah! Ueuh~",
   "key.hahueuh.open_gui": "Open Ability Menu",
   "key.hahueuh.cycle_slots": "Cycle Ability Slots",
@@ -66,6 +69,8 @@
   "hahueuh.ability.self_propel": "Self Propel",
   "hahueuh.ability.lions_heart": "Lion's Heart",
   "hahueuh.ability.little_king": "Little King",
+  "hahueuh.ability.material_phase": "Material Phase",
+  "hahueuh.ability.object_freeze": "Object Freeze",
 
   "effect.hahueuh.witch_miasma": "Witch's Miasma",
 
@@ -108,6 +113,14 @@
   "hahueuh.message.little_king_no_hearts": "Your heart has nothing left to give.",
   "hahueuh.message.little_king_implanted": "A piece of your heart takes root. Hearts given: %s",
   "hahueuh.message.little_king_heart_returned": "A piece of your heart returns. Hearts given: %s",
+  "hahueuh.message.material_phase_needs_lions_heart": "Material Phase needs Lion's Heart to be active.",
+  "hahueuh.message.material_phase_cooldown": "The world resists your passage. CD: %ss",
+  "hahueuh.message.material_phase_activated": "You slip between the world's matter.",
+  "hahueuh.message.material_phase_deactivated": "You return to solid form.",
+  "hahueuh.message.object_freeze_needs_lions_heart": "Object Freeze needs Lion's Heart to be active.",
+  "hahueuh.message.object_freeze_cooldown": "Your grip is not ready to freeze again. CD: %ss",
+  "hahueuh.message.object_freeze_launched": "You hurl them through everything in their path.",
+  "hahueuh.message.object_freeze_thrown": "Whatever was in your hand becomes an unstoppable bullet.",
 
   "hahueuh.command.checkpoint_created": "Checkpoint created.",
   "hahueuh.command.half_heart": "Set to half a heart.",

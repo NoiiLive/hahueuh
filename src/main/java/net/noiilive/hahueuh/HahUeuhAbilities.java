@@ -29,6 +29,8 @@ public final class HahUeuhAbilities {
 
     public static final ResourceLocation LIONS_HEART_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "lions_heart");
     public static final ResourceLocation LITTLE_KING_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "little_king");
+    public static final ResourceLocation MATERIAL_PHASE_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "material_phase");
+    public static final ResourceLocation OBJECT_FREEZE_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "object_freeze");
 
     @SubscribeEvent
     static void onRegisterAuthorities(RegisterAuthoritiesEvent event) {

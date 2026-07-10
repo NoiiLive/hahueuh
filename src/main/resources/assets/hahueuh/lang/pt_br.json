@@ -41,6 +41,9 @@
   "hahueuh.configuration.littleKingRangeBlocks": "Alcance do coração do Pequeno Rei (blocos)",
   "hahueuh.configuration.littleKingIndefinite": "Pequeno Rei indefinido quando tudo implantado",
   "hahueuh.configuration.littleKingImplantableEntities": "Entidades implantáveis do Pequeno Rei",
+  "hahueuh.configuration.materialPhaseCooldownSeconds": "Recarga da Fase Material (segundos)",
+  "hahueuh.configuration.objectFreezeCooldownSeconds": "Recarga do Congelamento de Objetos (segundos)",
+  "hahueuh.configuration.greedProjectileDistance": "Distância do projétil da Cobiça (blocos)",
   "key.categories.hahueuh": "Hah! Ueuh~",
   "key.hahueuh.open_gui": "Abrir Menu de Autoridades",
   "key.hahueuh.cycle_slots": "Alternar Grupo de Slots",
@@ -66,6 +69,8 @@
   "hahueuh.ability.self_propel": "Auto-Propulsão",
   "hahueuh.ability.lions_heart": "Coração de Leão",
   "hahueuh.ability.little_king": "Pequeno Rei",
+  "hahueuh.ability.material_phase": "Fase Material",
+  "hahueuh.ability.object_freeze": "Congelamento de Objetos",
 
   "effect.hahueuh.witch_miasma": "Miasma da Bruxa",
 
@@ -108,6 +113,14 @@
   "hahueuh.message.little_king_no_hearts": "Seu coração não tem mais nada a dar.",
   "hahueuh.message.little_king_implanted": "Um pedaço do seu coração cria raízes. Corações dados: %s",
   "hahueuh.message.little_king_heart_returned": "Um pedaço do seu coração retorna. Corações dados: %s",
+  "hahueuh.message.material_phase_needs_lions_heart": "A Fase Material precisa que o Coração de Leão esteja ativo.",
+  "hahueuh.message.material_phase_cooldown": "O mundo resiste à sua passagem. Recarga: %ss",
+  "hahueuh.message.material_phase_activated": "Você desliza entre a matéria do mundo.",
+  "hahueuh.message.material_phase_deactivated": "Você retorna à forma sólida.",
+  "hahueuh.message.object_freeze_needs_lions_heart": "O Congelamento de Objetos precisa que o Coração de Leão esteja ativo.",
+  "hahueuh.message.object_freeze_cooldown": "Sua mão ainda não pode congelar de novo. Recarga: %ss",
+  "hahueuh.message.object_freeze_launched": "Você os arremessa através de tudo em seu caminho.",
+  "hahueuh.message.object_freeze_thrown": "O que estava em sua mão se torna uma bala imparável.",
 
   "hahueuh.command.checkpoint_created": "Ponto de controle criado.",
   "hahueuh.command.half_heart": "Definido para meio coração.",

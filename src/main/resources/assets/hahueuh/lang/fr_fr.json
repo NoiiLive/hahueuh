@@ -41,6 +41,9 @@
   "hahueuh.configuration.littleKingRangeBlocks": "Portée du cœur du Petit Roi (blocs)",
   "hahueuh.configuration.littleKingIndefinite": "Petit Roi illimité une fois tout implanté",
   "hahueuh.configuration.littleKingImplantableEntities": "Entités implantables du Petit Roi",
+  "hahueuh.configuration.materialPhaseCooldownSeconds": "Recharge de Phase Matérielle (secondes)",
+  "hahueuh.configuration.objectFreezeCooldownSeconds": "Recharge du Gel d'Objet (secondes)",
+  "hahueuh.configuration.greedProjectileDistance": "Distance du projectile d'Avidité (blocs)",
   "key.categories.hahueuh": "Hah! Ueuh~",
   "key.hahueuh.open_gui": "Ouvrir le menu des autorités",
   "key.hahueuh.cycle_slots": "Changer de groupe d'emplacements",
@@ -66,6 +69,8 @@
   "hahueuh.ability.self_propel": "Auto-Propulsion",
   "hahueuh.ability.lions_heart": "Cœur de Lion",
   "hahueuh.ability.little_king": "Petit Roi",
+  "hahueuh.ability.material_phase": "Phase Matérielle",
+  "hahueuh.ability.object_freeze": "Gel d'Objet",
 
   "effect.hahueuh.witch_miasma": "Miasme de la Sorcière",
 
@@ -108,6 +113,14 @@
   "hahueuh.message.little_king_no_hearts": "Votre cœur n'a plus rien à donner.",
   "hahueuh.message.little_king_implanted": "Un morceau de votre cœur prend racine. Cœurs donnés : %s",
   "hahueuh.message.little_king_heart_returned": "Un morceau de votre cœur revient. Cœurs donnés : %s",
+  "hahueuh.message.material_phase_needs_lions_heart": "La Phase Matérielle nécessite un Cœur de Lion actif.",
+  "hahueuh.message.material_phase_cooldown": "Le monde résiste à votre passage. Recharge : %ss",
+  "hahueuh.message.material_phase_activated": "Vous vous glissez entre la matière du monde.",
+  "hahueuh.message.material_phase_deactivated": "Vous retrouvez votre forme solide.",
+  "hahueuh.message.object_freeze_needs_lions_heart": "Le Gel d'Objet nécessite un Cœur de Lion actif.",
+  "hahueuh.message.object_freeze_cooldown": "Votre poigne ne peut pas encore geler. Recharge : %ss",
+  "hahueuh.message.object_freeze_launched": "Vous les projetez à travers tout sur leur passage.",
+  "hahueuh.message.object_freeze_thrown": "Ce qui était dans votre main devient une balle inarrêtable.",
 
   "hahueuh.command.checkpoint_created": "Point de contrôle créé.",
   "hahueuh.command.half_heart": "Réglé sur un demi-cœur.",

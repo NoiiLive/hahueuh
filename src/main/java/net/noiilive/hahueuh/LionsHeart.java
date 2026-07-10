@@ -2,12 +2,16 @@ package net.noiilive.hahueuh;
 
 import net.noiilive.hahueuh.network.AbilityCooldownPayload;
 import net.noiilive.hahueuh.network.LionsHeartStatePayload;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.damagesource.DamageContainer;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -19,6 +23,11 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,13 +42,20 @@ public final class LionsHeart {
     private static final float BURNOUT_DAMAGE_MIN = 4f;
     private static final float BURNOUT_DAMAGE_MAX = 20f;
 
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final String PERSIST_FILE_NAME = "hahueuh_lions_heart.json";
+    private static final Type PERSIST_TYPE = new TypeToken<Map<String, PersistedActivation>>() {}.getType();
+
     private record ActivationState(int startTick, int durationTicks) {}
+    private record PersistedActivation(int durationTicks, int elapsedTicks) {}
 
     private final Map<UUID, ActivationState> activations = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> cooldownUntilTick = new ConcurrentHashMap<>();
     private final Set<UUID> burnoutInProgress = ConcurrentHashMap.newKeySet();
     private final Map<UUID, Integer> dangerAnchorTick = new ConcurrentHashMap<>();
+    private final Map<UUID, PersistedActivation> persistedActivations = new ConcurrentHashMap<>();
     private MinecraftServer server;
+    private Path persistFilePath;
 
     public boolean isActive(UUID uuid) {
         return activations.containsKey(uuid);
@@ -146,6 +162,8 @@ public final class LionsHeart {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         this.server = event.getServer();
+        this.persistFilePath = server.getWorldPath(LevelResource.ROOT).resolve(PERSIST_FILE_NAME);
+        loadPersisted();
     }
 
     @SubscribeEvent
@@ -159,8 +177,60 @@ public final class LionsHeart {
 
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && isActive(player.getUUID())) {
-            deactivate(player, "hahueuh.message.lions_heart_deactivated");
+        if (!(event.getEntity() instanceof ServerPlayer player) || server == null) return;
+        UUID uuid = player.getUUID();
+        ActivationState state = activations.remove(uuid);
+        dangerAnchorTick.remove(uuid);
+        burnoutInProgress.remove(uuid);
+        if (state == null) return;
+
+        int elapsed = server.getTickCount() - state.startTick();
+        persistedActivations.put(uuid, new PersistedActivation(state.durationTicks(), elapsed));
+        savePersisted();
+    }
+
+    public void restoreOnLogin(ServerPlayer player) {
+        if (server == null) return;
+        UUID uuid = player.getUUID();
+        PersistedActivation persisted = persistedActivations.remove(uuid);
+        if (persisted == null) return;
+        savePersisted();
+
+        activations.put(uuid, new ActivationState(server.getTickCount() - persisted.elapsedTicks(), persisted.durationTicks()));
+        PacketDistributor.sendToPlayer(player, new LionsHeartStatePayload(true));
+    }
+
+    public void reloadPersisted() {
+        loadPersisted();
+    }
+
+    private void loadPersisted() {
+        persistedActivations.clear();
+        if (persistFilePath == null || !Files.exists(persistFilePath)) return;
+        try {
+            Map<String, PersistedActivation> raw = GSON.fromJson(Files.readString(persistFilePath, StandardCharsets.UTF_8), PERSIST_TYPE);
+            if (raw == null) return;
+            raw.forEach((key, value) -> {
+                try {
+                    persistedActivations.put(UUID.fromString(key), value);
+                } catch (IllegalArgumentException e) {
+                    HahUeuh.LOGGER.warn("Ignoring malformed Lion's Heart persisted UUID '{}'", key);
+                }
+            });
+        } catch (IOException e) {
+            HahUeuh.LOGGER.error("Failed to load persisted Lion's Heart activations from {}", persistFilePath, e);
+        }
+    }
+
+    private void savePersisted() {
+        if (persistFilePath == null) return;
+        try {
+            Map<String, PersistedActivation> raw = new HashMap<>();
+            persistedActivations.forEach((uuid, state) -> raw.put(uuid.toString(), state));
+            Files.createDirectories(persistFilePath.getParent());
+            Files.writeString(persistFilePath, GSON.toJson(raw, PERSIST_TYPE), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            HahUeuh.LOGGER.error("Failed to save persisted Lion's Heart activations to {}", persistFilePath, e);
         }
     }
 

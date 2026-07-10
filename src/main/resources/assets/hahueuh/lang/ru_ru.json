@@ -41,6 +41,9 @@
   "hahueuh.configuration.littleKingRangeBlocks": "Радиус сердца Маленького короля (блоки)",
   "hahueuh.configuration.littleKingIndefinite": "Бесконечность при полной имплантации",
   "hahueuh.configuration.littleKingImplantableEntities": "Сущности для имплантации Маленького короля",
+  "hahueuh.configuration.materialPhaseCooldownSeconds": "Перезарядка Фазы материи (секунды)",
+  "hahueuh.configuration.objectFreezeCooldownSeconds": "Перезарядка Заморозки предмета (секунды)",
+  "hahueuh.configuration.greedProjectileDistance": "Дальность полёта снаряда Алчности (блоки)",
   "key.categories.hahueuh": "Hah! Ueuh~",
   "key.hahueuh.open_gui": "Открыть меню полномочий",
   "key.hahueuh.cycle_slots": "Переключить группу слотов",
@@ -66,6 +69,8 @@
   "hahueuh.ability.self_propel": "Самодвижение",
   "hahueuh.ability.lions_heart": "Сердце льва",
   "hahueuh.ability.little_king": "Маленький король",
+  "hahueuh.ability.material_phase": "Фаза материи",
+  "hahueuh.ability.object_freeze": "Заморозка предмета",
 
   "effect.hahueuh.witch_miasma": "Миазм ведьмы",
 
@@ -108,6 +113,14 @@
   "hahueuh.message.little_king_no_hearts": "Сердцу больше нечего отдать.",
   "hahueuh.message.little_king_implanted": "Частица вашего сердца укореняется. Отдано сердец: %s",
   "hahueuh.message.little_king_heart_returned": "Частица вашего сердца возвращается. Отдано сердец: %s",
+  "hahueuh.message.material_phase_needs_lions_heart": "Фазе материи нужно активное Сердце льва.",
+  "hahueuh.message.material_phase_cooldown": "Мир сопротивляется вашему проходу. Перезарядка: %s с",
+  "hahueuh.message.material_phase_activated": "Вы проскальзываете сквозь материю мира.",
+  "hahueuh.message.material_phase_deactivated": "Вы возвращаетесь в плотную форму.",
+  "hahueuh.message.object_freeze_needs_lions_heart": "Заморозке предмета нужно активное Сердце льва.",
+  "hahueuh.message.object_freeze_cooldown": "Ваша хватка пока не может заморозить снова. Перезарядка: %s с",
+  "hahueuh.message.object_freeze_launched": "Вы швыряете их сквозь всё на своём пути.",
+  "hahueuh.message.object_freeze_thrown": "То, что было у вас в руке, становится неудержимой пулей.",
 
   "hahueuh.command.checkpoint_created": "Контрольная точка создана.",
   "hahueuh.command.half_heart": "Здоровье установлено на пол-сердца.",

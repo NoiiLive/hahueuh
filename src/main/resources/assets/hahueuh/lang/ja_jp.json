@@ -41,6 +41,9 @@
   "hahueuh.configuration.littleKingRangeBlocks": "小さな王の心臓の範囲（ブロック）",
   "hahueuh.configuration.littleKingIndefinite": "すべて埋め込むと小さな王は無期限",
   "hahueuh.configuration.littleKingImplantableEntities": "小さな王が埋め込めるエンティティ",
+  "hahueuh.configuration.materialPhaseCooldownSeconds": "物質透過のクールダウン（秒）",
+  "hahueuh.configuration.objectFreezeCooldownSeconds": "物体凍結のクールダウン（秒）",
+  "hahueuh.configuration.greedProjectileDistance": "強欲の投射物の到達距離（ブロック）",
   "key.categories.hahueuh": "Hah! Ueuh~",
   "key.hahueuh.open_gui": "権能メニューを開く",
   "key.hahueuh.cycle_slots": "スロットグループ切替",
@@ -66,6 +69,8 @@
   "hahueuh.ability.self_propel": "自己推進",
   "hahueuh.ability.lions_heart": "獅子の心臓",
   "hahueuh.ability.little_king": "小さな王",
+  "hahueuh.ability.material_phase": "物質透過",
+  "hahueuh.ability.object_freeze": "物体凍結",
 
   "effect.hahueuh.witch_miasma": "魔女の瘴気",
 
@@ -108,6 +113,14 @@
   "hahueuh.message.little_king_no_hearts": "心臓にはもう与えるものが残っていない。",
   "hahueuh.message.little_king_implanted": "心臓の一片が根を張った。与えた心臓：%s",
   "hahueuh.message.little_king_heart_returned": "心臓の一片が戻ってきた。与えた心臓：%s",
+  "hahueuh.message.material_phase_needs_lions_heart": "物質透過には獅子の心臓の発動が必要だ。",
+  "hahueuh.message.material_phase_cooldown": "世界がお前の通過を拒む。クールダウン：%s秒",
+  "hahueuh.message.material_phase_activated": "世界の物質の狭間へと滑り込む。",
+  "hahueuh.message.material_phase_deactivated": "再び実体へと戻る。",
+  "hahueuh.message.object_freeze_needs_lions_heart": "物体凍結には獅子の心臓の発動が必要だ。",
+  "hahueuh.message.object_freeze_cooldown": "その手はまだ凍らせられない。クールダウン：%s秒",
+  "hahueuh.message.object_freeze_launched": "行く手にあるものすべてを打ち砕きながら、相手を吹き飛ばす。",
+  "hahueuh.message.object_freeze_thrown": "手にしていたものが、止まらぬ弾丸となる。",
 
   "hahueuh.command.checkpoint_created": "チェックポイントを作成しました。",
   "hahueuh.command.half_heart": "体力をハート半分に設定しました。",

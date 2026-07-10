@@ -54,6 +54,24 @@ public final class ConfigGreed {
                     () -> "minecraft:villager",
                     obj -> obj instanceof String s && ResourceLocation.tryParse(s) != null);
 
+
+    public static final ModConfigSpec.IntValue MATERIAL_PHASE_COOLDOWN_SECONDS = BUILDER
+            .comment("Cooldown (in seconds) after Material Phase is toggled off before it can be used again.",
+                     "Set to 0 to disable. Default: 5. Range: 0 to 3600.")
+            .defineInRange("materialPhaseCooldownSeconds", 5, 0, 3600);
+
+
+    public static final ModConfigSpec.IntValue OBJECT_FREEZE_COOLDOWN_SECONDS = BUILDER
+            .comment("Cooldown (in seconds) between Object Freeze uses. Set to 0 to disable.",
+                     "Default: 5. Range: 0 to 3600.")
+            .defineInRange("objectFreezeCooldownSeconds", 5, 0, 3600);
+
+    public static final ModConfigSpec.IntValue GREED_PROJECTILE_DISTANCE = BUILDER
+            .comment("How far (in blocks) an Object Freeze thrown-object projectile can fly before it's",
+                     "forcibly discarded, so a high-speed shot can't outrun render/simulation distance and",
+                     "linger somewhere off-screen. Default: 32. Range: 1 to 1000.")
+            .defineInRange("greedProjectileDistance", 32, 1, 1000);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     private ConfigGreed() {}

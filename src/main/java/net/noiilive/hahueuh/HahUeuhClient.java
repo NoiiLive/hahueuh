@@ -12,7 +12,9 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
@@ -28,6 +30,11 @@ public class HahUeuhClient {
     static void onClientSetup(FMLClientSetupEvent event) {
         HahUeuh.LOGGER.info("HELLO FROM CLIENT SETUP");
         HahUeuh.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+    }
+
+    @SubscribeEvent
+    static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(ModEntities.FROZEN_OBJECT_PROJECTILE.get(), ThrownItemRenderer::new);
     }
 
     @SubscribeEvent
@@ -48,6 +55,7 @@ public class HahUeuhClient {
         net.noiilive.hahueuh.network.RemoteUnseenHands.clear();
         net.noiilive.hahueuh.network.ClientLionsHeartState.clear();
         net.noiilive.hahueuh.network.ClientLittleKingState.clear();
+        net.noiilive.hahueuh.network.ClientMaterialPhaseState.clear();
         net.noiilive.hahueuh.api.AbilityCooldowns.reset();
         AbilitySlots.reset();
     }

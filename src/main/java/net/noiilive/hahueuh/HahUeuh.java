@@ -24,6 +24,10 @@ import net.noiilive.hahueuh.network.LionsHeartStatePayload;
 import net.noiilive.hahueuh.network.LionsHeartTogglePayload;
 import net.noiilive.hahueuh.network.LittleKingHighlightPayload;
 import net.noiilive.hahueuh.network.LittleKingImplantPayload;
+import net.noiilive.hahueuh.network.ClientMaterialPhaseState;
+import net.noiilive.hahueuh.network.MaterialPhaseStatePayload;
+import net.noiilive.hahueuh.network.MaterialPhaseTogglePayload;
+import net.noiilive.hahueuh.network.ObjectFreezeActivatePayload;
 import net.noiilive.hahueuh.network.PlayerAuthoritiesPayload;
 import net.noiilive.hahueuh.network.RemoteUnseenHands;
 import net.noiilive.hahueuh.network.UnseenHandGrabSyncPayload;
@@ -53,10 +57,13 @@ public class HahUeuh {
     public static final GreedCompatibility GREED_COMPAT = new GreedCompatibility();
     public static final LionsHeart LIONS_HEART = new LionsHeart();
     public static final LittleKing LITTLE_KING = new LittleKing();
+    public static final MaterialPhase MATERIAL_PHASE = new MaterialPhase();
+    public static final ObjectFreeze OBJECT_FREEZE = new ObjectFreeze();
 
     public HahUeuh(IEventBus modEventBus, ModContainer modContainer) {
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
+        ModEntities.ENTITY_TYPES.register(modEventBus);
         ModSounds.SOUND_EVENTS.register(modEventBus);
         ModEffects.MOB_EFFECTS.register(modEventBus);
 
@@ -65,6 +72,8 @@ public class HahUeuh {
         NeoForge.EVENT_BUS.register(GREED_COMPAT);
         NeoForge.EVENT_BUS.register(LIONS_HEART);
         NeoForge.EVENT_BUS.register(LITTLE_KING);
+        NeoForge.EVENT_BUS.register(MATERIAL_PHASE);
+        NeoForge.EVENT_BUS.register(OBJECT_FREEZE);
 
         NeoForge.EVENT_BUS.addListener(RezeroCommand::register);
 
@@ -158,6 +167,29 @@ public class HahUeuh {
                 LittleKingHighlightPayload.TYPE,
                 LittleKingHighlightPayload.STREAM_CODEC,
                 (payload, context) -> ClientLittleKingState.set(payload.entityIds()));
+
+        registrar.playToServer(
+                MaterialPhaseTogglePayload.TYPE,
+                MaterialPhaseTogglePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        MATERIAL_PHASE.toggle(sp);
+                    }
+                });
+
+        registrar.playToClient(
+                MaterialPhaseStatePayload.TYPE,
+                MaterialPhaseStatePayload.STREAM_CODEC,
+                (payload, context) -> ClientMaterialPhaseState.setActive(payload.active()));
+
+        registrar.playToServer(
+                ObjectFreezeActivatePayload.TYPE,
+                ObjectFreezeActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        OBJECT_FREEZE.activate(sp);
+                    }
+                });
 
         registrar.playToClient(
                 AbilitySlotsSyncPayload.TYPE,
