@@ -19,6 +19,13 @@ public final class ConfigSloth {
                      "again. Set to 0 to disable. Default: 10. Range: 0 to 3600.")
             .defineInRange("slothCooldownSeconds", 10, 0, 3600);
 
+    public static final ModConfigSpec.IntValue QUICK_ACTION_COOLDOWN_SECONDS = BUILDER
+            .comment("Cooldown (in seconds) shared by the quick-use Sloth abilities — Quick Strike, Quick",
+                     "Grasp, Hidden Interaction, and Self Propel — after one finishes before any of the",
+                     "four can be used again. Independent from the Summon Hand cooldown above. Set to 0 to",
+                     "disable. Default: 5. Range: 0 to 3600.")
+            .defineInRange("quickActionCooldownSeconds", 5, 0, 3600);
+
     public static final ModConfigSpec.BooleanValue SLOTH_COMPAT_ENABLED = BUILDER
             .comment("If true, Sloth users must earn 'compatibility' with the authority; using the Unseen",
                      "Hand before reaching the threshold inflicts drawbacks (blindness, hunger, nausea,",

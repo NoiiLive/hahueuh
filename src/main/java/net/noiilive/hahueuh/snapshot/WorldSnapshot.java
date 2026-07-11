@@ -27,6 +27,9 @@ public record WorldSnapshot(
         Map<UUID, Integer> lionsHeartCooldownRemaining,
         Map<UUID, Integer> littleKingCooldownRemaining,
         Map<UUID, Integer> materialPhaseCooldownRemaining,
-        Map<UUID, Integer> objectFreezeCooldownRemaining
+        Map<UUID, Integer> objectFreezeCooldownRemaining,
+        Map<UUID, Integer> allyTrackerCooldownRemaining,
+        Map<UUID, Integer> baseShiftCooldownRemaining,
+        Map<UUID, Integer> secondShiftCooldownRemaining
 ) {
 }

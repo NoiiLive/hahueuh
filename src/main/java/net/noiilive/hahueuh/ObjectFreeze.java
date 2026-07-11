@@ -112,6 +112,7 @@ public final class ObjectFreeze {
         Vec3 velocity = direction.scale(LAUNCH_SPEED).add(0.0, LAUNCH_LIFT, 0.0);
 
         target.setNoGravity(true);
+        target.setOnGround(false);
         target.fallDistance = 0;
         target.setDeltaMovement(velocity);
         if (target instanceof ServerPlayer sp) {
@@ -190,6 +191,7 @@ public final class ObjectFreeze {
             target.setPos(pos.x, pos.y, pos.z);
         }
         target.setDeltaMovement(velocity);
+        target.setOnGround(false);
 
         if (blocksDestroyed > 0) {
             target.hurt(target.damageSources().flyIntoWall(), blocksDestroyed * LAUNCH_DAMAGE_PER_BLOCK);

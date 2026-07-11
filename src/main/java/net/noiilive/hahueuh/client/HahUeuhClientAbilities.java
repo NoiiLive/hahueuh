@@ -11,7 +11,10 @@ import net.noiilive.hahueuh.network.GreedVariant;
 import net.noiilive.hahueuh.network.LionsHeartTogglePayload;
 import net.noiilive.hahueuh.network.LittleKingImplantPayload;
 import net.noiilive.hahueuh.network.MaterialPhaseTogglePayload;
+import net.noiilive.hahueuh.network.AllyTrackerActivatePayload;
+import net.noiilive.hahueuh.network.BaseShiftTogglePayload;
 import net.noiilive.hahueuh.network.ObjectFreezeActivatePayload;
+import net.noiilive.hahueuh.network.SecondShiftTogglePayload;
 import net.noiilive.hahueuh.network.SlothVariant;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -60,7 +63,7 @@ public final class HahUeuhClientAbilities {
                 .holdBased()
                 .translationKey("hahueuh.ability.quick_strike")
                 .shortLabel(() -> "QST")
-                .sharesCooldownWith(HahUeuhAbilities.SLOTH_COOLDOWN_KEY)
+                .sharesCooldownWith(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY)
                 .onHeldTick(new QuickStrikeBehavior())
                 .build());
 
@@ -68,7 +71,7 @@ public final class HahUeuhClientAbilities {
                 .holdBased()
                 .translationKey("hahueuh.ability.quick_grasp")
                 .shortLabel(() -> "QGR")
-                .sharesCooldownWith(HahUeuhAbilities.SLOTH_COOLDOWN_KEY)
+                .sharesCooldownWith(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY)
                 .onHeldTick(new QuickGraspBehavior())
                 .build());
 
@@ -76,7 +79,7 @@ public final class HahUeuhClientAbilities {
                 .holdBased()
                 .translationKey("hahueuh.ability.hidden_interaction")
                 .shortLabel(() -> "HID")
-                .sharesCooldownWith(HahUeuhAbilities.SLOTH_COOLDOWN_KEY)
+                .sharesCooldownWith(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY)
                 .availableWhen(() -> ClientSlothState.slothVariant() == SlothVariant.INVISIBLE_PROVIDENCE)
                 .onHeldTick(new HiddenInteractionBehavior())
                 .build());
@@ -85,7 +88,7 @@ public final class HahUeuhClientAbilities {
                 .holdBased()
                 .translationKey("hahueuh.ability.self_propel")
                 .shortLabel(() -> "PRO")
-                .sharesCooldownWith(HahUeuhAbilities.SLOTH_COOLDOWN_KEY)
+                .sharesCooldownWith(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY)
                 .availableWhen(() -> ClientSlothState.slothVariant() == SlothVariant.UNSEEN_HANDS)
                 .onHeldTick(new SelfPropelBehavior())
                 .build());
@@ -116,6 +119,27 @@ public final class HahUeuhClientAbilities {
                 .shortLabel(() -> "FRZ")
                 .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.LIONSHEART)
                 .onActivate(ctx -> PacketDistributor.sendToServer(ObjectFreezeActivatePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.ALLY_TRACKER_ABILITY, HahUeuhAbilities.GREED_AUTHORITY)
+                .translationKey("hahueuh.ability.ally_tracker")
+                .shortLabel(() -> "ALY")
+                .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.CORLEONIS)
+                .onActivate(ctx -> PacketDistributor.sendToServer(AllyTrackerActivatePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.BASE_SHIFT_ABILITY, HahUeuhAbilities.GREED_AUTHORITY)
+                .translationKey("hahueuh.ability.base_shift")
+                .shortLabel(() -> "SHF")
+                .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.CORLEONIS)
+                .onActivate(ctx -> PacketDistributor.sendToServer(BaseShiftTogglePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.SECOND_SHIFT_ABILITY, HahUeuhAbilities.GREED_AUTHORITY)
+                .translationKey("hahueuh.ability.second_shift")
+                .shortLabel(() -> "SH2")
+                .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.CORLEONIS)
+                .onActivate(ctx -> PacketDistributor.sendToServer(SecondShiftTogglePayload.INSTANCE))
                 .build());
     }
 }

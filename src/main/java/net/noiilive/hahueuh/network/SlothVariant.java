@@ -3,7 +3,10 @@ package net.noiilive.hahueuh.network;
 import net.noiilive.hahueuh.ConfigSloth;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -152,6 +155,21 @@ public enum SlothVariant {
     public static void freezeWalkAnimation(LivingEntity entity) {
         entity.walkAnimation.setSpeed(0f);
         entity.walkAnimation.position = 0f;
+    }
+
+    public static float attackDamageBonus(LivingEntity owner) {
+        float bonus = 0f;
+        AttributeInstance attackDamage = owner.getAttribute(Attributes.ATTACK_DAMAGE);
+        if (attackDamage != null) {
+            bonus += (float) (attackDamage.getValue() - attackDamage.getBaseValue());
+        }
+        if (owner.hasEffect(MobEffects.DAMAGE_BOOST)) {
+            bonus += (owner.getEffect(MobEffects.DAMAGE_BOOST).getAmplifier() + 1) * 3.0f;
+        }
+        if (owner.hasEffect(MobEffects.WEAKNESS)) {
+            bonus -= (owner.getEffect(MobEffects.WEAKNESS).getAmplifier() + 1) * 4.0f;
+        }
+        return bonus;
     }
 
     private static float rnd(UUID uuid, int index, int salt) {

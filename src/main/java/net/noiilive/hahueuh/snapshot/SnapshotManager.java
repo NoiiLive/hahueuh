@@ -56,6 +56,8 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.entity.EntityType;
@@ -317,6 +319,9 @@ public class SnapshotManager {
         Map<UUID, Integer> littleKingCooldownRemaining = new HashMap<>();
         Map<UUID, Integer> materialPhaseCooldownRemaining = new HashMap<>();
         Map<UUID, Integer> objectFreezeCooldownRemaining = new HashMap<>();
+        Map<UUID, Integer> allyTrackerCooldownRemaining = new HashMap<>();
+        Map<UUID, Integer> baseShiftCooldownRemaining = new HashMap<>();
+        Map<UUID, Integer> secondShiftCooldownRemaining = new HashMap<>();
 
         Path metaFile = checkpointDir.resolve(PLAYER_SNAPSHOTS_FILE_NAME);
         if (Files.exists(metaFile)) {
@@ -349,6 +354,9 @@ public class SnapshotManager {
                     littleKingCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("LittleKing"));
                     materialPhaseCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("MaterialPhase"));
                     objectFreezeCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("ObjectFreeze"));
+                    allyTrackerCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("AllyTracker"));
+                    baseShiftCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("BaseShift"));
+                    secondShiftCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("SecondShift"));
                 }
             } catch (Exception e) {
                 LOGGER.warn("Failed to read snapshot metadata from {}", metaFile, e);
@@ -360,7 +368,8 @@ public class SnapshotManager {
                 gameTime, dayTime, raining, thundering,
                 clearWeatherTime, rainTime, thunderTime, fileTimestamps,
                 domainCooldownRemaining, lionsHeartCooldownRemaining, littleKingCooldownRemaining,
-                materialPhaseCooldownRemaining, objectFreezeCooldownRemaining
+                materialPhaseCooldownRemaining, objectFreezeCooldownRemaining, allyTrackerCooldownRemaining,
+                baseShiftCooldownRemaining, secondShiftCooldownRemaining
         );
     }
 
@@ -449,6 +458,9 @@ public class SnapshotManager {
             cooldowns.put("LittleKing", cooldownsToNbt(snapshot.littleKingCooldownRemaining()));
             cooldowns.put("MaterialPhase", cooldownsToNbt(snapshot.materialPhaseCooldownRemaining()));
             cooldowns.put("ObjectFreeze", cooldownsToNbt(snapshot.objectFreezeCooldownRemaining()));
+            cooldowns.put("AllyTracker", cooldownsToNbt(snapshot.allyTrackerCooldownRemaining()));
+            cooldowns.put("BaseShift", cooldownsToNbt(snapshot.baseShiftCooldownRemaining()));
+            cooldowns.put("SecondShift", cooldownsToNbt(snapshot.secondShiftCooldownRemaining()));
             root.put("Cooldowns", cooldowns);
 
             NbtIo.write(root, checkpointDir.resolve(PLAYER_SNAPSHOTS_FILE_NAME));
@@ -596,6 +608,8 @@ public class SnapshotManager {
         sendActiveUnseenHandsTo(player);
         HahUeuh.LIONS_HEART.restoreOnLogin(player);
         HahUeuh.MATERIAL_PHASE.restoreOnLogin(player);
+        HahUeuh.BASE_SHIFT.restoreOnLogin(player);
+        HahUeuh.SECOND_SHIFT.restoreOnLogin(player);
         int cooldownTicksLeft = player.isCreative() ? 0 : domainCooldownRemainingTicks(player.getUUID());
         if (cooldownTicksLeft > 0) {
             PacketDistributor.sendToPlayer(player, new AbilityCooldownPayload(HahUeuhAbilities.DOMAIN_VICTIM_ABILITY, cooldownTicksLeft));
@@ -877,8 +891,9 @@ public class SnapshotManager {
 
         if (hand.mode == HandMode.ATTACK) {
             hand.grabbed[0] = null;
+            float damage = Math.max(0f, 4.0f + SlothVariant.attackDamageBonus(owner));
             for (Entity e : level.getEntities(owner, reach, e -> e instanceof LivingEntity && e.isAlive() && e != owner)) {
-                e.hurt(owner.damageSources().indirectMagic(owner, owner), 2.0f);
+                e.hurt(owner.damageSources().indirectMagic(owner, owner), damage);
             }
         } else if (hand.mode == HandMode.GRAB) {
             hand.grabbed[0] = dragGrab(owner, level, tip, hand.grabbed[0], reach,
@@ -910,7 +925,8 @@ public class SnapshotManager {
                 targets.addAll(level.getEntities(owner, new AABB(tip, tip).inflate(0.9),
                         e -> e instanceof LivingEntity && e.isAlive() && e != owner));
             }
-            for (Entity e : targets) e.hurt(owner.damageSources().indirectMagic(owner, owner), 1.0f);
+            float damage = Math.max(0f, 2.0f + SlothVariant.attackDamageBonus(owner));
+            for (Entity e : targets) e.hurt(owner.damageSources().indirectMagic(owner, owner), damage);
         } else if (hand.mode == HandMode.GRAB) {
             Vec3[] tips = new Vec3[count];
             for (int i = 0; i < count; i++) tips[i] = unseenHandTip(owner, i, hand.distance);
@@ -1036,7 +1052,7 @@ public class SnapshotManager {
         ensureGrabSlots(hand, 2);
         ServerLevel level = owner.serverLevel();
         float size = SlothVariant.sekhmetSize(owner.getUUID());
-        float damage = 2f * size;
+        float damage = Math.max(0f, 2f * size + SlothVariant.attackDamageBonus(owner));
         double maxReach = ConfigSloth.SLOTH_MAX_DISTANCE.getAsInt() * SlothVariant.SEKHMET.reachMultiplier;
         double dist = Math.min(hand.distance, maxReach);
         double hitRadius = 0.6 + 0.35 * size;
@@ -1464,10 +1480,12 @@ public class SnapshotManager {
                 playerData.putAll(slot.snapshot.playerData());
             }
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                try {
-                    player.closeContainer();
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to close container for {} during checkpoint capture", player.getGameProfile().getName(), e);
+                if (player.containerMenu != player.inventoryMenu) {
+                    try {
+                        player.closeContainer();
+                    } catch (Exception e) {
+                        LOGGER.warn("Failed to close container for {} during checkpoint capture", player.getGameProfile().getName(), e);
+                    }
                 }
                 playerData.put(player.getUUID(), PlayerSnapshot.capture(player));
             }
@@ -1491,7 +1509,10 @@ public class SnapshotManager {
                     HahUeuh.LIONS_HEART.captureCooldownRemaining(),
                     HahUeuh.LITTLE_KING.captureCooldownRemaining(),
                     HahUeuh.MATERIAL_PHASE.captureCooldownRemaining(),
-                    HahUeuh.OBJECT_FREEZE.captureCooldownRemaining()
+                    HahUeuh.OBJECT_FREEZE.captureCooldownRemaining(),
+                    HahUeuh.ALLY_TRACKER.captureCooldownRemaining(),
+                    HahUeuh.BASE_SHIFT.captureCooldownRemaining(),
+                    HahUeuh.SECOND_SHIFT.captureCooldownRemaining()
             );
             saveSnapshotMetadataToDisk(checkpointDir, slot.snapshot);
 
@@ -1586,10 +1607,13 @@ public class SnapshotManager {
             stepStart = logStepTime("restoreEntitiesForLevel (all levels)", stepStart);
 
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                try {
-                    player.closeContainer();
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to close container for {} before rollback restore", player.getGameProfile().getName(), e);
+                // Same reasoning as the checkpoint-capture close: only bother if a real container is open.
+                if (player.containerMenu != player.inventoryMenu) {
+                    try {
+                        player.closeContainer();
+                    } catch (Exception e) {
+                        LOGGER.warn("Failed to close container for {} before rollback restore", player.getGameProfile().getName(), e);
+                    }
                 }
                 PlayerSnapshot ps = snapshot.playerData().get(player.getUUID());
                 if (ps != null) {
@@ -1618,6 +1642,8 @@ public class SnapshotManager {
             abilitySlotsManager.load(server);
             HahUeuh.LIONS_HEART.reloadPersisted();
             HahUeuh.MATERIAL_PHASE.reloadPersisted();
+            HahUeuh.BASE_SHIFT.reloadPersisted();
+            HahUeuh.SECOND_SHIFT.reloadPersisted();
             HahUeuh.SLOTH_COMPAT.reload();
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 sendAuthoritiesTo(player);
@@ -1625,14 +1651,20 @@ public class SnapshotManager {
                 HahUeuh.LIONS_HEART.forceResetOnRollback(player);
                 HahUeuh.MATERIAL_PHASE.forceResetOnRollback(player);
                 HahUeuh.OBJECT_FREEZE.forceResetOnRollback(player);
+                HahUeuh.BASE_SHIFT.forceResetOnRollback(player);
+                HahUeuh.SECOND_SHIFT.forceResetOnRollback(player);
             }
             HahUeuh.LITTLE_KING.refreshAllOnRollback();
+            HahUeuh.ALLY_TRACKER.refreshAllOnRollback();
             restoreCooldowns(domainCooldownUntilTick, snapshot.domainCooldownRemaining(),
                     HahUeuhAbilities.DOMAIN_VICTIM_ABILITY, HahUeuhAbilities.DOMAIN_AGGRESSOR_ABILITY);
             HahUeuh.LIONS_HEART.restoreCooldownRemaining(snapshot.lionsHeartCooldownRemaining());
             HahUeuh.LITTLE_KING.restoreCooldownRemaining(snapshot.littleKingCooldownRemaining());
             HahUeuh.MATERIAL_PHASE.restoreCooldownRemaining(snapshot.materialPhaseCooldownRemaining());
             HahUeuh.OBJECT_FREEZE.restoreCooldownRemaining(snapshot.objectFreezeCooldownRemaining());
+            HahUeuh.ALLY_TRACKER.restoreCooldownRemaining(snapshot.allyTrackerCooldownRemaining());
+            HahUeuh.BASE_SHIFT.restoreCooldownRemaining(snapshot.baseShiftCooldownRemaining());
+            HahUeuh.SECOND_SHIFT.restoreCooldownRemaining(snapshot.secondShiftCooldownRemaining());
             stepStart = logStepTime("reload authorities + compatibility", stepStart);
 
             ServerLevel overworld = server.overworld();
@@ -2096,6 +2128,7 @@ public class SnapshotManager {
             if (snap != null) {
                 try {
                     e.load(snap);
+                    resetTransientAiState(e);
                     reverted++;
                 } catch (Exception ex) {
                     LOGGER.warn("Failed to revert entity {} in {}", id, level.dimension().location(), ex);
@@ -2128,6 +2161,18 @@ public class SnapshotManager {
         if (reverted + removed + spawned > 0) {
             LOGGER.debug("Entities in {}: {} reverted, {} removed (post-checkpoint), {} re-added",
                     level.dimension().location(), reverted, removed, spawned);
+        }
+    }
+
+    private void resetTransientAiState(Entity entity) {
+        if (!(entity instanceof Mob mob)) return;
+        mob.setTarget(null);
+        mob.setLastHurtByMob(null);
+        for (WrappedGoal goal : mob.goalSelector.getAvailableGoals()) {
+            if (goal.isRunning()) goal.stop();
+        }
+        for (WrappedGoal goal : mob.targetSelector.getAvailableGoals()) {
+            if (goal.isRunning()) goal.stop();
         }
     }
 

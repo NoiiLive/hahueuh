@@ -4,6 +4,7 @@ import net.noiilive.hahueuh.ConfigSloth;
 import net.noiilive.hahueuh.HahUeuh;
 import net.noiilive.hahueuh.network.GreedVariant;
 import net.noiilive.hahueuh.network.SlothVariant;
+import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -13,6 +14,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.GameProfileArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameRules;
@@ -20,6 +22,7 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.portal.DimensionTransition;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
+import java.util.Collection;
 import java.util.Set;
 
 public class RezeroCommand {
@@ -82,7 +85,20 @@ public class RezeroCommand {
                 .then(Commands.literal("revive")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.argument("player", EntityArgument.player())
-                                .executes(RezeroCommand::runRevive))));
+                                .executes(RezeroCommand::runRevive)))
+                .then(Commands.literal("ally")
+                        .then(Commands.literal("request")
+                                .then(Commands.argument("player", GameProfileArgument.gameProfile())
+                                        .executes(RezeroCommand::runAllyRequest)))
+                        .then(Commands.literal("accept")
+                                .then(Commands.argument("player", GameProfileArgument.gameProfile())
+                                        .executes(ctx -> runAllyResponse(ctx, true))))
+                        .then(Commands.literal("decline")
+                                .then(Commands.argument("player", GameProfileArgument.gameProfile())
+                                        .executes(ctx -> runAllyResponse(ctx, false))))
+                        .then(Commands.literal("remove")
+                                .then(Commands.argument("player", GameProfileArgument.gameProfile())
+                                        .executes(RezeroCommand::runAllyRemove)))));
     }
 
     private static int runCheckpoint(CommandContext<CommandSourceStack> ctx) {
@@ -173,6 +189,9 @@ public class RezeroCommand {
         ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
         boolean value = BoolArgumentType.getBool(ctx, "value");
         HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager().setGreed(target.getUUID(), value);
+        if (!value) {
+            HahUeuh.LITTLE_KING.releaseAllImplants(target.getUUID());
+        }
         HahUeuh.SNAPSHOT_MANAGER.sendAuthoritiesTo(target);
 
         ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.greed_authority_set",
@@ -185,6 +204,9 @@ public class RezeroCommand {
         ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
         HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager().setGreed(target.getUUID(), true);
         HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager().setGreedVariant(target.getUUID(), variant);
+        if (variant != GreedVariant.LIONSHEART) {
+            HahUeuh.LITTLE_KING.releaseAllImplants(target.getUUID());
+        }
         HahUeuh.SNAPSHOT_MANAGER.sendAuthoritiesTo(target);
 
         ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.greed_variant_set",
@@ -210,6 +232,37 @@ public class RezeroCommand {
                 target.getName(), amount
         ).withStyle(ChatFormatting.GREEN), true);
         return amount;
+    }
+
+    private static int runAllyRequest(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer requester = ctx.getSource().getPlayerOrException();
+        Collection<GameProfile> profiles = GameProfileArgument.getGameProfiles(ctx, "player");
+        for (GameProfile profile : profiles) {
+            HahUeuh.PLAYER_ALLIES.requestAlly(requester, profile);
+        }
+        return profiles.size();
+    }
+
+    private static int runAllyResponse(CommandContext<CommandSourceStack> ctx, boolean accept) throws CommandSyntaxException {
+        ServerPlayer target = ctx.getSource().getPlayerOrException();
+        Collection<GameProfile> profiles = GameProfileArgument.getGameProfiles(ctx, "player");
+        for (GameProfile profile : profiles) {
+            if (accept) {
+                HahUeuh.PLAYER_ALLIES.acceptRequest(target, profile);
+            } else {
+                HahUeuh.PLAYER_ALLIES.declineRequest(target, profile);
+            }
+        }
+        return profiles.size();
+    }
+
+    private static int runAllyRemove(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        Collection<GameProfile> profiles = GameProfileArgument.getGameProfiles(ctx, "player");
+        for (GameProfile profile : profiles) {
+            HahUeuh.PLAYER_ALLIES.removeAlly(player, profile);
+        }
+        return profiles.size();
     }
 
     private static int runRevive(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

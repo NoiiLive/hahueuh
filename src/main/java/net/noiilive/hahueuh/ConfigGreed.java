@@ -72,6 +72,45 @@ public final class ConfigGreed {
                      "linger somewhere off-screen. Default: 32. Range: 1 to 1000.")
             .defineInRange("greedProjectileDistance", 32, 1, 1000);
 
+
+    public static final ModConfigSpec.IntValue ALLY_TRACKER_COOLDOWN_SECONDS = BUILDER
+            .comment("Cooldown (in seconds) between Ally Tracker marks (opening the tracker GUI is always",
+                     "free and never triggers a cooldown). Set to 0 to disable. Default: 15. Range: 0 to 3600.")
+            .defineInRange("allyTrackerCooldownSeconds", 15, 0, 3600);
+
+    public static final ModConfigSpec.IntValue ALLY_TRACKER_MAX_ALLIES = BUILDER
+            .comment("Maximum number of allies a Cor Leonis user may register with Ally Tracker.",
+                     "Default: 100. Range: 1 to 10000.")
+            .defineInRange("allyTrackerMaxAllies", 100, 1, 10000);
+
+    public static final ModConfigSpec.IntValue BASE_SHIFT_COOLDOWN_SECONDS = BUILDER
+            .comment("Cooldown (in seconds) after Base Shift or Second Shift is toggled off before that same",
+                     "ability can be used again. Base Shift and Second Shift each track their own independent",
+                     "cooldown timer, but share this one config value, since they're opposite phases of the",
+                     "same ability. Set to 0 to disable. Default: 30. Range: 0 to 3600.")
+            .defineInRange("baseShiftCooldownSeconds", 30, 0, 3600);
+
+    public static final ModConfigSpec.DoubleValue SECOND_SHIFT_MIN_EFFECT_SHARE = BUILDER
+            .comment("The minimum split share (as a fraction of one full effect level, e.g. 0.1 = 10%) a Second",
+                     "Shift participant must be allotted for a shared potion effect to reach them at all — below",
+                     "this, that participant simply doesn't get the effect. Default: 0.1. Range: 0.0 to 1.0.")
+            .defineInRange("secondShiftMinEffectShare", 0.1, 0.0, 1.0);
+
+    public static final ModConfigSpec.IntValue GREED_POINTS_CHEST_LOOT = BUILDER
+            .comment("Greed compatibility points gained the first time a generated (never-opened) chest or",
+                     "minecart chest is looted. Default: 5.")
+            .defineInRange("greedPointsChestLoot", 5, 0, 1_000_000);
+
+    public static final ModConfigSpec.IntValue GREED_POINTS_ORE_MINE = BUILDER
+            .comment("Greed compatibility points gained per diamond, emerald, or ancient debris ore mined.",
+                     "Default: 2.")
+            .defineInRange("greedPointsOreMine", 2, 0, 1_000_000);
+
+    public static final ModConfigSpec.IntValue GREED_POINTS_VILLAGER_TRADE = BUILDER
+            .comment("Greed compatibility points gained per villager trade that pays out emeralds (selling",
+                     "to the villager, not buying with them). Default: 1.")
+            .defineInRange("greedPointsVillagerTrade", 1, 0, 1_000_000);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     private ConfigGreed() {}

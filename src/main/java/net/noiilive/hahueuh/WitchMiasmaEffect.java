@@ -5,6 +5,7 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.AABB;
 
@@ -25,7 +26,8 @@ public final class WitchMiasmaEffect extends MobEffect {
             double radius = BASE_RADIUS + amplifier * RADIUS_PER_LEVEL;
             AABB box = player.getBoundingBox().inflate(radius);
             List<Mob> mobs = player.level().getEntitiesOfClass(Mob.class, box,
-                    m -> m instanceof Enemy && m.isAlive() && (m.getTarget() == null || !m.getTarget().isAlive()));
+                    m -> m instanceof Enemy && !(m instanceof NeutralMob) && m.isAlive()
+                            && (m.getTarget() == null || !m.getTarget().isAlive()));
             for (Mob mob : mobs) {
                 if (mob.getSensing().hasLineOfSight(player)) {
                     mob.setTarget(player);

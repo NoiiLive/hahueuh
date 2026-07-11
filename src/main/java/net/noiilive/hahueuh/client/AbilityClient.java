@@ -106,6 +106,10 @@ public final class AbilityClient {
 
         SlothHandController.INSTANCE.tick(player);
 
+        if (net.noiilive.hahueuh.network.AllyTrackerData.consumeOpenRequest() && mc.screen == null) {
+            mc.setScreen(new net.noiilive.hahueuh.client.gui.AllyTrackerScreen());
+        }
+
         boolean onRealGround = player.onGround()
                 && !player.getBlockStateOn().getCollisionShape(player.level(), player.getOnPos()).isEmpty();
         net.noiilive.hahueuh.network.ClientLionsHeartState.updateFloor(

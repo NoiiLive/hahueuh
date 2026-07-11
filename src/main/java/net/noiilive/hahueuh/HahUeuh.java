@@ -10,6 +10,17 @@ import net.noiilive.hahueuh.command.RezeroCommand;
 import net.noiilive.hahueuh.client.AbilitySlots;
 import net.noiilive.hahueuh.network.AbilityCooldownPayload;
 import net.noiilive.hahueuh.network.AbilitySlotsSyncPayload;
+import net.noiilive.hahueuh.network.AllyBurdenUpdatePayload;
+import net.noiilive.hahueuh.network.AllyDataPayload;
+import net.noiilive.hahueuh.network.AllyTrackerActivatePayload;
+import net.noiilive.hahueuh.network.AllyTrackerData;
+import net.noiilive.hahueuh.network.AllyTrackerRefreshPayload;
+import net.noiilive.hahueuh.network.BaseShiftStatePayload;
+import net.noiilive.hahueuh.network.BaseShiftTogglePayload;
+import net.noiilive.hahueuh.network.ClientBaseShiftState;
+import net.noiilive.hahueuh.network.ClientSecondShiftState;
+import net.noiilive.hahueuh.network.SecondShiftStatePayload;
+import net.noiilive.hahueuh.network.SecondShiftTogglePayload;
 import net.noiilive.hahueuh.network.AbilitySlotsUpdatePayload;
 import net.noiilive.hahueuh.network.ActivateAuthorityPayload;
 import net.noiilive.hahueuh.network.ClientGreedState;
@@ -59,6 +70,10 @@ public class HahUeuh {
     public static final LittleKing LITTLE_KING = new LittleKing();
     public static final MaterialPhase MATERIAL_PHASE = new MaterialPhase();
     public static final ObjectFreeze OBJECT_FREEZE = new ObjectFreeze();
+    public static final AllyTracker ALLY_TRACKER = new AllyTracker();
+    public static final BaseShift BASE_SHIFT = new BaseShift();
+    public static final SecondShift SECOND_SHIFT = new SecondShift();
+    public static final PlayerAllies PLAYER_ALLIES = new PlayerAllies();
 
     public HahUeuh(IEventBus modEventBus, ModContainer modContainer) {
         BLOCKS.register(modEventBus);
@@ -74,6 +89,10 @@ public class HahUeuh {
         NeoForge.EVENT_BUS.register(LITTLE_KING);
         NeoForge.EVENT_BUS.register(MATERIAL_PHASE);
         NeoForge.EVENT_BUS.register(OBJECT_FREEZE);
+        NeoForge.EVENT_BUS.register(ALLY_TRACKER);
+        NeoForge.EVENT_BUS.register(BASE_SHIFT);
+        NeoForge.EVENT_BUS.register(SECOND_SHIFT);
+        NeoForge.EVENT_BUS.register(PLAYER_ALLIES);
 
         NeoForge.EVENT_BUS.addListener(RezeroCommand::register);
 
@@ -123,13 +142,7 @@ public class HahUeuh {
         registrar.playToClient(
                 AbilityCooldownPayload.TYPE,
                 AbilityCooldownPayload.STREAM_CODEC,
-                (payload, context) -> {
-                    if (AbilityRegistry.get(payload.abilityId()).isPresent()) {
-                        AbilityCooldowns.startCooldown(payload.abilityId(), payload.remainingTicks() / 20.0);
-                    } else {
-                        LOGGER.warn("Received AbilityCooldownPayload for unknown ability id {}", payload.abilityId());
-                    }
-                });
+                (payload, context) -> AbilityCooldowns.startCooldown(payload.abilityId(), payload.remainingTicks() / 20.0));
 
         registrar.playToServer(
                 ActivateAuthorityPayload.TYPE,
@@ -190,6 +203,66 @@ public class HahUeuh {
                         OBJECT_FREEZE.activate(sp);
                     }
                 });
+
+        registrar.playToServer(
+                AllyTrackerActivatePayload.TYPE,
+                AllyTrackerActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        ALLY_TRACKER.activate(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                AllyTrackerRefreshPayload.TYPE,
+                AllyTrackerRefreshPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        ALLY_TRACKER.sendRefresh(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                AllyBurdenUpdatePayload.TYPE,
+                AllyBurdenUpdatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        ALLY_TRACKER.updateBurden(sp, payload.selfWeight(), payload.allyWeights());
+                    }
+                });
+
+        registrar.playToClient(
+                AllyDataPayload.TYPE,
+                AllyDataPayload.STREAM_CODEC,
+                (payload, context) -> AllyTrackerData.receive(payload));
+
+        registrar.playToServer(
+                BaseShiftTogglePayload.TYPE,
+                BaseShiftTogglePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        BASE_SHIFT.toggle(sp);
+                    }
+                });
+
+        registrar.playToClient(
+                BaseShiftStatePayload.TYPE,
+                BaseShiftStatePayload.STREAM_CODEC,
+                (payload, context) -> ClientBaseShiftState.setActive(payload.active()));
+
+        registrar.playToServer(
+                SecondShiftTogglePayload.TYPE,
+                SecondShiftTogglePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        SECOND_SHIFT.toggle(sp);
+                    }
+                });
+
+        registrar.playToClient(
+                SecondShiftStatePayload.TYPE,
+                SecondShiftStatePayload.STREAM_CODEC,
+                (payload, context) -> ClientSecondShiftState.setActive(payload.active()));
 
         registrar.playToClient(
                 AbilitySlotsSyncPayload.TYPE,

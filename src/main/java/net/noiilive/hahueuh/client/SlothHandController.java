@@ -37,6 +37,7 @@ final class SlothHandController {
 
     private boolean wasHeld;
     private boolean wasServerActive;
+    private boolean sessionIsSummon;
     private boolean retractingGrab;
     private boolean wasMobility;
     private HandMode lastModeWhileHeld = HandMode.NONE;
@@ -72,30 +73,37 @@ final class SlothHandController {
 
         boolean variantIsUnseenHands = ClientSlothState.slothVariant() == SlothVariant.UNSEEN_HANDS;
         boolean canSloth = ClientSlothState.canSloth();
-        boolean onCooldown = AbilityCooldowns.secondsRemaining(HahUeuhAbilities.SLOTH_COOLDOWN_KEY) > 0 && !player.isCreative();
+        boolean summonOnCooldown = AbilityCooldowns.secondsRemaining(HahUeuhAbilities.SLOTH_COOLDOWN_KEY) > 0 && !player.isCreative();
+        boolean quickOnCooldown = AbilityCooldowns.secondsRemaining(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY) > 0 && !player.isCreative();
 
         if (!summonHeld) summonSuppressedUntilRelease = false;
 
-        boolean wantsSummon = summonHeld && canSloth && !onCooldown && !summonSuppressedUntilRelease;
-        boolean wantsSelfPropel = selfPropelHeld && canSloth && !onCooldown && variantIsUnseenHands;
+        boolean wantsSummon = summonHeld && canSloth && !summonOnCooldown && !summonSuppressedUntilRelease;
+        boolean wantsSelfPropel = selfPropelHeld && canSloth && !quickOnCooldown && variantIsUnseenHands;
 
-        if ((summonHeld || selfPropelHeld) && onCooldown) {
+        if (summonHeld && summonOnCooldown) {
             player.displayClientMessage(Component.translatable("hahueuh.message.sloth_cooldown",
                             AbilityCooldowns.secondsRemaining(HahUeuhAbilities.SLOTH_COOLDOWN_KEY))
                     .withStyle(ChatFormatting.LIGHT_PURPLE), true);
         }
+        if (selfPropelHeld && quickOnCooldown) {
+            player.displayClientMessage(Component.translatable("hahueuh.message.quick_action_cooldown",
+                            AbilityCooldowns.secondsRemaining(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY))
+                    .withStyle(ChatFormatting.LIGHT_PURPLE), true);
+        }
 
+        boolean cancelingActiveSummon = wasServerActive && sessionIsSummon;
         if (pendingQuickRequested) {
             pendingQuickRequested = false;
-            if (onCooldown) {
-                player.displayClientMessage(Component.translatable("hahueuh.message.sloth_cooldown",
-                                AbilityCooldowns.secondsRemaining(HahUeuhAbilities.SLOTH_COOLDOWN_KEY))
+            if (quickOnCooldown && !cancelingActiveSummon) {
+                player.displayClientMessage(Component.translatable("hahueuh.message.quick_action_cooldown",
+                                AbilityCooldowns.secondsRemaining(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY))
                         .withStyle(ChatFormatting.LIGHT_PURPLE), true);
             } else if (canSloth) {
                 quickSequenceActive = true;
                 quickMode = pendingQuickMode;
-                quickRetracting = wantsSummon;
-                if (wantsSummon) {
+                quickRetracting = wantsSummon || cancelingActiveSummon;
+                if (wantsSummon || cancelingActiveSummon) {
                     summonSuppressedUntilRelease = true;
                     retractingGrab = false;
                     lastModeWhileHeld = HandMode.NONE;
@@ -154,8 +162,15 @@ final class SlothHandController {
         }
 
         boolean serverActive = held || retractingGrab || (quickSequenceActive && quickRetracting);
+        if (serverActive && !wasServerActive) {
+            sessionIsSummon = wantsSummon || cancelingActiveSummon;
+        }
         if (wasServerActive && !serverActive && !player.isCreative()) {
-            AbilityCooldowns.startCooldown(HahUeuhAbilities.SLOTH_COOLDOWN_KEY, ConfigSloth.SLOTH_COOLDOWN_SECONDS.getAsInt());
+            if (sessionIsSummon) {
+                AbilityCooldowns.startCooldown(HahUeuhAbilities.SLOTH_COOLDOWN_KEY, ConfigSloth.SLOTH_COOLDOWN_SECONDS.getAsInt());
+            } else {
+                AbilityCooldowns.startCooldown(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY, ConfigSloth.QUICK_ACTION_COOLDOWN_SECONDS.getAsInt());
+            }
         }
         wasServerActive = serverActive;
 

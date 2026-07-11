@@ -253,6 +253,18 @@ public final class LittleKing {
         }
     }
 
+    public void releaseAllImplants(UUID kingUuid) {
+        if (implants.remove(kingUuid) == null) return;
+        save();
+        if (server == null) return;
+        ServerPlayer king = server.getPlayerList().getPlayer(kingUuid);
+        if (king != null) {
+            reapplyHeartDebt(king);
+            lastSentHighlight.remove(kingUuid);
+            sendHighlight(king);
+        }
+    }
+
     public void refreshAllOnRollback() {
         if (server == null) return;
         load();
