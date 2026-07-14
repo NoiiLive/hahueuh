@@ -8,9 +8,12 @@ import com.google.gson.reflect.TypeToken;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.damagesource.DamageContainer;
@@ -61,6 +64,10 @@ public final class LionsHeart {
         return activations.containsKey(uuid);
     }
 
+    public boolean isOnCooldown(UUID uuid) {
+        return cooldownRemainingTicks(uuid) > 0;
+    }
+
     private static int rollDurationTicks() {
         int min = ConfigGreed.LIONS_HEART_DURATION_MIN_SECONDS.getAsInt();
         int max = ConfigGreed.LIONS_HEART_DURATION_MAX_SECONDS.getAsInt();
@@ -69,13 +76,34 @@ public final class LionsHeart {
         return seconds * 20;
     }
 
-    public void forceResetOnRollback(ServerPlayer player) {
-        UUID uuid = player.getUUID();
-        burnoutInProgress.remove(uuid);
-        dangerAnchorTick.remove(uuid);
-        if (activations.remove(uuid) != null) {
-            PacketDistributor.sendToPlayer(player, new LionsHeartStatePayload(false));
+    public Map<UUID, int[]> captureActive() {
+        Map<UUID, int[]> result = new HashMap<>();
+        if (server == null) return result;
+        int now = server.getTickCount();
+        activations.forEach((uuid, state) -> result.put(uuid, new int[]{state.durationTicks(), now - state.startTick()}));
+        return result;
+    }
+
+    public void restoreActiveOnRollback(Map<UUID, int[]> activeAtSnapshot) {
+        if (server == null) return;
+        int now = server.getTickCount();
+        for (UUID uuid : new ArrayList<>(activations.keySet())) {
+            if (activeAtSnapshot.containsKey(uuid)) continue;
+            activations.remove(uuid);
+            burnoutInProgress.remove(uuid);
+            dangerAnchorTick.remove(uuid);
+            ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+            if (player != null) PacketDistributor.sendToPlayer(player, new LionsHeartStatePayload(false));
         }
+        activeAtSnapshot.forEach((uuid, durationElapsed) -> {
+            int duration = durationElapsed[0];
+            int elapsed = durationElapsed[1];
+            activations.put(uuid, new ActivationState(now - elapsed, duration));
+            burnoutInProgress.remove(uuid);
+            dangerAnchorTick.remove(uuid);
+            ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+            if (player != null) PacketDistributor.sendToPlayer(player, new LionsHeartStatePayload(true));
+        });
     }
 
     public void toggle(ServerPlayer player) {
@@ -122,13 +150,40 @@ public final class LionsHeart {
         if (!player.isCreative()) {
             int cooldownSeconds = ConfigGreed.LIONS_HEART_COOLDOWN_SECONDS.getAsInt();
             if (cooldownSeconds > 0) {
-                cooldownUntilTick.put(uuid, server.getTickCount() + cooldownSeconds * 20);
+                cooldownUntilTick.put(uuid, server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20));
                 PacketDistributor.sendToPlayer(player,
-                        new AbilityCooldownPayload(HahUeuhAbilities.LIONS_HEART_ABILITY, cooldownSeconds * 20));
+                        new AbilityCooldownPayload(HahUeuhAbilities.LIONS_HEART_ABILITY, HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20)));
             }
         }
 
         player.displayClientMessage(Component.translatable(messageKey).withStyle(ChatFormatting.GOLD), true);
+    }
+
+    public void activateMob(Mob mob) {
+        if (server == null) return;
+        activations.put(mob.getUUID(), new ActivationState(server.getTickCount(), rollDurationTicks()));
+        mob.level().playSound(null, mob, ModSounds.LIONSHEART_ACTIVATE.get(), SoundSource.HOSTILE, 1.0f, 1.0f);
+    }
+
+    private void deactivateMob(Mob mob) {
+        UUID uuid = mob.getUUID();
+        activations.remove(uuid);
+        dangerAnchorTick.remove(uuid);
+        mob.level().playSound(null, mob, ModSounds.LIONSHEART_DEACTIVATE.get(), SoundSource.HOSTILE, 1.0f, 1.0f);
+
+        int cooldownSeconds = ConfigGreed.LIONS_HEART_COOLDOWN_SECONDS.getAsInt();
+        if (cooldownSeconds > 0) {
+            cooldownUntilTick.put(uuid, server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20));
+        }
+    }
+
+    private Entity findEntityAnywhere(UUID id) {
+        if (server == null) return null;
+        for (ServerLevel level : server.getAllLevels()) {
+            Entity e = level.getEntity(id);
+            if (e != null) return e;
+        }
+        return null;
     }
 
     private int cooldownRemainingTicks(UUID uuid) {
@@ -240,11 +295,23 @@ public final class LionsHeart {
         for (Map.Entry<UUID, ActivationState> entry : new ArrayList<>(activations.entrySet())) {
             UUID uuid = entry.getKey();
             ServerPlayer player = server.getPlayerList().getPlayer(uuid);
-            if (player == null) {
-                activations.remove(uuid);
+            if (player != null) {
+                tickActive(player, entry.getValue());
                 continue;
             }
-            tickActive(player, entry.getValue());
+            if (findEntityAnywhere(uuid) instanceof Mob mob && mob.isAlive()) {
+                tickActiveMob(mob, entry.getValue());
+            } else {
+                activations.remove(uuid);
+            }
+        }
+    }
+
+    private void tickActiveMob(Mob mob, ActivationState state) {
+        int warningAtElapsed = state.durationTicks() - WARNING_LEAD_TICKS;
+        int elapsed = server.getTickCount() - state.startTick();
+        if (elapsed >= warningAtElapsed) {
+            deactivateMob(mob);
         }
     }
 
@@ -295,33 +362,38 @@ public final class LionsHeart {
 
     @SubscribeEvent
     public void onDeath(LivingDeathEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !isActive(player.getUUID())) return;
-        UUID uuid = player.getUUID();
+        LivingEntity entity = event.getEntity();
+        UUID uuid = entity.getUUID();
+        if (!isActive(uuid)) return;
         activations.remove(uuid);
         burnoutInProgress.remove(uuid);
         dangerAnchorTick.remove(uuid);
-        PacketDistributor.sendToPlayer(player, new LionsHeartStatePayload(false));
-        player.level().playSound(null, player, ModSounds.LIONSHEART_DEACTIVATE.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
-        if (server != null && !player.isCreative()) {
-            int cooldownSeconds = ConfigGreed.LIONS_HEART_COOLDOWN_SECONDS.getAsInt();
-            if (cooldownSeconds > 0) {
-                cooldownUntilTick.put(uuid, server.getTickCount() + cooldownSeconds * 20);
-                PacketDistributor.sendToPlayer(player,
-                        new AbilityCooldownPayload(HahUeuhAbilities.LIONS_HEART_ABILITY, cooldownSeconds * 20));
+
+        if (entity instanceof ServerPlayer player) {
+            PacketDistributor.sendToPlayer(player, new LionsHeartStatePayload(false));
+            player.level().playSound(null, player, ModSounds.LIONSHEART_DEACTIVATE.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
+            if (server != null && !player.isCreative()) {
+                int cooldownSeconds = ConfigGreed.LIONS_HEART_COOLDOWN_SECONDS.getAsInt();
+                if (cooldownSeconds > 0) {
+                    cooldownUntilTick.put(uuid, server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20));
+                    PacketDistributor.sendToPlayer(player,
+                            new AbilityCooldownPayload(HahUeuhAbilities.LIONS_HEART_ABILITY, HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20)));
+                }
             }
+        } else {
+            entity.level().playSound(null, entity, ModSounds.LIONSHEART_DEACTIVATE.get(), SoundSource.HOSTILE, 1.0f, 1.0f);
         }
     }
 
     @SubscribeEvent
     public void onIncomingDamage(LivingIncomingDamageEvent event) {
-        if (event.getEntity() instanceof ServerPlayer target && isActive(target.getUUID())
-                && !burnoutInProgress.contains(target.getUUID())) {
+        if (isActive(event.getEntity().getUUID()) && !burnoutInProgress.contains(event.getEntity().getUUID())) {
             event.setCanceled(true);
             return;
         }
 
         Entity attacker = event.getSource().getEntity();
-        if (attacker instanceof ServerPlayer attackingPlayer && isActive(attackingPlayer.getUUID())) {
+        if (attacker instanceof LivingEntity attackingEntity && isActive(attackingEntity.getUUID())) {
             event.addReductionModifier(DamageContainer.Reduction.ARMOR, (container, reduction) -> 0f);
             event.addReductionModifier(DamageContainer.Reduction.ENCHANTMENTS, (container, reduction) -> 0f);
         }
@@ -330,7 +402,7 @@ public final class LionsHeart {
     @SubscribeEvent
     public void onShieldBlock(LivingShieldBlockEvent event) {
         Entity attacker = event.getDamageSource().getEntity();
-        if (attacker instanceof ServerPlayer attackingPlayer && isActive(attackingPlayer.getUUID())) {
+        if (attacker instanceof LivingEntity attackingEntity && isActive(attackingEntity.getUUID())) {
             event.setBlocked(false);
         }
     }

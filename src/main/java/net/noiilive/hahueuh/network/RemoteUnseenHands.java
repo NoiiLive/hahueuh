@@ -6,16 +6,16 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class RemoteUnseenHands {
-    public record Remote(float distance, int mode, int variant, boolean mobility) {}
+    public record Remote(int entityId, float distance, int mode, int variant, boolean mobility) {}
 
     private static final Map<UUID, Remote> HANDS = new ConcurrentHashMap<>();
     private static final Map<UUID, List<Integer>> GRABBED = new ConcurrentHashMap<>();
 
     private RemoteUnseenHands() {}
 
-    public static void update(UUID owner, boolean active, float distance, int mode, int variant, boolean mobility) {
+    public static void update(UUID owner, int entityId, boolean active, float distance, int mode, int variant, boolean mobility) {
         if (active) {
-            HANDS.put(owner, new Remote(distance, mode, variant, mobility));
+            HANDS.put(owner, new Remote(entityId, distance, mode, variant, mobility));
         } else {
             HANDS.remove(owner);
         }

@@ -19,6 +19,7 @@ import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerWakeUpEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
@@ -42,17 +43,26 @@ public final class SlothCompatibility {
     static final String FILE_NAME = "hahueuh_sloth_compat.json";
 
     private static final int VEHICLE_TICKS_PER_AWARD = 600;
+    private static final java.util.Random RANDOM = new java.util.Random();
 
     private final Map<UUID, Integer> score = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> vehicleTicks = new ConcurrentHashMap<>();
     private MinecraftServer server;
     private Path filePath;
 
-    private static boolean enabled() { return ConfigSloth.SLOTH_COMPAT_ENABLED.get(); }
+    private static boolean enabled() { return ConfigMain.COMPATIBILITY_ENABLED.get(); }
     private static int threshold() { return ConfigSloth.SLOTH_COMPAT_THRESHOLD.getAsInt(); }
 
     public boolean isCompatible(UUID uuid) {
         return !enabled() || score.getOrDefault(uuid, 0) >= threshold();
+    }
+
+    public float cooldownMultiplier(UUID uuid) {
+        if (!enabled()) return 1.0f;
+        int t = threshold();
+        if (t <= 0) return 1.0f;
+        double pct = Math.min(1.0, (double) score.getOrDefault(uuid, 0) / t);
+        return (float) (2.0 - pct);
     }
 
     public int getScore(UUID uuid) {
@@ -62,6 +72,23 @@ public final class SlothCompatibility {
     public void setScore(UUID uuid, int value) {
         score.put(uuid, Math.max(0, value));
         save();
+    }
+
+    public void ensureStartingScore(UUID uuid) {
+        if (score.containsKey(uuid)) return;
+        int min = ConfigMain.STARTING_COMPATIBILITY_MIN.get();
+        int max = ConfigMain.STARTING_COMPATIBILITY_MAX.get();
+        int lo = Math.min(min, max), hi = Math.max(min, max);
+        int roll = lo + RANDOM.nextInt(hi - lo + 1);
+        score.put(uuid, roll);
+        save();
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            ensureStartingScore(player.getUUID());
+        }
     }
 
 

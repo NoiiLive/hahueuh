@@ -26,12 +26,6 @@ public final class ConfigSloth {
                      "disable. Default: 5. Range: 0 to 3600.")
             .defineInRange("quickActionCooldownSeconds", 5, 0, 3600);
 
-    public static final ModConfigSpec.BooleanValue SLOTH_COMPAT_ENABLED = BUILDER
-            .comment("If true, Sloth users must earn 'compatibility' with the authority; using the Unseen",
-                     "Hand before reaching the threshold inflicts drawbacks (blindness, hunger, nausea,",
-                     "and steady damage). Disable to let anyone use Sloth freely. Default: true.")
-            .define("slothCompatibilityEnabled", true);
-
     public static final ModConfigSpec.IntValue SLOTH_COMPAT_THRESHOLD = BUILDER
             .comment("Compatibility score a player must reach to use Sloth without drawbacks.",
                      "Default: 100. Range: 1 to 1000000.")
@@ -79,6 +73,30 @@ public final class ConfigSloth {
                      "mobility mode (activate the hand, then sneak, to plant all hands on the ground and",
                      "glide forward). Default: 8. Range: 1 to 40.")
             .defineInRange("unseenHandsMobilitySpeed", 8, 1, 40);
+
+    public static final ModConfigSpec.IntValue VARIANT_WEIGHT_INVISIBLE_PROVIDENCE = BUILDER
+            .comment("Relative weight for rolling Invisible Providence when a player absorbs a Sloth Witch",
+                     "Factor (see SnapshotManager/WitchFactorGrant) — weighed against",
+                     "variantWeightUnseenHands/variantWeightSekhmet, not a percentage on its own (e.g. 55/40/5",
+                     "out of 100 total is the same odds as 11/8/1 out of 20). Default: 55.")
+            .defineInRange("variantWeightInvisibleProvidence", 55, 0, 1_000_000);
+
+    public static final ModConfigSpec.IntValue VARIANT_WEIGHT_UNSEEN_HANDS = BUILDER
+            .comment("See variantWeightInvisibleProvidence. Default: 40.")
+            .defineInRange("variantWeightUnseenHands", 40, 0, 1_000_000);
+
+    public static final ModConfigSpec.IntValue VARIANT_WEIGHT_SEKHMET = BUILDER
+            .comment("See variantWeightInvisibleProvidence. Default: 5.")
+            .defineInRange("variantWeightSekhmet", 5, 0, 1_000_000);
+
+    public static final ModConfigSpec.DoubleValue MOB_QUICK_ACTION_CHANCE = BUILDER
+            .comment("Chance, rolled about once a second while a mob holding a Sloth Witch Factor is actively",
+                     "fighting someone, that it uses Quick Strike or Quick Grasp (picked randomly) on its",
+                     "target — the only two Sloth moves mobs use (Summon Hand's hold-to-aim doesn't suit them,",
+                     "and Hidden Interaction/Self Propel are Invisible Providence/Unseen Hands-only utility",
+                     "moves with no combat use). Reach-limited by slothMaxDistance and shares",
+                     "quickActionCooldownSeconds with the player version. Default: 15. Range: 0 to 100.")
+            .defineInRange("mobQuickActionChance", 15.0, 0.0, 100.0);
 
     public static final ModConfigSpec.ConfigValue<List<? extends String>> SEKHMET_BREAKABLE_TAGS = BUILDER
             .comment("Block tags Sekhmet's hands may smash while ATTACKING when the rezeroBlockDestruction",

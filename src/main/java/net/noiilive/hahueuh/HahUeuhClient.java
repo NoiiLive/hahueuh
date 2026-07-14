@@ -30,11 +30,23 @@ public class HahUeuhClient {
     static void onClientSetup(FMLClientSetupEvent event) {
         HahUeuh.LOGGER.info("HELLO FROM CLIENT SETUP");
         HahUeuh.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+        event.enqueueWork(() -> {
+            net.minecraft.client.renderer.item.ItemProperties.register(
+                    ModItems.DRAGON_SWORD_REID.get(),
+                    ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "sheathed"),
+                    (stack, level, entity, seed) -> DragonSwordReidItem.isSheathed(stack) ? 1.0f : 0.0f);
+
+            net.minecraft.client.renderer.item.ItemProperties.register(
+                    ModItems.DRAGON_SWORD_REID.get(),
+                    ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "blocking"),
+                    (stack, level, entity, seed) -> entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0f : 0.0f);
+        });
     }
 
     @SubscribeEvent
     static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.FROZEN_OBJECT_PROJECTILE.get(), ThrownItemRenderer::new);
+        event.registerEntityRenderer(ModEntities.WITCH_FACTOR.get(), net.noiilive.hahueuh.client.WitchFactorRenderer::new);
     }
 
     @SubscribeEvent

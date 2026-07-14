@@ -520,9 +520,9 @@ public final class AllyTracker {
         if (king.isCreative()) return;
         int cooldownSeconds = ConfigGreed.ALLY_TRACKER_COOLDOWN_SECONDS.getAsInt();
         if (cooldownSeconds <= 0) return;
-        cooldownUntilTick.put(king.getUUID(), server.getTickCount() + cooldownSeconds * 20);
+        cooldownUntilTick.put(king.getUUID(), server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20));
         PacketDistributor.sendToPlayer(king,
-                new AbilityCooldownPayload(HahUeuhAbilities.ALLY_TRACKER_ABILITY, cooldownSeconds * 20));
+                new AbilityCooldownPayload(HahUeuhAbilities.ALLY_TRACKER_ABILITY, HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20)));
     }
 
     private int cooldownRemainingTicks(UUID uuid) {

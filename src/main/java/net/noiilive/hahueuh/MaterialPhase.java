@@ -109,9 +109,9 @@ public final class MaterialPhase {
         if (startCooldown && !player.isCreative()) {
             int cooldownSeconds = ConfigGreed.MATERIAL_PHASE_COOLDOWN_SECONDS.getAsInt();
             if (cooldownSeconds > 0) {
-                cooldownUntilTick.put(uuid, server.getTickCount() + cooldownSeconds * 20);
+                cooldownUntilTick.put(uuid, server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20));
                 PacketDistributor.sendToPlayer(player,
-                        new AbilityCooldownPayload(HahUeuhAbilities.MATERIAL_PHASE_ABILITY, cooldownSeconds * 20));
+                        new AbilityCooldownPayload(HahUeuhAbilities.MATERIAL_PHASE_ABILITY, HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20)));
             }
         }
         player.displayClientMessage(Component.translatable("hahueuh.message.material_phase_deactivated")
@@ -123,6 +123,37 @@ public final class MaterialPhase {
             removeDamageBuff(player);
             PacketDistributor.sendToPlayer(player, new MaterialPhaseStatePayload(false));
         }
+    }
+
+    public Set<UUID> captureActive() {
+        return new HashSet<>(active);
+    }
+
+    public void restoreActiveOnRollback(Set<UUID> activeAtSnapshot) {
+        if (server == null) return;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            UUID uuid = player.getUUID();
+            boolean want = activeAtSnapshot.contains(uuid);
+            if (want == active.contains(uuid)) continue;
+            if (want) {
+                active.add(uuid);
+                applyDamageBuff(player);
+                PacketDistributor.sendToPlayer(player, new MaterialPhaseStatePayload(true));
+            } else {
+                active.remove(uuid);
+                removeDamageBuff(player);
+                PacketDistributor.sendToPlayer(player, new MaterialPhaseStatePayload(false));
+            }
+        }
+        reconcileOfflinePersisted(activeAtSnapshot);
+    }
+
+    private void reconcileOfflinePersisted(Set<UUID> activeAtSnapshot) {
+        boolean changed = false;
+        for (UUID uuid : activeAtSnapshot) {
+            if (server.getPlayerList().getPlayer(uuid) == null) changed |= persistedActive.add(uuid);
+        }
+        if (changed) savePersisted();
     }
 
     private void applyDamageBuff(ServerPlayer player) {
@@ -157,8 +188,6 @@ public final class MaterialPhase {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         UUID uuid = player.getUUID();
         if (active.remove(uuid)) {
-            // No cooldown, no message — just remember it was on, so logging back in resumes it (as
-            // long as Lion's Heart also resumes) instead of silently leaving the player mortal again.
             persistedActive.add(uuid);
             savePersisted();
         }

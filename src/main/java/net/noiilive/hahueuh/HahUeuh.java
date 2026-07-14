@@ -17,6 +17,23 @@ import net.noiilive.hahueuh.network.AllyTrackerData;
 import net.noiilive.hahueuh.network.AllyTrackerRefreshPayload;
 import net.noiilive.hahueuh.network.BaseShiftStatePayload;
 import net.noiilive.hahueuh.network.BaseShiftTogglePayload;
+import net.noiilive.hahueuh.network.BookOfWisdomTogglePayload;
+import net.noiilive.hahueuh.network.MentalOverloadActivatePayload;
+import net.noiilive.hahueuh.network.VisionOfDangerTogglePayload;
+import net.noiilive.hahueuh.network.VisionOfDangerStatePayload;
+import net.noiilive.hahueuh.network.VisionOfDangerHighlightPayload;
+import net.noiilive.hahueuh.network.ClientVisionOfDangerState;
+import net.noiilive.hahueuh.network.ClientVisionOfDangerHighlightState;
+import net.noiilive.hahueuh.network.VisionOfLifeTogglePayload;
+import net.noiilive.hahueuh.network.VisionOfLifeStatePayload;
+import net.noiilive.hahueuh.network.VisionOfLifeGlowPayload;
+import net.noiilive.hahueuh.network.ClientVisionOfLifeState;
+import net.noiilive.hahueuh.network.ClientVisionOfLifeGlowState;
+import net.noiilive.hahueuh.network.FootprintSyncPayload;
+import net.noiilive.hahueuh.network.ClientFootprintState;
+import net.noiilive.hahueuh.network.VisionInfoQueryPayload;
+import net.noiilive.hahueuh.network.VisionInfoResultPayload;
+import net.noiilive.hahueuh.network.VisionInfoClientData;
 import net.noiilive.hahueuh.network.ClientBaseShiftState;
 import net.noiilive.hahueuh.network.ClientSecondShiftState;
 import net.noiilive.hahueuh.network.SecondShiftStatePayload;
@@ -42,6 +59,14 @@ import net.noiilive.hahueuh.network.ObjectFreezeActivatePayload;
 import net.noiilive.hahueuh.network.PlayerAuthoritiesPayload;
 import net.noiilive.hahueuh.network.RemoteUnseenHands;
 import net.noiilive.hahueuh.network.UnseenHandGrabSyncPayload;
+import net.noiilive.hahueuh.network.OpenEfficientEnchantingPayload;
+import net.noiilive.hahueuh.network.BackToEnchantingPayload;
+import net.noiilive.hahueuh.network.OpenBookOfWisdomBindPayload;
+import net.noiilive.hahueuh.network.ActivateBookOfWisdomVisionPayload;
+import net.noiilive.hahueuh.network.BindVisionAbilityPayload;
+import net.noiilive.hahueuh.network.EfficientEnchantSelectPayload;
+import net.noiilive.hahueuh.network.EfficientEnchantOptionsPayload;
+import net.noiilive.hahueuh.client.EfficientEnchantOptionsData;
 import net.noiilive.hahueuh.network.UnseenHandPayload;
 import net.noiilive.hahueuh.network.UnseenHandSyncPayload;
 import net.noiilive.hahueuh.snapshot.SnapshotManager;
@@ -74,6 +99,17 @@ public class HahUeuh {
     public static final BaseShift BASE_SHIFT = new BaseShift();
     public static final SecondShift SECOND_SHIFT = new SecondShift();
     public static final PlayerAllies PLAYER_ALLIES = new PlayerAllies();
+    public static final BookOfWisdom BOOK_OF_WISDOM = new BookOfWisdom();
+    public static final BookOfWisdomCopy BOOK_OF_WISDOM_COPY = new BookOfWisdomCopy();
+    public static final MentalOverload MENTAL_OVERLOAD = new MentalOverload();
+    public static final VisionOfDanger VISION_OF_DANGER = new VisionOfDanger();
+    public static final VisionOfLife VISION_OF_LIFE = new VisionOfLife();
+    public static final FootprintTracker FOOTPRINT_TRACKER = new FootprintTracker();
+    public static final VisionOfInformation VISION_OF_INFO = new VisionOfInformation();
+    public static final EfficientEnchanting EFFICIENT_ENCHANTING = new EfficientEnchanting();
+    public static final MobWitchFactor MOB_WITCH_FACTOR = new MobWitchFactor();
+    public static final MobAbilityAI MOB_ABILITY_AI = new MobAbilityAI();
+    public static final DragonSwordReid DRAGON_SWORD_REID = new DragonSwordReid();
 
     public HahUeuh(IEventBus modEventBus, ModContainer modContainer) {
         BLOCKS.register(modEventBus);
@@ -81,8 +117,16 @@ public class HahUeuh {
         ModEntities.ENTITY_TYPES.register(modEventBus);
         ModSounds.SOUND_EVENTS.register(modEventBus);
         ModEffects.MOB_EFFECTS.register(modEventBus);
+        ModDataComponents.DATA_COMPONENT_TYPES.register(modEventBus);
+        ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
+        ModItems.ITEMS.register(modEventBus);
+        ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
+        ModMenus.MENUS.register(modEventBus);
 
         NeoForge.EVENT_BUS.register(SNAPSHOT_MANAGER);
+        NeoForge.EVENT_BUS.register(MOB_WITCH_FACTOR);
+        NeoForge.EVENT_BUS.register(MOB_ABILITY_AI);
+        NeoForge.EVENT_BUS.register(DRAGON_SWORD_REID);
         NeoForge.EVENT_BUS.register(SLOTH_COMPAT);
         NeoForge.EVENT_BUS.register(GREED_COMPAT);
         NeoForge.EVENT_BUS.register(LIONS_HEART);
@@ -93,6 +137,13 @@ public class HahUeuh {
         NeoForge.EVENT_BUS.register(BASE_SHIFT);
         NeoForge.EVENT_BUS.register(SECOND_SHIFT);
         NeoForge.EVENT_BUS.register(PLAYER_ALLIES);
+        NeoForge.EVENT_BUS.register(BOOK_OF_WISDOM);
+        NeoForge.EVENT_BUS.register(BOOK_OF_WISDOM_COPY);
+        NeoForge.EVENT_BUS.register(MENTAL_OVERLOAD);
+        NeoForge.EVENT_BUS.register(VISION_OF_DANGER);
+        NeoForge.EVENT_BUS.register(VISION_OF_LIFE);
+        NeoForge.EVENT_BUS.register(FOOTPRINT_TRACKER);
+        NeoForge.EVENT_BUS.register(VISION_OF_INFO);
 
         NeoForge.EVENT_BUS.addListener(RezeroCommand::register);
 
@@ -101,6 +152,9 @@ public class HahUeuh {
         modEventBus.addListener((net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent event) ->
                 event.enqueueWork(ModGameRules::register));
 
+        modEventBus.addListener((net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent event) ->
+                event.put(ModEntities.WITCH_FACTOR.get(), WitchFactorEntity.createAttributes().build()));
+
         modEventBus.addListener((net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent event) -> {
             modEventBus.post(new RegisterAuthoritiesEvent());
             AuthorityRegistry.freeze();
@@ -108,10 +162,11 @@ public class HahUeuh {
             AbilityRegistry.freeze();
         });
 
-        modContainer.registerConfig(ModConfig.Type.COMMON, ConfigReturnByDeath.SPEC, "hahueuh/server/return_by_death.toml");
-        modContainer.registerConfig(ModConfig.Type.COMMON, ConfigDomain.SPEC, "hahueuh/server/domain.toml");
-        modContainer.registerConfig(ModConfig.Type.COMMON, ConfigSloth.SPEC, "hahueuh/server/sloth.toml");
-        modContainer.registerConfig(ModConfig.Type.COMMON, ConfigGreed.SPEC, "hahueuh/server/greed.toml");
+        modContainer.registerConfig(ModConfig.Type.SERVER, ConfigMain.SPEC, "hahueuh/server/main.toml");
+        modContainer.registerConfig(ModConfig.Type.SERVER, ConfigReturnByDeath.SPEC, "hahueuh/server/return_by_death.toml");
+        modContainer.registerConfig(ModConfig.Type.SERVER, ConfigDomain.SPEC, "hahueuh/server/domain.toml");
+        modContainer.registerConfig(ModConfig.Type.SERVER, ConfigSloth.SPEC, "hahueuh/server/sloth.toml");
+        modContainer.registerConfig(ModConfig.Type.SERVER, ConfigGreed.SPEC, "hahueuh/server/greed.toml");
     }
 
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
@@ -245,6 +300,81 @@ public class HahUeuh {
                     }
                 });
 
+        registrar.playToServer(
+                BookOfWisdomTogglePayload.TYPE,
+                BookOfWisdomTogglePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        BOOK_OF_WISDOM.toggle(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                MentalOverloadActivatePayload.TYPE,
+                MentalOverloadActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        MENTAL_OVERLOAD.activate(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                VisionOfDangerTogglePayload.TYPE,
+                VisionOfDangerTogglePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        VISION_OF_DANGER.toggle(sp);
+                    }
+                });
+
+        registrar.playToClient(
+                VisionOfDangerStatePayload.TYPE,
+                VisionOfDangerStatePayload.STREAM_CODEC,
+                (payload, context) -> ClientVisionOfDangerState.setActive(payload.active()));
+
+        registrar.playToClient(
+                VisionOfDangerHighlightPayload.TYPE,
+                VisionOfDangerHighlightPayload.STREAM_CODEC,
+                (payload, context) -> ClientVisionOfDangerHighlightState.set(payload.entityIds()));
+
+        registrar.playToServer(
+                VisionOfLifeTogglePayload.TYPE,
+                VisionOfLifeTogglePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        VISION_OF_LIFE.toggle(sp);
+                    }
+                });
+
+        registrar.playToClient(
+                VisionOfLifeStatePayload.TYPE,
+                VisionOfLifeStatePayload.STREAM_CODEC,
+                (payload, context) -> ClientVisionOfLifeState.setActive(payload.active()));
+
+        registrar.playToClient(
+                VisionOfLifeGlowPayload.TYPE,
+                VisionOfLifeGlowPayload.STREAM_CODEC,
+                (payload, context) -> ClientVisionOfLifeGlowState.set(payload.hostileIds(), payload.passiveIds(), payload.playerIds(), payload.witchFactorIds()));
+
+        registrar.playToClient(
+                FootprintSyncPayload.TYPE,
+                FootprintSyncPayload.STREAM_CODEC,
+                (payload, context) -> ClientFootprintState.set(payload.maxAgeTicks(), payload.footprints()));
+
+        registrar.playToServer(
+                VisionInfoQueryPayload.TYPE,
+                VisionInfoQueryPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        VISION_OF_INFO.handleQuery(sp, payload);
+                    }
+                });
+
+        registrar.playToClient(
+                VisionInfoResultPayload.TYPE,
+                VisionInfoResultPayload.STREAM_CODEC,
+                (payload, context) -> VisionInfoClientData.set(payload));
+
         registrar.playToClient(
                 BaseShiftStatePayload.TYPE,
                 BaseShiftStatePayload.STREAM_CODEC,
@@ -283,18 +413,77 @@ public class HahUeuh {
                 UnseenHandPayload.STREAM_CODEC,
                 (payload, context) -> {
                     if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
-                        SNAPSHOT_MANAGER.onUnseenHandUpdate(sp, payload.active(), payload.distance(), payload.mode(), payload.mobility());
+                        SNAPSHOT_MANAGER.onUnseenHandUpdate(sp, payload.active(), payload.distance(), payload.mode(), payload.mobility(), payload.quickSession());
                     }
                 });
 
         registrar.playToClient(
                 UnseenHandSyncPayload.TYPE,
                 UnseenHandSyncPayload.STREAM_CODEC,
-                (payload, context) -> RemoteUnseenHands.update(payload.owner(), payload.active(), payload.distance(), payload.mode(), payload.variant(), payload.mobility()));
+                (payload, context) -> RemoteUnseenHands.update(payload.owner(), payload.entityId(), payload.active(), payload.distance(), payload.mode(), payload.variant(), payload.mobility()));
 
         registrar.playToClient(
                 UnseenHandGrabSyncPayload.TYPE,
                 UnseenHandGrabSyncPayload.STREAM_CODEC,
                 (payload, context) -> RemoteUnseenHands.updateGrabbed(payload.owner(), payload.grabbedIds()));
+
+        registrar.playToServer(
+                OpenEfficientEnchantingPayload.TYPE,
+                OpenEfficientEnchantingPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        EFFICIENT_ENCHANTING.open(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                EfficientEnchantSelectPayload.TYPE,
+                EfficientEnchantSelectPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        EFFICIENT_ENCHANTING.select(sp, payload.enchantmentId());
+                    }
+                });
+
+        registrar.playToClient(
+                EfficientEnchantOptionsPayload.TYPE,
+                EfficientEnchantOptionsPayload.STREAM_CODEC,
+                (payload, context) -> EfficientEnchantOptionsData.set(payload.options()));
+
+        registrar.playToServer(
+                BackToEnchantingPayload.TYPE,
+                BackToEnchantingPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        EFFICIENT_ENCHANTING.goBack(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                OpenBookOfWisdomBindPayload.TYPE,
+                OpenBookOfWisdomBindPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        BOOK_OF_WISDOM_COPY.openBindMenu(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                ActivateBookOfWisdomVisionPayload.TYPE,
+                ActivateBookOfWisdomVisionPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        BOOK_OF_WISDOM_COPY.activateBoundAbility(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                BindVisionAbilityPayload.TYPE,
+                BindVisionAbilityPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        BOOK_OF_WISDOM_COPY.bind(sp, payload.abilityOrdinal());
+                    }
+                });
     }
 }

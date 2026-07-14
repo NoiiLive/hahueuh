@@ -15,6 +15,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.LiquidBlock;
@@ -91,24 +93,24 @@ public final class ObjectFreeze {
         if (!player.isCreative()) {
             int cooldownSeconds = ConfigGreed.OBJECT_FREEZE_COOLDOWN_SECONDS.getAsInt();
             if (cooldownSeconds > 0) {
-                cooldownUntilTick.put(uuid, server.getTickCount() + cooldownSeconds * 20);
+                cooldownUntilTick.put(uuid, server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20));
                 PacketDistributor.sendToPlayer(player,
-                        new AbilityCooldownPayload(HahUeuhAbilities.OBJECT_FREEZE_ABILITY, cooldownSeconds * 20));
+                        new AbilityCooldownPayload(HahUeuhAbilities.OBJECT_FREEZE_ABILITY, HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20)));
             }
         }
     }
 
-    private LivingEntity raycastTarget(ServerPlayer player) {
-        HitResult hit = ProjectileUtil.getHitResultOnViewVector(player,
-                e -> e != player && e.isAlive() && !e.isSpectator() && e instanceof LivingEntity, TARGET_RANGE);
+    private LivingEntity raycastTarget(LivingEntity caster) {
+        HitResult hit = ProjectileUtil.getHitResultOnViewVector(caster,
+                e -> e != caster && e.isAlive() && !e.isSpectator() && e instanceof LivingEntity, TARGET_RANGE);
         if (hit instanceof EntityHitResult ehr && ehr.getEntity() instanceof LivingEntity living) {
             return living;
         }
         return null;
     }
 
-    private void launchEntity(ServerPlayer player, LivingEntity target) {
-        Vec3 direction = player.getViewVector(1.0f);
+    private void launchEntity(LivingEntity caster, LivingEntity target) {
+        Vec3 direction = caster.getViewVector(1.0f);
         Vec3 velocity = direction.scale(LAUNCH_SPEED).add(0.0, LAUNCH_LIFT, 0.0);
 
         target.setNoGravity(true);
@@ -120,7 +122,7 @@ public final class ObjectFreeze {
         }
         launches.put(target.getUUID(), new LaunchState(velocity, LAUNCH_DURATION_TICKS));
 
-        player.level().playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_KNOCKBACK,
+        caster.level().playSound(null, caster.blockPosition(), SoundEvents.PLAYER_ATTACK_KNOCKBACK,
                 SoundSource.PLAYERS, 1.0f, 0.8f);
     }
 
@@ -223,9 +225,9 @@ public final class ObjectFreeze {
         return null;
     }
 
-    private void throwHeldItem(ServerPlayer player) {
-        ItemStack held = player.getMainHandItem();
-        boolean shotgun = !held.isEmpty() && player.isShiftKeyDown();
+    private void throwHeldItem(LivingEntity caster) {
+        ItemStack held = caster.getMainHandItem();
+        boolean shotgun = !held.isEmpty() && caster instanceof Player p && p.isShiftKeyDown();
 
         int count;
         ItemStack visual;
@@ -235,7 +237,7 @@ public final class ObjectFreeze {
         } else if (shotgun) {
             count = held.getCount();
             visual = held.copyWithCount(1);
-            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            caster.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         } else {
             count = 1;
             visual = held.copyWithCount(1);
@@ -244,8 +246,26 @@ public final class ObjectFreeze {
 
         float inaccuracy = count > 1 ? SHOTGUN_INACCURACY : 0.0f;
         for (int i = 0; i < count; i++) {
-            FrozenObjectProjectile projectile = new FrozenObjectProjectile(player.level(), player, visual, inaccuracy);
-            player.level().addFreshEntity(projectile);
+            FrozenObjectProjectile projectile = new FrozenObjectProjectile(caster.level(), caster, visual, inaccuracy);
+            caster.level().addFreshEntity(projectile);
+        }
+    }
+
+    public void activateMob(Mob mob) {
+        if (server == null) return;
+        UUID uuid = mob.getUUID();
+        if (cooldownRemainingTicks(uuid) > 0) return;
+
+        LivingEntity target = raycastTarget(mob);
+        if (target != null) {
+            launchEntity(mob, target);
+        } else {
+            throwHeldItem(mob);
+        }
+
+        int cooldownSeconds = ConfigGreed.OBJECT_FREEZE_COOLDOWN_SECONDS.getAsInt();
+        if (cooldownSeconds > 0) {
+            cooldownUntilTick.put(uuid, server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20));
         }
     }
 

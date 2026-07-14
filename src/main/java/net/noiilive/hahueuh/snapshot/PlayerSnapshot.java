@@ -1,6 +1,7 @@
 package net.noiilive.hahueuh.snapshot;
 
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -20,9 +21,12 @@ import net.minecraft.server.players.PlayerList;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.attachment.AttachmentHolder;
+import net.neoforged.neoforge.attachment.AttachmentType;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,13 +52,15 @@ public class PlayerSnapshot {
     private final GameType gameType;
     private final int selectedSlot;
     private final CompoundTag abilitiesTag;
+    private final CompoundTag attachmentsTag;
 
     private PlayerSnapshot(double x, double y, double z, float yRot, float xRot,
                            ResourceKey<Level> dimension, float health, int foodLevel,
                            float saturation, float exhaustion, ListTag inventoryTag,
                            ListTag enderChestTag, int experienceLevel, float experienceProgress,
                            int totalExperience, List<CompoundTag> activeEffects,
-                           GameType gameType, int selectedSlot, CompoundTag abilitiesTag) {
+                           GameType gameType, int selectedSlot, CompoundTag abilitiesTag,
+                           CompoundTag attachmentsTag) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -74,6 +80,7 @@ public class PlayerSnapshot {
         this.gameType = gameType;
         this.selectedSlot = selectedSlot;
         this.abilitiesTag = abilitiesTag;
+        this.attachmentsTag = attachmentsTag;
     }
 
     public static PlayerSnapshot capture(ServerPlayer player) {
@@ -92,6 +99,9 @@ public class PlayerSnapshot {
         CompoundTag abilitiesTag = new CompoundTag();
         player.getAbilities().addSaveData(abilitiesTag);
 
+        CompoundTag attachmentsTag = player.serializeAttachments(player.registryAccess());
+        if (attachmentsTag == null) attachmentsTag = new CompoundTag();
+
         return new PlayerSnapshot(
                 player.getX(), player.getY(), player.getZ(),
                 player.getYRot(), player.getXRot(),
@@ -108,7 +118,8 @@ public class PlayerSnapshot {
                 activeEffects,
                 player.gameMode.getGameModeForPlayer(),
                 player.getInventory().selected,
-                abilitiesTag
+                abilitiesTag,
+                attachmentsTag
         );
     }
 
@@ -135,6 +146,7 @@ public class PlayerSnapshot {
         tag.putString("GameType", gameType.getName());
         tag.putInt("SelectedSlot", selectedSlot);
         tag.put("Abilities", abilitiesTag);
+        tag.put("Attachments", attachmentsTag);
         return tag;
     }
 
@@ -163,7 +175,8 @@ public class PlayerSnapshot {
                 activeEffects,
                 GameType.byName(tag.getString("GameType")),
                 tag.getInt("SelectedSlot"),
-                tag.getCompound("Abilities")
+                tag.getCompound("Abilities"),
+                tag.getCompound("Attachments")
         );
     }
 
@@ -205,6 +218,8 @@ public class PlayerSnapshot {
 
         player.getAbilities().loadSaveData(abilitiesTag);
 
+        restoreAttachments(player, attachmentsTag);
+
         resyncAdvancements(player, server);
 
         player.clearFire();
@@ -217,6 +232,31 @@ public class PlayerSnapshot {
                 experienceProgress, totalExperience, experienceLevel
         ));
         player.onUpdateAbilities();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void restoreAttachments(ServerPlayer player, CompoundTag attachmentsTag) {
+        try {
+            Field attachmentsField = AttachmentHolder.class.getDeclaredField("attachments");
+            attachmentsField.setAccessible(true);
+            attachmentsField.set(player, null);
+
+            if (!attachmentsTag.isEmpty()) {
+                Method deserialize = AttachmentHolder.class.getDeclaredMethod(
+                        "deserializeAttachments", HolderLookup.Provider.class, CompoundTag.class);
+                deserialize.setAccessible(true);
+                deserialize.invoke(player, player.registryAccess(), attachmentsTag);
+            }
+
+            Map<AttachmentType<?>, Object> restored = (Map<AttachmentType<?>, Object>) attachmentsField.get(player);
+            if (restored != null) {
+                for (AttachmentType<?> type : restored.keySet()) {
+                    player.syncData(type);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to restore data attachments for {} on rollback", player.getGameProfile().getName(), e);
+        }
     }
 
     @SuppressWarnings("unchecked")

@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "minecraft:writable_book" },
+    { "item": "hahueuh:memories_of_the_world" }
+  ],
+  "result": {
+    "count": 1,
+    "id": "hahueuh:book_of_wisdom"
+  }
+}

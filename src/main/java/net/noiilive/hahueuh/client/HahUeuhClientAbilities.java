@@ -13,6 +13,10 @@ import net.noiilive.hahueuh.network.LittleKingImplantPayload;
 import net.noiilive.hahueuh.network.MaterialPhaseTogglePayload;
 import net.noiilive.hahueuh.network.AllyTrackerActivatePayload;
 import net.noiilive.hahueuh.network.BaseShiftTogglePayload;
+import net.noiilive.hahueuh.network.BookOfWisdomTogglePayload;
+import net.noiilive.hahueuh.network.MentalOverloadActivatePayload;
+import net.noiilive.hahueuh.network.VisionOfDangerTogglePayload;
+import net.noiilive.hahueuh.network.VisionOfLifeTogglePayload;
 import net.noiilive.hahueuh.network.ObjectFreezeActivatePayload;
 import net.noiilive.hahueuh.network.SecondShiftTogglePayload;
 import net.noiilive.hahueuh.network.SlothVariant;
@@ -140,6 +144,34 @@ public final class HahUeuhClientAbilities {
                 .shortLabel(() -> "SH2")
                 .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.CORLEONIS)
                 .onActivate(ctx -> PacketDistributor.sendToServer(SecondShiftTogglePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.BOOK_OF_WISDOM_ABILITY, HahUeuhAbilities.GREED_AUTHORITY)
+                .translationKey("hahueuh.ability.book_of_wisdom")
+                .shortLabel(() -> "BOW")
+                .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.ECHIDNA)
+                .onActivate(ctx -> PacketDistributor.sendToServer(BookOfWisdomTogglePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.MENTAL_OVERLOAD_ABILITY, HahUeuhAbilities.GREED_AUTHORITY)
+                .translationKey("hahueuh.ability.mental_overload")
+                .shortLabel(() -> "MO")
+                .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.ECHIDNA)
+                .onActivate(ctx -> PacketDistributor.sendToServer(MentalOverloadActivatePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.VISION_OF_DANGER_ABILITY, HahUeuhAbilities.GREED_AUTHORITY)
+                .translationKey("hahueuh.ability.vision_of_danger")
+                .shortLabel(() -> "VOD")
+                .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.ECHIDNA)
+                .onActivate(ctx -> PacketDistributor.sendToServer(VisionOfDangerTogglePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.VISION_OF_LIFE_ABILITY, HahUeuhAbilities.GREED_AUTHORITY)
+                .translationKey("hahueuh.ability.vision_of_life")
+                .shortLabel(() -> "VOL")
+                .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.ECHIDNA)
+                .onActivate(ctx -> PacketDistributor.sendToServer(VisionOfLifeTogglePayload.INSTANCE))
                 .build());
     }
 }

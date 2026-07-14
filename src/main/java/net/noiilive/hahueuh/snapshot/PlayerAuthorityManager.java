@@ -1,7 +1,9 @@
 package net.noiilive.hahueuh.snapshot;
 
+import net.noiilive.hahueuh.ConfigMain;
 import net.noiilive.hahueuh.network.GreedVariant;
 import net.noiilive.hahueuh.network.SlothVariant;
+import net.noiilive.hahueuh.network.WitchFactorAuthority;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -17,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +34,11 @@ public class PlayerAuthorityManager {
     private static final String SLOTH_VARIANT_FILE_NAME = "hahueuh_sloth_variant.json";
     private static final String GREED_FILE_NAME = "hahueuh_greed_authority.json";
     private static final String GREED_VARIANT_FILE_NAME = "hahueuh_greed_variant.json";
+    private static final String WITCH_FACTOR_SLOTH_FILE_NAME = "hahueuh_witch_factor_sloth.json";
+    private static final String WITCH_FACTOR_GREED_FILE_NAME = "hahueuh_witch_factor_greed.json";
+    private static final String SAGE_CANDIDATE_FILE_NAME = "hahueuh_sage_candidate.json";
+
+    private static final Random RANDOM = new Random();
 
     private final Map<UUID, Boolean> returnByDeath = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> domain = new ConcurrentHashMap<>();
@@ -38,12 +46,18 @@ public class PlayerAuthorityManager {
     private final Map<UUID, SlothVariant> slothVariant = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> greed = new ConcurrentHashMap<>();
     private final Map<UUID, GreedVariant> greedVariant = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> witchFactorSloth = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> witchFactorGreed = new ConcurrentHashMap<>();
+    private final Map<UUID, Boolean> sageCandidate = new ConcurrentHashMap<>();
     private Path filePath;
     private Path domainFilePath;
     private Path slothFilePath;
     private Path slothVariantFilePath;
     private Path greedFilePath;
     private Path greedVariantFilePath;
+    private Path witchFactorSlothFilePath;
+    private Path witchFactorGreedFilePath;
+    private Path sageCandidateFilePath;
 
     public void load(MinecraftServer server) {
         returnByDeath.clear();
@@ -52,6 +66,9 @@ public class PlayerAuthorityManager {
         slothVariant.clear();
         greed.clear();
         greedVariant.clear();
+        witchFactorSloth.clear();
+        witchFactorGreed.clear();
+        sageCandidate.clear();
         Path root = server.getWorldPath(LevelResource.ROOT);
         filePath = root.resolve(FILE_NAME);
         domainFilePath = root.resolve(DOMAIN_FILE_NAME);
@@ -59,10 +76,16 @@ public class PlayerAuthorityManager {
         slothVariantFilePath = root.resolve(SLOTH_VARIANT_FILE_NAME);
         greedFilePath = root.resolve(GREED_FILE_NAME);
         greedVariantFilePath = root.resolve(GREED_VARIANT_FILE_NAME);
+        witchFactorSlothFilePath = root.resolve(WITCH_FACTOR_SLOTH_FILE_NAME);
+        witchFactorGreedFilePath = root.resolve(WITCH_FACTOR_GREED_FILE_NAME);
+        sageCandidateFilePath = root.resolve(SAGE_CANDIDATE_FILE_NAME);
         loadInto(filePath, returnByDeath);
         loadInto(domainFilePath, domain);
         loadInto(slothFilePath, sloth);
         loadInto(greedFilePath, greed);
+        loadInto(witchFactorSlothFilePath, witchFactorSloth);
+        loadInto(witchFactorGreedFilePath, witchFactorGreed);
+        loadInto(sageCandidateFilePath, sageCandidate);
         loadVariants(slothVariantFilePath, slothVariant, SlothVariant::byId, v -> v.id);
         loadVariants(greedVariantFilePath, greedVariant, GreedVariant::byId, v -> v.id);
     }
@@ -128,6 +151,36 @@ public class PlayerAuthorityManager {
         }
     }
 
+    private static java.util.List<UUID> currentHolders(Map<UUID, Boolean> authorityMap) {
+        java.util.List<UUID> holders = new java.util.ArrayList<>();
+        authorityMap.forEach((uuid, has) -> { if (Boolean.TRUE.equals(has)) holders.add(uuid); });
+        return holders;
+    }
+
+    public java.util.List<UUID> holdersOfReturnByDeath() {
+        return currentHolders(returnByDeath);
+    }
+
+    public java.util.List<UUID> holdersOfDomain() {
+        return currentHolders(domain);
+    }
+
+    public java.util.List<UUID> holdersOfSloth() {
+        return currentHolders(sloth);
+    }
+
+    public java.util.List<UUID> holdersOfGreed() {
+        return currentHolders(greed);
+    }
+
+    public java.util.List<UUID> holdersOfWitchFactorSloth() {
+        return currentHolders(witchFactorSloth);
+    }
+
+    public java.util.List<UUID> holdersOfWitchFactorGreed() {
+        return currentHolders(witchFactorGreed);
+    }
+
     public boolean canReturnByDeath(UUID uuid) {
         return returnByDeath.getOrDefault(uuid, false);
     }
@@ -180,5 +233,49 @@ public class PlayerAuthorityManager {
     public void setGreedVariant(UUID uuid, GreedVariant variant) {
         greedVariant.put(uuid, variant);
         saveVariants(greedVariantFilePath, greedVariant, v -> v.id);
+    }
+
+    public boolean hasWitchFactorSloth(UUID uuid) {
+        return witchFactorSloth.getOrDefault(uuid, false);
+    }
+
+    public void setWitchFactorSloth(UUID uuid, boolean value) {
+        witchFactorSloth.put(uuid, value);
+        saveMap(witchFactorSlothFilePath, witchFactorSloth);
+    }
+
+    public boolean hasWitchFactorGreed(UUID uuid) {
+        return witchFactorGreed.getOrDefault(uuid, false);
+    }
+
+    public void setWitchFactorGreed(UUID uuid, boolean value) {
+        witchFactorGreed.put(uuid, value);
+        saveMap(witchFactorGreedFilePath, witchFactorGreed);
+    }
+
+    public boolean hasAnyWitchFactor(UUID uuid) {
+        return hasWitchFactorSloth(uuid) || hasWitchFactorGreed(uuid);
+    }
+
+    public boolean hasOtherWitchFactor(UUID uuid, WitchFactorAuthority sin) {
+        return switch (sin) {
+            case SLOTH -> hasWitchFactorGreed(uuid);
+            case GREED -> hasWitchFactorSloth(uuid);
+            case NONE -> hasAnyWitchFactor(uuid);
+        };
+    }
+
+    public boolean isSageCandidate(UUID uuid) {
+        return sageCandidate.getOrDefault(uuid, false);
+    }
+    public void setSageCandidate(UUID uuid, boolean value) {
+        sageCandidate.put(uuid, value);
+        saveMap(sageCandidateFilePath, sageCandidate);
+    }
+
+    public void ensureSageCandidateRolled(UUID uuid) {
+        if (sageCandidate.containsKey(uuid)) return;
+        boolean rolled = RANDOM.nextDouble() * 100.0 < ConfigMain.SAGE_CANDIDATE_CHANCE.get();
+        setSageCandidate(uuid, rolled);
     }
 }

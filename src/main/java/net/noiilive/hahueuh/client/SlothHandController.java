@@ -165,13 +165,6 @@ final class SlothHandController {
         if (serverActive && !wasServerActive) {
             sessionIsSummon = wantsSummon || cancelingActiveSummon;
         }
-        if (wasServerActive && !serverActive && !player.isCreative()) {
-            if (sessionIsSummon) {
-                AbilityCooldowns.startCooldown(HahUeuhAbilities.SLOTH_COOLDOWN_KEY, ConfigSloth.SLOTH_COOLDOWN_SECONDS.getAsInt());
-            } else {
-                AbilityCooldowns.startCooldown(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY, ConfigSloth.QUICK_ACTION_COOLDOWN_SECONDS.getAsInt());
-            }
-        }
         wasServerActive = serverActive;
 
         UnseenHandState.setActive(held);
@@ -198,12 +191,13 @@ final class SlothHandController {
         float distance = (float) UnseenHandState.liveDistance();
         HandMode mode = UnseenHandState.mode();
         boolean mobility = UnseenHandState.isMobility();
+        boolean quickSession = active && !sessionIsSummon;
         handSyncCounter++;
         boolean changed = active != lastSentHandActive || mode != lastSentHandMode || mobility != lastSentMobility
                 || Math.abs(distance - lastSentHandDistance) > 0.05f;
         boolean periodic = active && (handSyncCounter % 2 == 0);
         if ((changed || periodic) && mc.getConnection() != null) {
-            PacketDistributor.sendToServer(new UnseenHandPayload(active, distance, mode.ordinal(), mobility));
+            PacketDistributor.sendToServer(new UnseenHandPayload(active, distance, mode.ordinal(), mobility, quickSession));
             lastSentHandActive = active;
             lastSentHandDistance = distance;
             lastSentHandMode = mode;

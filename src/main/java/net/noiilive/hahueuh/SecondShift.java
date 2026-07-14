@@ -105,6 +105,31 @@ public final class SecondShift {
         }
     }
 
+    public Set<UUID> captureActive() {
+        return new HashSet<>(active);
+    }
+
+    public void restoreActiveOnRollback(Set<UUID> activeAtSnapshot) {
+        if (server == null) return;
+        for (ServerPlayer king : server.getPlayerList().getPlayers()) {
+            UUID uuid = king.getUUID();
+            boolean want = activeAtSnapshot.contains(uuid);
+            if (want == active.contains(uuid)) continue;
+            if (want) {
+                active.add(uuid);
+                PacketDistributor.sendToPlayer(king, new SecondShiftStatePayload(true));
+            } else {
+                active.remove(uuid);
+                PacketDistributor.sendToPlayer(king, new SecondShiftStatePayload(false));
+            }
+        }
+        boolean changed = false;
+        for (UUID uuid : activeAtSnapshot) {
+            if (server.getPlayerList().getPlayer(uuid) == null) changed |= persistedActive.add(uuid);
+        }
+        if (changed) savePersisted();
+    }
+
     private UUID findSharingKing(UUID entityUuid) {
         if (server == null || active.isEmpty()) return null;
         for (UUID kingUuid : active) {
@@ -148,8 +173,6 @@ public final class SecondShift {
 
                 LivingEntity participant = participants.get(entry.getKey());
                 if (participant == null) {
-                    // Weighted but not loaded — an unloaded mob ally (online players are always loaded).
-                    // Pull its chunk in on demand and apply its share once it resolves (see applyToMob).
                     HahUeuh.ALLY_TRACKER.applyToMob(entry.getKey(), mob -> applyShareGuarded(mob, share));
                     continue;
                 }
@@ -260,7 +283,6 @@ public final class SecondShift {
 
                 LivingEntity participant = participants.get(entry.getKey());
                 if (participant == null) {
-                    // Unloaded mob ally — pull its chunk in on demand and apply once it resolves.
                     HahUeuh.ALLY_TRACKER.applyToMob(entry.getKey(), mob -> applyEffectGuarded(mob, shared));
                     continue;
                 }
@@ -304,9 +326,9 @@ public final class SecondShift {
         if (server == null || king.isCreative()) return;
         int cooldownSeconds = ConfigGreed.BASE_SHIFT_COOLDOWN_SECONDS.getAsInt();
         if (cooldownSeconds <= 0) return;
-        cooldownUntilTick.put(king.getUUID(), server.getTickCount() + cooldownSeconds * 20);
+        cooldownUntilTick.put(king.getUUID(), server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20));
         PacketDistributor.sendToPlayer(king,
-                new AbilityCooldownPayload(HahUeuhAbilities.SECOND_SHIFT_ABILITY, cooldownSeconds * 20));
+                new AbilityCooldownPayload(HahUeuhAbilities.SECOND_SHIFT_ABILITY, HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20)));
     }
 
     private int cooldownRemainingTicks(UUID uuid) {

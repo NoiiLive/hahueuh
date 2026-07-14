@@ -35,6 +35,10 @@ public final class HahUeuhAbilities {
     public static final ResourceLocation ALLY_TRACKER_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "ally_tracker");
     public static final ResourceLocation BASE_SHIFT_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "base_shift");
     public static final ResourceLocation SECOND_SHIFT_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "second_shift");
+    public static final ResourceLocation BOOK_OF_WISDOM_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "book_of_wisdom");
+    public static final ResourceLocation MENTAL_OVERLOAD_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "mental_overload");
+    public static final ResourceLocation VISION_OF_DANGER_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "vision_of_danger");
+    public static final ResourceLocation VISION_OF_LIFE_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "vision_of_life");
 
     @SubscribeEvent
     static void onRegisterAuthorities(RegisterAuthoritiesEvent event) {

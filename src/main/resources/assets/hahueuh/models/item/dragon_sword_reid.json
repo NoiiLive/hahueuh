@@ -1,0 +1,12 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "hahueuh:item/dragonswordreid_16x"
+  },
+  "overrides": [
+    {"predicate": {"hahueuh:sheathed": 0, "hahueuh:blocking": 0}, "model": "hahueuh:item/dragon_sword_reid_drawn"},
+    {"predicate": {"hahueuh:sheathed": 0, "hahueuh:blocking": 1}, "model": "hahueuh:item/dragon_sword_reid_drawn_blocking"},
+    {"predicate": {"hahueuh:sheathed": 1, "hahueuh:blocking": 0}, "model": "hahueuh:item/dragon_sword_reid_sheathed"},
+    {"predicate": {"hahueuh:sheathed": 1, "hahueuh:blocking": 1}, "model": "hahueuh:item/dragon_sword_reid_sheathed_blocking"}
+  ]
+}

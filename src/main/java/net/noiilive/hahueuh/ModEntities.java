@@ -20,4 +20,11 @@ public final class ModEntities {
                     .updateInterval(5)
                     .noSave()
                     .build("frozen_object_projectile"));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<WitchFactorEntity>> WITCH_FACTOR =
+            ENTITY_TYPES.register("witch_factor", () -> EntityType.Builder
+                    .<WitchFactorEntity>of(WitchFactorEntity::new, MobCategory.MISC)
+                    .sized(0.4f, 0.4f)
+                    .clientTrackingRange(8)
+                    .build("witch_factor"));
 }

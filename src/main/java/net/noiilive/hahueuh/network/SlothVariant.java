@@ -3,6 +3,7 @@ package net.noiilive.hahueuh.network;
 import net.noiilive.hahueuh.ConfigSloth;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -42,6 +43,24 @@ public enum SlothVariant {
     public static SlothVariant byOrdinal(int ordinal) {
         SlothVariant[] values = values();
         return (ordinal >= 0 && ordinal < values.length) ? values[ordinal] : INVISIBLE_PROVIDENCE;
+    }
+
+    public static SlothVariant randomWeighted(RandomSource random) {
+        int wInvisible = Math.max(0, ConfigSloth.VARIANT_WEIGHT_INVISIBLE_PROVIDENCE.getAsInt());
+        int wUnseen = Math.max(0, ConfigSloth.VARIANT_WEIGHT_UNSEEN_HANDS.getAsInt());
+        int wSekhmet = Math.max(0, ConfigSloth.VARIANT_WEIGHT_SEKHMET.getAsInt());
+        int total = wInvisible + wUnseen + wSekhmet;
+        if (total <= 0) return INVISIBLE_PROVIDENCE;
+
+        int roll = random.nextInt(total);
+        if (roll < wInvisible) return INVISIBLE_PROVIDENCE;
+        if (roll < wInvisible + wUnseen) return UNSEEN_HANDS;
+        return SEKHMET;
+    }
+
+    public static SlothVariant randomForMob(RandomSource random) {
+        SlothVariant[] values = values();
+        return values[random.nextInt(values.length)];
     }
 
     public static float sekhmetSize(UUID uuid) {

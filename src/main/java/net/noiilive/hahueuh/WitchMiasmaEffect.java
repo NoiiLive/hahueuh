@@ -22,7 +22,8 @@ public final class WitchMiasmaEffect extends MobEffect {
 
     @Override
     public boolean applyEffectTick(LivingEntity entity, int amplifier) {
-        if (entity instanceof ServerPlayer player && !player.isCreative() && !player.isSpectator()) {
+        if (entity instanceof ServerPlayer player && !player.isCreative() && !player.isSpectator()
+                && !HahUeuh.SNAPSHOT_MANAGER.isTargetingSuppressed()) {
             double radius = BASE_RADIUS + amplifier * RADIUS_PER_LEVEL;
             AABB box = player.getBoundingBox().inflate(radius);
             List<Mob> mobs = player.level().getEntitiesOfClass(Mob.class, box,

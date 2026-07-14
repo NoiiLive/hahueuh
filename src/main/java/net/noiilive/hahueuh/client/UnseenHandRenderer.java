@@ -21,7 +21,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -78,8 +78,8 @@ public final class UnseenHandRenderer {
 
     private record VisualKey(UUID owner, int slot) {}
 
-    private record Instance(Player owner, double target, int modeId, float scale, float speedMul, boolean mirror,
-                            HandShape shape, boolean mobility) {}
+    private record Instance(int entityId, LivingEntity owner, double target, int modeId, float scale, float speedMul,
+                            boolean mirror, HandShape shape, boolean mobility) {}
 
     private record HandShape(float heightFrac, float lateral, float back, float distBias, float tipSplay,
                              float tipRise, float bowConst, float bowPerDist, float controlBack, float stepPhase,
@@ -133,13 +133,14 @@ public final class UnseenHandRenderer {
 
         Map<VisualKey, Instance> instances = new HashMap<>();
         for (Map.Entry<UUID, RemoteUnseenHands.Remote> e : RemoteUnseenHands.active().entrySet()) {
-            Player owner = e.getKey().equals(self) ? mc.player : mc.level.getPlayerByUUID(e.getKey());
+            RemoteUnseenHands.Remote r = e.getValue();
+            LivingEntity owner = e.getKey().equals(self) ? mc.player : resolveLiving(mc.level, r.entityId());
             if (owner == null) continue;
-            addInstances(instances, e.getKey(), owner, e.getValue().distance(),
-                    e.getValue().mode(), SlothVariant.byOrdinal(e.getValue().variant()), e.getValue().mobility(), 1f);
+            addInstances(instances, e.getKey(), r.entityId(), owner, r.distance(),
+                    r.mode(), SlothVariant.byOrdinal(r.variant()), r.mobility(), 1f);
         }
         if (UnseenHandState.isActive()) {
-            addInstances(instances, self, mc.player, (float) UnseenHandState.maxRange(),
+            addInstances(instances, self, mc.player.getId(), mc.player, (float) UnseenHandState.maxRange(),
                     UnseenHandState.mode().ordinal(), ClientSlothState.slothVariant(), UnseenHandState.isMobility(),
                     UnseenHandState.speedBoost());
         }
@@ -159,11 +160,20 @@ public final class UnseenHandRenderer {
         boolean anyDrawn = false;
         for (VisualKey key : all) {
             Instance inst = instances.get(key);
-            Player owner = key.owner().equals(self) ? mc.player : mc.level.getPlayerByUUID(key.owner());
+            HandVisual visual = VISUALS.computeIfAbsent(key, k -> new HandVisual());
+
+            LivingEntity owner;
+            if (inst != null) {
+                visual.ownerEntityId = inst.entityId();
+                owner = inst.owner();
+            } else if (key.owner().equals(self)) {
+                owner = mc.player;
+            } else {
+                owner = resolveLiving(mc.level, visual.ownerEntityId);
+            }
             boolean isHeld = inst != null && owner != null;
             double target = isHeld ? inst.target() : 0.0;
 
-            HandVisual visual = VISUALS.computeIfAbsent(key, k -> new HandVisual());
             if (isHeld) {
                 visual.scale = inst.scale();
                 visual.shape = inst.shape();
@@ -193,7 +203,12 @@ public final class UnseenHandRenderer {
         if (anyDrawn) buffers.endBatch(renderType);
     }
 
-    private static void addInstances(Map<VisualKey, Instance> out, UUID id, Player owner,
+    private static LivingEntity resolveLiving(net.minecraft.client.multiplayer.ClientLevel level, int entityId) {
+        if (level == null || entityId < 0) return null;
+        return level.getEntity(entityId) instanceof LivingEntity le ? le : null;
+    }
+
+    private static void addInstances(Map<VisualKey, Instance> out, UUID id, int entityId, LivingEntity owner,
                                      float target, int modeId, SlothVariant variant, boolean mobility, float extraSpeedMul) {
         if (variant == SlothVariant.SEKHMET) {
             float size = SlothVariant.sekhmetSize(id);
@@ -201,9 +216,9 @@ public final class UnseenHandRenderer {
             float splay = SlothVariant.sekhmetHandSplay(size);
             float back = (float) SlothVariant.SEKHMET_BACK_OFFSET;
             float height = (float) SlothVariant.SEKHMET_SHOULDER_HEIGHT;
-            out.put(new VisualKey(id, 0), new Instance(owner, target, modeId, size, SEKHMET_SPEED_MUL * extraSpeedMul, true,
+            out.put(new VisualKey(id, 0), new Instance(entityId, owner, target, modeId, size, SEKHMET_SPEED_MUL * extraSpeedMul, true,
                     new HandShape(height, -off, back, 0f, -splay, 0f, -(splay + 0.3f * size), -0.2f, 0f, 0f, 0), false));
-            out.put(new VisualKey(id, 1), new Instance(owner, target, modeId, size, SEKHMET_SPEED_MUL * extraSpeedMul, false,
+            out.put(new VisualKey(id, 1), new Instance(entityId, owner, target, modeId, size, SEKHMET_SPEED_MUL * extraSpeedMul, false,
                     new HandShape(height, off, back, 0f, splay, 0f, splay + 0.3f * size, 0.2f, 0f, 0f, 0), false));
         } else if (variant == SlothVariant.UNSEEN_HANDS) {
             int count = SlothVariant.unseenHandCount(id);
@@ -221,10 +236,10 @@ public final class UnseenHandRenderer {
                         SlothVariant.unseenHandStepPhase(id, i, count),
                         i);
                 boolean mirror = SlothVariant.unseenHandSide(i) < 0f;
-                out.put(new VisualKey(id, i), new Instance(owner, target, modeId, 1f, extraSpeedMul, mirror, shape, mobility));
+                out.put(new VisualKey(id, i), new Instance(entityId, owner, target, modeId, 1f, extraSpeedMul, mirror, shape, mobility));
             }
         } else {
-            out.put(new VisualKey(id, 0), new Instance(owner, target, modeId, 1f, extraSpeedMul, false, HandShape.CHEST, false));
+            out.put(new VisualKey(id, 0), new Instance(entityId, owner, target, modeId, 1f, extraSpeedMul, false, HandShape.CHEST, false));
         }
     }
 
@@ -250,6 +265,7 @@ public final class UnseenHandRenderer {
         boolean mirror = false;
         boolean mobility = false;
         int grabbedEntityId = -1;
+        int ownerEntityId = -1;
         private Vec3 smoothedTip;
         double targetDistance;
 
@@ -268,7 +284,7 @@ public final class UnseenHandRenderer {
             }
         }
 
-        void render(Player owner, int modeId, float dt, float pt, PoseStack pose, Vec3 camPos,
+        void render(LivingEntity owner, int modeId, float dt, float pt, PoseStack pose, Vec3 camPos,
                     UnseenHandHierModel hand, ModelPart tendril, VertexConsumer main, OutlineBufferSource outlineSource,
                     net.minecraft.client.multiplayer.ClientLevel level) {
             float targetYaw = owner.getViewYRot(pt);

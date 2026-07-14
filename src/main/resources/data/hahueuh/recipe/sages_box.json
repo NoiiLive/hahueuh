@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BBB",
+    "BEB",
+    "BBB"
+  ],
+  "key": {
+    "B": { "item": "minecraft:bone" },
+    "E": { "item": "minecraft:ender_chest" }
+  },
+  "result": {
+    "count": 1,
+    "id": "hahueuh:sages_box"
+  }
+}

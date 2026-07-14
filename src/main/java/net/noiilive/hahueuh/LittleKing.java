@@ -102,6 +102,11 @@ public final class LittleKing {
             return;
         }
 
+        if (king.isShiftKeyDown()) {
+            releaseImplant(king);
+            return;
+        }
+
         int remainingCooldown = king.isCreative() ? 0 : cooldownRemainingTicks(uuid);
         if (remainingCooldown > 0) {
             int seconds = (int) Math.ceil(remainingCooldown / 20.0);
@@ -131,9 +136,9 @@ public final class LittleKing {
         if (!king.isCreative()) {
             int cooldownSeconds = ConfigGreed.LITTLE_KING_COOLDOWN_SECONDS.getAsInt();
             if (cooldownSeconds > 0) {
-                cooldownUntilTick.put(uuid, server.getTickCount() + cooldownSeconds * 20);
+                cooldownUntilTick.put(uuid, server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20));
                 PacketDistributor.sendToPlayer(king,
-                        new AbilityCooldownPayload(HahUeuhAbilities.LITTLE_KING_ABILITY, cooldownSeconds * 20));
+                        new AbilityCooldownPayload(HahUeuhAbilities.LITTLE_KING_ABILITY, HahUeuh.GREED_COMPAT.scaleCooldownTicks(uuid, cooldownSeconds * 20)));
             }
         }
 
@@ -143,9 +148,54 @@ public final class LittleKing {
         sendHighlight(king);
     }
 
+    private void releaseImplant(ServerPlayer king) {
+        UUID uuid = king.getUUID();
+        List<UUID> list = implants.get(uuid);
+        LivingEntity target = raycastLiving(king, e -> true);
+
+        if (list == null || list.isEmpty() || target == null || !list.remove(target.getUUID())) {
+            king.displayClientMessage(Component.translatable("hahueuh.message.little_king_no_heart_here")
+                    .withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
+        reapplyHeartDebt(king);
+        save();
+        king.level().playSound(null, king.blockPosition(), SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 0.3f, 0.7f);
+        king.displayClientMessage(Component.translatable("hahueuh.message.little_king_heart_returned", list.size())
+                .withStyle(ChatFormatting.GOLD), true);
+        sendHighlight(king);
+    }
+
+    public boolean crushImplant(Entity target) {
+        if (server == null || implants.isEmpty()) return false;
+        UUID targetUuid = target.getUUID();
+        boolean any = false;
+        for (Map.Entry<UUID, List<UUID>> entry : implants.entrySet()) {
+            List<UUID> list = entry.getValue();
+            int before = list.size();
+            list.removeIf(targetUuid::equals);
+            if (list.size() == before) continue;
+            any = true;
+            ServerPlayer king = server.getPlayerList().getPlayer(entry.getKey());
+            if (king != null) {
+                reapplyHeartDebt(king);
+                king.displayClientMessage(Component.translatable("hahueuh.message.little_king_heart_crushed", list.size())
+                        .withStyle(ChatFormatting.RED), true);
+                sendHighlight(king);
+            }
+        }
+        if (any) save();
+        return any;
+    }
+
     private LivingEntity raycastTarget(ServerPlayer king) {
+        return raycastLiving(king, LittleKing::isImplantable);
+    }
+
+    private LivingEntity raycastLiving(ServerPlayer king, java.util.function.Predicate<Entity> filter) {
         HitResult hit = ProjectileUtil.getHitResultOnViewVector(king,
-                e -> e != king && e.isAlive() && !e.isSpectator() && isImplantable(e), IMPLANT_REACH);
+                e -> e != king && e.isAlive() && !e.isSpectator() && e instanceof LivingEntity && filter.test(e), IMPLANT_REACH);
         if (hit instanceof EntityHitResult ehr && ehr.getEntity() instanceof LivingEntity living) {
             return living;
         }
