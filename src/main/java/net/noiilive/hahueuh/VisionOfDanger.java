@@ -90,6 +90,8 @@ public final class VisionOfDanger {
 
         active.add(uuid);
         PacketDistributor.sendToPlayer(player, new VisionOfDangerStatePayload(true));
+        player.level().playSound(null, player.blockPosition(), ModSounds.VISION_OF_DANGER.get(),
+                net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
         player.displayClientMessage(Component.translatable("hahueuh.message.vision_of_danger_activated")
                 .withStyle(ChatFormatting.LIGHT_PURPLE), true);
     }
@@ -106,6 +108,8 @@ public final class VisionOfDanger {
         active.add(uuid);
         activatedViaBookOfWisdom.add(uuid);
         PacketDistributor.sendToPlayer(player, new VisionOfDangerStatePayload(true));
+        player.level().playSound(null, player.blockPosition(), ModSounds.VISION_OF_DANGER.get(),
+                net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
         player.displayClientMessage(Component.translatable("hahueuh.message.vision_of_danger_activated")
                 .withStyle(ChatFormatting.LIGHT_PURPLE), true);
     }
@@ -134,6 +138,8 @@ public final class VisionOfDanger {
         }
         lastSentHighlight.remove(uuid);
         PacketDistributor.sendToPlayer(player, new VisionOfDangerHighlightPayload(List.of()));
+        player.level().playSound(null, player.blockPosition(), ModSounds.MEMORIES_TOGGLE_OFF.get(),
+                net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
         player.displayClientMessage(Component.translatable(messageKey).withStyle(messageColor), true);
     }
 

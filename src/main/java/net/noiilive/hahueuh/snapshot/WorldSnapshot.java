@@ -45,6 +45,7 @@ public record WorldSnapshot(
         Set<UUID> baseShiftActive,
         Set<UUID> secondShiftActive,
         Set<UUID> visionOfDangerActive,
-        Set<UUID> visionOfLifeActive
+        Set<UUID> visionOfLifeActive,
+        Map<UUID, Integer> fingerGrantCooldownRemaining
 ) {
 }

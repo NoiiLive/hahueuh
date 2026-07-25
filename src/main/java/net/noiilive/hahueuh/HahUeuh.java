@@ -40,18 +40,24 @@ import net.noiilive.hahueuh.network.SecondShiftStatePayload;
 import net.noiilive.hahueuh.network.SecondShiftTogglePayload;
 import net.noiilive.hahueuh.network.AbilitySlotsUpdatePayload;
 import net.noiilive.hahueuh.network.ActivateAuthorityPayload;
+import net.noiilive.hahueuh.network.ClientDualWieldState;
 import net.noiilive.hahueuh.network.ClientGreedState;
 import net.noiilive.hahueuh.network.ClientSlothState;
+import net.noiilive.hahueuh.network.ClientFingerState;
 import net.noiilive.hahueuh.network.DeathFadePayload;
 import net.noiilive.hahueuh.network.DeathFadeState;
 import net.noiilive.hahueuh.network.DomainRenderState;
+import net.noiilive.hahueuh.network.AttackStrengthSyncPayload;
 import net.noiilive.hahueuh.network.DomainStatePayload;
 import net.noiilive.hahueuh.network.ClientLionsHeartState;
 import net.noiilive.hahueuh.network.ClientLittleKingState;
+import net.noiilive.hahueuh.network.ClientFingerHighlightState;
 import net.noiilive.hahueuh.network.LionsHeartStatePayload;
 import net.noiilive.hahueuh.network.LionsHeartTogglePayload;
 import net.noiilive.hahueuh.network.LittleKingHighlightPayload;
+import net.noiilive.hahueuh.network.FingerHighlightPayload;
 import net.noiilive.hahueuh.network.LittleKingImplantPayload;
+import net.noiilive.hahueuh.network.FingerGrantPayload;
 import net.noiilive.hahueuh.network.ClientMaterialPhaseState;
 import net.noiilive.hahueuh.network.MaterialPhaseStatePayload;
 import net.noiilive.hahueuh.network.MaterialPhaseTogglePayload;
@@ -92,6 +98,7 @@ public class HahUeuh {
     public static final SlothCompatibility SLOTH_COMPAT = new SlothCompatibility();
     public static final GreedCompatibility GREED_COMPAT = new GreedCompatibility();
     public static final LionsHeart LIONS_HEART = new LionsHeart();
+    public static final DualWield DUAL_WIELD = new DualWield();
     public static final LittleKing LITTLE_KING = new LittleKing();
     public static final MaterialPhase MATERIAL_PHASE = new MaterialPhase();
     public static final ObjectFreeze OBJECT_FREEZE = new ObjectFreeze();
@@ -99,20 +106,32 @@ public class HahUeuh {
     public static final BaseShift BASE_SHIFT = new BaseShift();
     public static final SecondShift SECOND_SHIFT = new SecondShift();
     public static final PlayerAllies PLAYER_ALLIES = new PlayerAllies();
+    public static final FingerGrant FINGER_GRANT = new FingerGrant();
     public static final BookOfWisdom BOOK_OF_WISDOM = new BookOfWisdom();
     public static final BookOfWisdomCopy BOOK_OF_WISDOM_COPY = new BookOfWisdomCopy();
     public static final MentalOverload MENTAL_OVERLOAD = new MentalOverload();
     public static final VisionOfDanger VISION_OF_DANGER = new VisionOfDanger();
     public static final VisionOfLife VISION_OF_LIFE = new VisionOfLife();
     public static final FootprintTracker FOOTPRINT_TRACKER = new FootprintTracker();
+    public static final BookOfLifeAging BOOK_OF_LIFE_AGING = new BookOfLifeAging();
+    public static final ManaCharging MANA_CHARGING = new ManaCharging();
+    public static final MiasmaTick MIASMA_TICK = new MiasmaTick();
+    public static final MiasmaContamination MIASMA_CONTAMINATION = new MiasmaContamination();
     public static final VisionOfInformation VISION_OF_INFO = new VisionOfInformation();
     public static final EfficientEnchanting EFFICIENT_ENCHANTING = new EfficientEnchanting();
     public static final MobWitchFactor MOB_WITCH_FACTOR = new MobWitchFactor();
     public static final MobAbilityAI MOB_ABILITY_AI = new MobAbilityAI();
     public static final DragonSwordReid DRAGON_SWORD_REID = new DragonSwordReid();
+    public static final net.noiilive.hahueuh.magic.SpellCasting SPELL_CASTING = new net.noiilive.hahueuh.magic.SpellCasting();
+    public static final CrippledState CRIPPLED_STATE = new CrippledState();
+    public static final BodilyDisconnect BODILY_DISCONNECT = new BodilyDisconnect();
+    public static final PocketDimension POCKET_DIMENSION = new PocketDimension();
+    public static final Crystallize CRYSTALLIZE = new Crystallize();
+    public static final ElMinyaChain EL_MINYA_CHAIN = new ElMinyaChain();
 
     public HahUeuh(IEventBus modEventBus, ModContainer modContainer) {
         BLOCKS.register(modEventBus);
+        ModBlocks.BLOCK_ENTITIES.register(modEventBus);
         ITEMS.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
         ModSounds.SOUND_EVENTS.register(modEventBus);
@@ -130,6 +149,7 @@ public class HahUeuh {
         NeoForge.EVENT_BUS.register(SLOTH_COMPAT);
         NeoForge.EVENT_BUS.register(GREED_COMPAT);
         NeoForge.EVENT_BUS.register(LIONS_HEART);
+        NeoForge.EVENT_BUS.register(DUAL_WIELD);
         NeoForge.EVENT_BUS.register(LITTLE_KING);
         NeoForge.EVENT_BUS.register(MATERIAL_PHASE);
         NeoForge.EVENT_BUS.register(OBJECT_FREEZE);
@@ -137,6 +157,7 @@ public class HahUeuh {
         NeoForge.EVENT_BUS.register(BASE_SHIFT);
         NeoForge.EVENT_BUS.register(SECOND_SHIFT);
         NeoForge.EVENT_BUS.register(PLAYER_ALLIES);
+        NeoForge.EVENT_BUS.register(FINGER_GRANT);
         NeoForge.EVENT_BUS.register(BOOK_OF_WISDOM);
         NeoForge.EVENT_BUS.register(BOOK_OF_WISDOM_COPY);
         NeoForge.EVENT_BUS.register(MENTAL_OVERLOAD);
@@ -144,6 +165,16 @@ public class HahUeuh {
         NeoForge.EVENT_BUS.register(VISION_OF_LIFE);
         NeoForge.EVENT_BUS.register(FOOTPRINT_TRACKER);
         NeoForge.EVENT_BUS.register(VISION_OF_INFO);
+        NeoForge.EVENT_BUS.register(BOOK_OF_LIFE_AGING);
+        NeoForge.EVENT_BUS.register(MANA_CHARGING);
+        NeoForge.EVENT_BUS.register(MIASMA_TICK);
+        NeoForge.EVENT_BUS.register(MIASMA_CONTAMINATION);
+        NeoForge.EVENT_BUS.register(SPELL_CASTING);
+        NeoForge.EVENT_BUS.register(CRIPPLED_STATE);
+        NeoForge.EVENT_BUS.register(BODILY_DISCONNECT);
+        NeoForge.EVENT_BUS.register(POCKET_DIMENSION);
+        NeoForge.EVENT_BUS.register(CRYSTALLIZE);
+        NeoForge.EVENT_BUS.register(EL_MINYA_CHAIN);
 
         NeoForge.EVENT_BUS.addListener(RezeroCommand::register);
 
@@ -160,13 +191,17 @@ public class HahUeuh {
             AuthorityRegistry.freeze();
             modEventBus.post(new RegisterAbilitiesEvent());
             AbilityRegistry.freeze();
+            net.noiilive.hahueuh.magic.Spells.registerAll();
         });
 
-        modContainer.registerConfig(ModConfig.Type.SERVER, ConfigMain.SPEC, "hahueuh/server/main.toml");
+        modContainer.registerConfig(ModConfig.Type.SERVER, ConfigMain.SPEC, "hahueuh/server/authority_main.toml");
         modContainer.registerConfig(ModConfig.Type.SERVER, ConfigReturnByDeath.SPEC, "hahueuh/server/return_by_death.toml");
         modContainer.registerConfig(ModConfig.Type.SERVER, ConfigDomain.SPEC, "hahueuh/server/domain.toml");
         modContainer.registerConfig(ModConfig.Type.SERVER, ConfigSloth.SPEC, "hahueuh/server/sloth.toml");
         modContainer.registerConfig(ModConfig.Type.SERVER, ConfigGreed.SPEC, "hahueuh/server/greed.toml");
+        modContainer.registerConfig(ModConfig.Type.SERVER, ConfigPlayer.SPEC, "hahueuh/server/player_main.toml");
+        modContainer.registerConfig(ModConfig.Type.SERVER, ConfigMagic.SPEC, "hahueuh/server/magic_main.toml");
+        modContainer.registerConfig(ModConfig.Type.SERVER, ConfigMagicYin.SPEC, "hahueuh/server/magic_yin.toml");
     }
 
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
@@ -183,15 +218,25 @@ public class HahUeuh {
                 (payload, context) -> DomainRenderState.update(payload));
 
         registrar.playToClient(
+                AttackStrengthSyncPayload.TYPE,
+                AttackStrengthSyncPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    ClientDualWieldState.setOffhandNext(payload.offhandNext());
+                    DualWield.applyIndicator(context.player(), payload.scale());
+                });
+
+        registrar.playToClient(
                 PlayerAuthoritiesPayload.TYPE,
                 PlayerAuthoritiesPayload.STREAM_CODEC,
                 (payload, context) -> {
                     OwnershipState.setAuthorityOwned(HahUeuhAbilities.RETURN_BY_DEATH_AUTHORITY, payload.returnByDeath());
                     OwnershipState.setAuthorityOwned(HahUeuhAbilities.DOMAIN_AUTHORITY, payload.domain());
                     OwnershipState.setAuthorityOwned(HahUeuhAbilities.SLOTH_AUTHORITY, payload.sloth());
-                    ClientSlothState.update(payload.sloth(), payload.slothVariant());
+                    ClientSlothState.update(payload.sloth(), payload.slothVariant(), payload.slothHandCount());
                     OwnershipState.setAuthorityOwned(HahUeuhAbilities.GREED_AUTHORITY, payload.greed());
                     ClientGreedState.update(payload.greed(), payload.greedVariant());
+                    ClientFingerState.setHands(payload.fingerHandCount());
+                    OwnershipState.setAuthorityOwned(HahUeuhAbilities.FINGER_AUTHORITY, payload.fingerHandCount() > 0);
                 });
 
         registrar.playToClient(
@@ -205,6 +250,15 @@ public class HahUeuh {
                 (payload, context) -> {
                     if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
                         SNAPSHOT_MANAGER.toggleDomain(sp, payload.aggressor());
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.ReturnByDeathActivatePayload.TYPE,
+                net.noiilive.hahueuh.network.ReturnByDeathActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        SNAPSHOT_MANAGER.handleReturnByDeathActivate(sp);
                     }
                 });
 
@@ -228,6 +282,69 @@ public class HahUeuh {
                 (payload, context) -> {
                     if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
                         LITTLE_KING.implant(sp);
+                        Miasma.addSingleUse(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                FingerGrantPayload.TYPE,
+                FingerGrantPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        FINGER_GRANT.grant(sp);
+                        Miasma.addSingleUse(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.ManaChargePayload.TYPE,
+                net.noiilive.hahueuh.network.ManaChargePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        MANA_CHARGING.setCharging(sp, payload.charging());
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.CastSpellPayload.TYPE,
+                net.noiilive.hahueuh.network.CastSpellPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        net.noiilive.hahueuh.magic.SpellRegistry.get(payload.spellId())
+                                .ifPresent(spell -> SPELL_CASTING.tryStart(sp, spell));
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.AlShamakActivatePayload.TYPE,
+                net.noiilive.hahueuh.network.AlShamakActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        if (payload.mode() == net.noiilive.hahueuh.network.AlShamakActivatePayload.RELEASE) {
+                            SPELL_CASTING.releaseStoredSpell(sp, payload.targetEntityId());
+                        } else if (payload.mode() == net.noiilive.hahueuh.network.AlShamakActivatePayload.DISCARD) {
+                            SPELL_CASTING.discardAlShamak(sp);
+                        } else {
+                            SPELL_CASTING.beginBanish(sp, payload.targetEntityId());
+                        }
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.StoreSpellPayload.TYPE,
+                net.noiilive.hahueuh.network.StoreSpellPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        SPELL_CASTING.beginStoreCast(sp, payload.spellId());
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.UlMinyaActivatePayload.TYPE,
+                net.noiilive.hahueuh.network.UlMinyaActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        SPELL_CASTING.beginUlMinya(sp, payload.targetEntityId());
                     }
                 });
 
@@ -235,6 +352,11 @@ public class HahUeuh {
                 LittleKingHighlightPayload.TYPE,
                 LittleKingHighlightPayload.STREAM_CODEC,
                 (payload, context) -> ClientLittleKingState.set(payload.entityIds()));
+
+        registrar.playToClient(
+                FingerHighlightPayload.TYPE,
+                FingerHighlightPayload.STREAM_CODEC,
+                (payload, context) -> ClientFingerHighlightState.set(payload.entityIds()));
 
         registrar.playToServer(
                 MaterialPhaseTogglePayload.TYPE,
@@ -256,6 +378,7 @@ public class HahUeuh {
                 (payload, context) -> {
                     if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
                         OBJECT_FREEZE.activate(sp);
+                        Miasma.addSingleUse(sp);
                     }
                 });
 
@@ -265,6 +388,7 @@ public class HahUeuh {
                 (payload, context) -> {
                     if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
                         ALLY_TRACKER.activate(sp);
+                        Miasma.addSingleUse(sp);
                     }
                 });
 
@@ -315,6 +439,7 @@ public class HahUeuh {
                 (payload, context) -> {
                     if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
                         MENTAL_OVERLOAD.activate(sp);
+                        Miasma.addSingleUse(sp);
                     }
                 });
 
@@ -420,7 +545,7 @@ public class HahUeuh {
         registrar.playToClient(
                 UnseenHandSyncPayload.TYPE,
                 UnseenHandSyncPayload.STREAM_CODEC,
-                (payload, context) -> RemoteUnseenHands.update(payload.owner(), payload.entityId(), payload.active(), payload.distance(), payload.mode(), payload.variant(), payload.mobility()));
+                (payload, context) -> RemoteUnseenHands.update(payload.owner(), payload.entityId(), payload.active(), payload.distance(), payload.mode(), payload.variant(), payload.mobility(), payload.count()));
 
         registrar.playToClient(
                 UnseenHandGrabSyncPayload.TYPE,

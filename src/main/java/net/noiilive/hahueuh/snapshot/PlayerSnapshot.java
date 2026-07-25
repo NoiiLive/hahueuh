@@ -1,15 +1,21 @@
 package net.noiilive.hahueuh.snapshot;
 
 import com.mojang.logging.LogUtils;
+import net.noiilive.hahueuh.ModEffects;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.ListTag;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEquipmentPacket;
 import net.minecraft.network.protocol.game.ClientboundSetExperiencePacket;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeMap;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -28,6 +34,7 @@ import org.slf4j.Logger;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -90,6 +97,7 @@ public class PlayerSnapshot {
 
         List<CompoundTag> activeEffects = new ArrayList<>();
         for (MobEffectInstance effect : player.getActiveEffects()) {
+            if (effect.is(ModEffects.WITCH_SCENT)) continue;
             Tag tag = effect.save();
             if (tag instanceof CompoundTag ct) {
                 activeEffects.add(ct);
@@ -185,6 +193,9 @@ public class PlayerSnapshot {
         if (targetLevel == null) {
             targetLevel = player.serverLevel();
         }
+        if (player.isPassenger()) {
+            player.stopRiding();
+        }
         player.teleportTo(targetLevel, x, y, z, Set.of(), yRot, xRot);
 
         player.setHealth(health);
@@ -206,12 +217,17 @@ public class PlayerSnapshot {
         player.experienceProgress = experienceProgress;
         player.totalExperience = totalExperience;
 
+        MobEffectInstance keptWitchScent = player.getEffect(ModEffects.WITCH_SCENT);
+
         player.removeAllEffects();
         for (CompoundTag effectTag : activeEffects) {
             MobEffectInstance effect = MobEffectInstance.load(effectTag);
             if (effect != null) {
                 player.addEffect(effect);
             }
+        }
+        if (keptWitchScent != null) {
+            player.addEffect(keptWitchScent);
         }
 
         player.setGameMode(gameType);
@@ -232,6 +248,11 @@ public class PlayerSnapshot {
                 experienceProgress, totalExperience, experienceLevel
         ));
         player.onUpdateAbilities();
+
+        if (net.noiilive.hahueuh.compat.PlayerReviveCompat.isBleeding(player)) {
+            net.noiilive.hahueuh.compat.PlayerReviveCompat.forceRevive(player);
+            player.setHealth(health);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -239,6 +260,16 @@ public class PlayerSnapshot {
         try {
             Field attachmentsField = AttachmentHolder.class.getDeclaredField("attachments");
             attachmentsField.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Map<AttachmentType<?>, Object> live = (Map<AttachmentType<?>, Object>) attachmentsField.get(player);
+            Map<AttachmentType<?>, Object> runtimeKept = new HashMap<>();
+            if (live != null) {
+                for (Map.Entry<AttachmentType<?>, Object> entry : live.entrySet()) {
+                    if (!isSerializableAttachment(entry.getKey())) runtimeKept.put(entry.getKey(), entry.getValue());
+                }
+            }
+
             attachmentsField.set(player, null);
 
             if (!attachmentsTag.isEmpty()) {
@@ -246,6 +277,11 @@ public class PlayerSnapshot {
                         "deserializeAttachments", HolderLookup.Provider.class, CompoundTag.class);
                 deserialize.setAccessible(true);
                 deserialize.invoke(player, player.registryAccess(), attachmentsTag);
+            }
+
+            for (Map.Entry<AttachmentType<?>, Object> entry : runtimeKept.entrySet()) {
+                @SuppressWarnings({"unchecked", "rawtypes"})
+                Object ignored = player.setData((AttachmentType) entry.getKey(), entry.getValue());
             }
 
             Map<AttachmentType<?>, Object> restored = (Map<AttachmentType<?>, Object>) attachmentsField.get(player);
@@ -259,17 +295,54 @@ public class PlayerSnapshot {
         }
     }
 
+    private static Field attachmentSerializerField;
+
+    private static boolean isSerializableAttachment(AttachmentType<?> type) {
+        try {
+            if (attachmentSerializerField == null) {
+                attachmentSerializerField = AttachmentType.class.getDeclaredField("serializer");
+                attachmentSerializerField.setAccessible(true);
+            }
+            return attachmentSerializerField.get(type) != null;
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static void forceEquipmentAttributeRefresh(ServerPlayer player) {
         try {
-            for (String fieldName : new String[]{"lastHandItemStacks", "lastArmorItemStacks"}) {
-                Field field = LivingEntity.class.getDeclaredField(fieldName);
+            AttributeMap attributes = player.getAttributes();
+
+            Map<String, EquipmentSlot[]> trackers = Map.of(
+                    "lastHandItemStacks", new EquipmentSlot[]{EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND},
+                    "lastArmorItemStacks", new EquipmentSlot[]{
+                            EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD});
+            for (Map.Entry<String, EquipmentSlot[]> entry : trackers.entrySet()) {
+                Field field = LivingEntity.class.getDeclaredField(entry.getKey());
                 field.setAccessible(true);
                 NonNullList<ItemStack> tracked = (NonNullList<ItemStack>) field.get(player);
+                EquipmentSlot[] slots = entry.getValue();
                 for (int i = 0; i < tracked.size(); i++) {
+                    ItemStack stale = tracked.get(i);
+                    if (!stale.isEmpty() && i < slots.length) {
+                        stale.forEachModifier(slots[i], (attribute, modifier) -> {
+                            AttributeInstance instance = attributes.getInstance(attribute);
+                            if (instance != null) {
+                                instance.removeModifier(modifier.id());
+                            }
+                        });
+                    }
                     tracked.set(i, ItemStack.EMPTY);
                 }
             }
+
+            List<Pair<EquipmentSlot, ItemStack>> currentEquipment = new ArrayList<>();
+            for (EquipmentSlot slot : EquipmentSlot.values()) {
+                currentEquipment.add(Pair.of(slot, player.getItemBySlot(slot).copy()));
+            }
+            player.serverLevel().getChunkSource().broadcastAndSend(
+                    player, new ClientboundSetEquipmentPacket(player.getId(), currentEquipment));
         } catch (Exception e) {
             LOGGER.warn("Failed to refresh equipment attributes for {} on rollback",
                     player.getGameProfile().getName(), e);

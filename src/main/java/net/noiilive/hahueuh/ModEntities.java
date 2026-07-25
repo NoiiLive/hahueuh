@@ -27,4 +27,33 @@ public final class ModEntities {
                     .sized(0.4f, 0.4f)
                     .clientTrackingRange(8)
                     .build("witch_factor"));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<MinyaSpikeEntity>> MINYA_SPIKE =
+            ENTITY_TYPES.register("minya_spike", () -> EntityType.Builder
+                    .<MinyaSpikeEntity>of(MinyaSpikeEntity::new, MobCategory.MISC)
+                    .sized(0.3f, 0.3f)
+                    .clientTrackingRange(8)
+                    .updateInterval(1)
+                    .noSave()
+                    .build("minya_spike"));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<BlackHoleEntity>> BLACK_HOLE =
+            ENTITY_TYPES.register("black_hole", () -> EntityType.Builder
+                    .<BlackHoleEntity>of(BlackHoleEntity::new, MobCategory.MISC)
+                    .sized(1.0f, 1.0f)
+                    .clientTrackingRange(16)
+                    .updateInterval(2)
+                    .noSave()
+                    .fireImmune()
+                    .build("black_hole"));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<MinyaRingEntity>> MINYA_RING =
+            ENTITY_TYPES.register("minya_ring", () -> EntityType.Builder
+                    .<MinyaRingEntity>of(MinyaRingEntity::new, MobCategory.MISC)
+                    .sized(1.0f, 0.1f)
+                    .clientTrackingRange(16)
+                    .updateInterval(2)
+                    .noSave()
+                    .fireImmune()
+                    .build("minya_ring"));
 }

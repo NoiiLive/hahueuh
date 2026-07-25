@@ -2,9 +2,16 @@ package net.noiilive.hahueuh;
 
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.MaceItem;
 import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.Tiers;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.item.component.Unbreakable;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -30,7 +37,7 @@ public final class ModItems {
     public static final DeferredItem<DragonSwordReidItem> DRAGON_SWORD_REID = ITEMS.registerItem(
             "dragon_sword_reid",
             props -> new DragonSwordReidItem(Tiers.NETHERITE, props),
-            new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant()
+            new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON).fireResistant()
                     .component(DataComponents.UNBREAKABLE, new Unbreakable(false))
                     .attributes(DragonSwordReidItem.attributesFor(true))
                     .component(DataComponents.LORE, new ItemLore(List.of(
@@ -39,6 +46,54 @@ public final class ModItems {
                             Component.translatable("item.hahueuh.dragon_sword_reid.lore_3"),
                             Component.translatable("item.hahueuh.dragon_sword_reid.lore_4"),
                             Component.translatable("item.hahueuh.dragon_sword_reid.lore_5")))));
+
+    public static final DeferredItem<SwordItem> BOWEL_HUNTER_KUKRI = ITEMS.registerItem(
+            "bowel_hunter_kukri",
+            props -> new SwordItem(Tiers.IRON, props),
+            new Item.Properties().rarity(Rarity.EPIC).attributes(swordAttributes(8.0, 2.0)));
+
+    public static final DeferredItem<SwordItem> BOWEL_HUNTER_WHITE_BLADE = ITEMS.registerItem(
+            "bowel_hunter_white_blade",
+            props -> new SwordItem(Tiers.DIAMOND, props),
+            new Item.Properties().rarity(Rarity.EPIC).attributes(swordAttributes(16.0, 1.2)));
+
+    public static final DeferredItem<SwordItem> BOWEL_HUNTER_BLACK_BLADE = ITEMS.registerItem(
+            "bowel_hunter_black_blade",
+            props -> new SwordItem(Tiers.DIAMOND, props),
+            new Item.Properties().rarity(Rarity.EPIC).attributes(swordAttributes(16.0, 1.2)));
+
+    public static final DeferredItem<MaceItem> SPIKED_CLUB = ITEMS.registerItem(
+            "spiked_club",
+            MaceItem::new,
+            new Item.Properties().durability(500).attributes(spikedClubAttributes())
+                    .component(DataComponents.TOOL, MaceItem.createToolProperties()));
+
+    private static ItemAttributeModifiers spikedClubAttributes() {
+        return ItemAttributeModifiers.builder()
+                .add(Attributes.ATTACK_DAMAGE,
+                        new AttributeModifier(Item.BASE_ATTACK_DAMAGE_ID, 24.0 - 1.0, AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .add(Attributes.ATTACK_SPEED,
+                        new AttributeModifier(Item.BASE_ATTACK_SPEED_ID, 0.6 - 4.0, AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .add(Attributes.ATTACK_KNOCKBACK,
+                        new AttributeModifier(
+                                ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "spiked_club_knockback"),
+                                4.0, AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .build();
+    }
+
+    private static ItemAttributeModifiers swordAttributes(double totalDamage, double totalSpeed) {
+        return ItemAttributeModifiers.builder()
+                .add(Attributes.ATTACK_DAMAGE,
+                        new AttributeModifier(Item.BASE_ATTACK_DAMAGE_ID, totalDamage - 1.0, AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .add(Attributes.ATTACK_SPEED,
+                        new AttributeModifier(Item.BASE_ATTACK_SPEED_ID, totalSpeed - 4.0, AttributeModifier.Operation.ADD_VALUE),
+                        EquipmentSlotGroup.MAINHAND)
+                .build();
+    }
 
     private ModItems() {}
 }

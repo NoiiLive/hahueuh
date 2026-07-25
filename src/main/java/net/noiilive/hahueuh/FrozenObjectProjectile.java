@@ -15,7 +15,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 
@@ -123,11 +122,6 @@ public final class FrozenObjectProjectile extends ThrowableProjectile implements
         target.hurt(this.damageSources().thrown(this, this.getOwner()), DAMAGE);
     }
 
-    @Override
-    protected void onHitBlock(BlockHitResult result) {
-        super.onHitBlock(result);
-        this.discard();
-    }
 
     @Override
     public boolean canUsePortal(boolean allowVehicles) {

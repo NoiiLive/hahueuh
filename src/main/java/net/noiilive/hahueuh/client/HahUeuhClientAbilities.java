@@ -7,6 +7,8 @@ import net.noiilive.hahueuh.api.event.RegisterAbilitiesEvent;
 import net.noiilive.hahueuh.network.ActivateAuthorityPayload;
 import net.noiilive.hahueuh.network.ClientGreedState;
 import net.noiilive.hahueuh.network.ClientSlothState;
+import net.noiilive.hahueuh.network.ClientFingerState;
+import net.noiilive.hahueuh.network.FingerGrantPayload;
 import net.noiilive.hahueuh.network.GreedVariant;
 import net.noiilive.hahueuh.network.LionsHeartTogglePayload;
 import net.noiilive.hahueuh.network.LittleKingImplantPayload;
@@ -20,7 +22,6 @@ import net.noiilive.hahueuh.network.VisionOfLifeTogglePayload;
 import net.noiilive.hahueuh.network.ObjectFreezeActivatePayload;
 import net.noiilive.hahueuh.network.SecondShiftTogglePayload;
 import net.noiilive.hahueuh.network.SlothVariant;
-import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -47,20 +48,15 @@ public final class HahUeuhClientAbilities {
         event.register(Ability.builder(HahUeuhAbilities.RETURN_BY_DEATH_ABILITY, HahUeuhAbilities.RETURN_BY_DEATH_AUTHORITY)
                 .translationKey("hahueuh.ability.return")
                 .shortLabel(() -> "RET")
-                .onActivate(ctx -> {
-                    Minecraft mc = Minecraft.getInstance();
-                    if (mc.getConnection() != null) {
-                        mc.getConnection().sendChat("I can use Return by Death");
-                    }
-                })
+                .onActivate(ctx -> PacketDistributor.sendToServer(
+                        net.noiilive.hahueuh.network.ReturnByDeathActivatePayload.INSTANCE))
                 .build());
 
         event.register(Ability.builder(HahUeuhAbilities.SUMMON_HAND_ABILITY, HahUeuhAbilities.SLOTH_AUTHORITY)
-                .holdBased()
                 .translationKey("hahueuh.ability.summon_hand")
                 .shortLabel(() -> "SUM")
                 .sharesCooldownWith(HahUeuhAbilities.SLOTH_COOLDOWN_KEY)
-                .onHeldTick(new SummonHandBehavior())
+                .onActivate(new SummonHandBehavior())
                 .build());
 
         event.register(Ability.builder(HahUeuhAbilities.QUICK_STRIKE_ABILITY, HahUeuhAbilities.SLOTH_AUTHORITY)
@@ -94,6 +90,48 @@ public final class HahUeuhClientAbilities {
                 .shortLabel(() -> "PRO")
                 .sharesCooldownWith(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY)
                 .availableWhen(() -> ClientSlothState.slothVariant() == SlothVariant.UNSEEN_HANDS)
+                .onHeldTick(new SelfPropelBehavior())
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.FINGER_GRANT_ABILITY, HahUeuhAbilities.SLOTH_AUTHORITY)
+                .translationKey("hahueuh.ability.finger_grant")
+                .shortLabel(() -> "FIN")
+                .availableWhen(() -> ClientSlothState.slothVariant() == SlothVariant.UNSEEN_HANDS)
+                .onActivate(ctx -> PacketDistributor.sendToServer(FingerGrantPayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.FINGER_SUMMON_HAND_ABILITY, HahUeuhAbilities.FINGER_AUTHORITY)
+                .translationKey("hahueuh.ability.finger_summon_hand")
+                .shortLabel(() -> "SUM")
+                .sharesCooldownWith(HahUeuhAbilities.SLOTH_COOLDOWN_KEY)
+                .availableWhen(ClientFingerState::hasHands)
+                .onActivate(new SummonHandBehavior())
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.FINGER_QUICK_STRIKE_ABILITY, HahUeuhAbilities.FINGER_AUTHORITY)
+                .holdBased()
+                .translationKey("hahueuh.ability.finger_quick_strike")
+                .shortLabel(() -> "QST")
+                .sharesCooldownWith(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY)
+                .availableWhen(ClientFingerState::hasHands)
+                .onHeldTick(new QuickStrikeBehavior())
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.FINGER_QUICK_GRASP_ABILITY, HahUeuhAbilities.FINGER_AUTHORITY)
+                .holdBased()
+                .translationKey("hahueuh.ability.finger_quick_grasp")
+                .shortLabel(() -> "QGR")
+                .sharesCooldownWith(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY)
+                .availableWhen(ClientFingerState::hasHands)
+                .onHeldTick(new QuickGraspBehavior())
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.FINGER_SELF_PROPEL_ABILITY, HahUeuhAbilities.FINGER_AUTHORITY)
+                .holdBased()
+                .translationKey("hahueuh.ability.finger_self_propel")
+                .shortLabel(() -> "PRO")
+                .sharesCooldownWith(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY)
+                .availableWhen(() -> ClientFingerState.hands() >= 2)
                 .onHeldTick(new SelfPropelBehavior())
                 .build());
 
@@ -172,6 +210,60 @@ public final class HahUeuhClientAbilities {
                 .shortLabel(() -> "VOL")
                 .availableWhen(() -> ClientGreedState.greedVariant() == GreedVariant.ECHIDNA)
                 .onActivate(ctx -> PacketDistributor.sendToServer(VisionOfLifeTogglePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.SHAMAK_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.shamak")
+                .shortLabel(() -> "SHA")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(
+                        new net.noiilive.hahueuh.network.CastSpellPayload(net.noiilive.hahueuh.magic.Spells.SHAMAK)))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.EL_SHAMAK_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.el_shamak")
+                .shortLabel(() -> "ELS")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(
+                        new net.noiilive.hahueuh.network.CastSpellPayload(net.noiilive.hahueuh.magic.Spells.EL_SHAMAK)))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.UL_SHAMAK_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.ul_shamak")
+                .shortLabel(() -> "ULS")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(
+                        new net.noiilive.hahueuh.network.CastSpellPayload(net.noiilive.hahueuh.magic.Spells.UL_SHAMAK)))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.AL_SHAMAK_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.al_shamak")
+                .shortLabel(() -> "ALS")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> net.noiilive.hahueuh.client.AlShamakClient.activate())
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.MINYA_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.minya")
+                .shortLabel(() -> "MIN")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(
+                        new net.noiilive.hahueuh.network.CastSpellPayload(net.noiilive.hahueuh.magic.Spells.MINYA)))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.EL_MINYA_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.el_minya")
+                .shortLabel(() -> "ELM")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(
+                        new net.noiilive.hahueuh.network.CastSpellPayload(net.noiilive.hahueuh.magic.Spells.EL_MINYA)))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.UL_MINYA_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.ul_minya")
+                .shortLabel(() -> "ULM")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> net.noiilive.hahueuh.client.UlMinyaClient.activate())
                 .build());
     }
 }

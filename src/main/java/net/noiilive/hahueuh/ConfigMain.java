@@ -75,13 +75,21 @@ public final class ConfigMain {
 
     public static final ModConfigSpec.ConfigValue<List<? extends String>> MOB_WITCH_FACTOR_ELIGIBLE_ENTITIES = BUILDER
             .comment("Entity types eligible to seek/hold a Witch Factor when mobWitchFactorsEnabled is true.",
-                     "Use full entity type ids, e.g. \"minecraft:villager\". Default: zombies, villagers and",
+                     "Use full entity type ids, e.g. \"minecraft:villager\". Default: Common night mobs, villagers and",
                      "illagers.")
             .defineList("mobWitchFactorEligibleEntities",
                     List.of("minecraft:villager", "minecraft:zombie_villager", "minecraft:pillager", "minecraft:vindicator",
-                            "minecraft:evoker", "minecraft:zombie"),
+                            "minecraft:evoker", "minecraft:zombie", "minecraft:husk", "minecraft:drowned",
+                            "minecraft:skeleton", "minecraft:stray", "minecraft:creeper", "minecraft:enderman"),
                     () -> "minecraft:villager",
                     obj -> obj instanceof String s && ResourceLocation.tryParse(s) != null);
+
+    public static final ModConfigSpec.BooleanValue MOB_WITCH_FACTOR_FORCE_WHITELIST_ENABLED = BUILDER
+            .comment("If false (default, current behavior), forcing a Witch Factor onto an entity — e.g. via",
+                     "the Sage's Box — works on any mob, regardless of mobWitchFactorEligibleEntities. If true,",
+                     "forcing is restricted to that same list: a mob not on it is rejected, same as if it had",
+                     "never been eligible to hold one at all. Never restricts players. Default: false.")
+            .define("mobWitchFactorForceWhitelistEnabled", false);
 
     public static final ModConfigSpec.BooleanValue MOB_WITCH_FACTOR_NATURAL_SPAWN_ENABLED = BUILDER
             .comment("If true (and mobWitchFactorsEnabled is also true), an eligible mob may naturally spawn",
@@ -95,7 +103,7 @@ public final class ConfigMain {
                      "spawns; if one is free, that one is used; if both are free, one is picked at random.",
                      "When singleAuthorityHolder is off, this check is skipped and either sin may be picked",
                      "regardless of who else already holds one. Default: 3. Range: 0 to 100.")
-            .defineInRange("mobWitchFactorNaturalSpawnChance", 3.0, 0.0, 100.0);
+            .defineInRange("mobWitchFactorNaturalSpawnChance", 1.0, 0.0, 100.0);
 
     public static final ModConfigSpec.IntValue MOB_WITCH_FACTOR_NATURAL_SPAWN_MIN_Y = BUILDER
             .comment("An eligible mob only rolls to naturally spawn with a Witch Factor (see",
@@ -104,6 +112,16 @@ public final class ConfigMain {
                      "buried deep in a cave where nobody will ever realistically find it. Default: 63 (sea",
                      "level). Range: -64 to 320.")
             .defineInRange("mobWitchFactorNaturalSpawnMinY", 63, -64, 320);
+
+    public static final ModConfigSpec.IntValue MOB_SIN_RETALIATION_SECONDS = BUILDER
+            .comment("How long (in seconds) a normally-passive mob holding a sin (villager, animal, etc.)",
+                     "stays angry at whoever last hurt it. A hostile mob already targets and fights on its",
+                     "own, so this only affects mobs that otherwise never would: while angry, it targets the",
+                     "attacker — pursuing and meleeing like a hostile, and using its sin abilities against",
+                     "them — then calms back down once the timer lapses with no further hits. It never turns",
+                     "on its own owner or the player who granted it Unseen Hands. Set to 0 to disable, leaving",
+                     "passive sin-mobs docile as before. Default: 30. Range: 0 to 600.")
+            .defineInRange("mobSinRetaliationSeconds", 30, 0, 600);
 
     public static final ModConfigSpec.DoubleValue SAGE_CANDIDATE_CHANCE = BUILDER
             .comment("Percent chance a player is rolled as a Sage Candidate the first time they're ever seen",

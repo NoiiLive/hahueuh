@@ -23,5 +23,130 @@
     "sounds": [
       "hahueuh:lionsheart_deactivate"
     ]
+  },
+  "sloth_hand_summon": {
+    "sounds": [
+      "hahueuh:sloth_hand_summon"
+    ]
+  },
+  "sloth_hand_use": {
+    "sounds": [
+      "hahueuh:sloth_hand_use"
+    ]
+  },
+  "minya_summon": {
+    "sounds": [
+      "hahueuh:minya_summon"
+    ]
+  },
+  "minya_shoot": {
+    "sounds": [
+      "hahueuh:minya_shoot"
+    ]
+  },
+  "minya_explode": {
+    "sounds": [
+      "hahueuh:minya_explode"
+    ]
+  },
+  "unseen_hand_summon": {
+    "sounds": [
+      "hahueuh:unseen_hand_summon"
+    ]
+  },
+  "unseen_hand_use": {
+    "sounds": [
+      "hahueuh:unseen_hand_use"
+    ]
+  },
+  "invisible_providence_summon": {
+    "sounds": [
+      "hahueuh:invisible_providence_summon"
+    ]
+  },
+  "invisible_providence_use": {
+    "sounds": [
+      "hahueuh:invisible_providence_use"
+    ]
+  },
+  "sekhmet_summon": {
+    "sounds": [
+      "hahueuh:sekhmet_summon"
+    ]
+  },
+  "sekhmet_use": {
+    "sounds": [
+      "hahueuh:sekhmet_use"
+    ]
+  },
+  "material_freeze_air": {
+    "sounds": [
+      "hahueuh:material_freeze_air"
+    ]
+  },
+  "material_freeze_solid": {
+    "sounds": [
+      "hahueuh:material_freeze_solid"
+    ]
+  },
+  "vision_of_danger": {
+    "sounds": [
+      "hahueuh:vision_of_danger"
+    ]
+  },
+  "vision_of_life": {
+    "sounds": [
+      "hahueuh:vision_of_life"
+    ]
+  },
+  "mental_overload": {
+    "sounds": [
+      "hahueuh:mental_overload"
+    ]
+  },
+  "memories_toggle_off": {
+    "sounds": [
+      "hahueuh:memories_toggle_off"
+    ]
+  },
+  "shamak_use": {
+    "sounds": [
+      "hahueuh:shamak_use"
+    ]
+  },
+  "el_shamak_use": {
+    "sounds": [
+      "hahueuh:el_shamak_use"
+    ]
+  },
+  "blackhole_summon": {
+    "sounds": [
+      "hahueuh:blackhole_summon"
+    ]
+  },
+  "blackhole_explode": {
+    "sounds": [
+      "hahueuh:blackhole_explode"
+    ]
+  },
+  "al_shamak_use": {
+    "sounds": [
+      "hahueuh:al_shamak_use"
+    ]
+  },
+  "al_shamak_release": {
+    "sounds": [
+      "hahueuh:al_shamak_release"
+    ]
+  },
+  "domain_open": {
+    "sounds": [
+      "hahueuh:domain_open"
+    ]
+  },
+  "domain_close": {
+    "sounds": [
+      "hahueuh:domain_close"
+    ]
   }
 }

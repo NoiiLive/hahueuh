@@ -46,6 +46,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -145,9 +146,9 @@ public final class VisionOfInformation {
             CompoundTag entry = invList.getCompound(i);
             int slot = entry.getByte("Slot") & 0xFF;
             int idx;
-            if (slot < 36) idx = slot;                    // main
-            else if (slot >= 100 && slot <= 103) idx = 36 + (slot - 100); // armor
-            else if (slot == 150 || slot == 0xFFFFFF9A) idx = 40;         // offhand (-106)
+            if (slot < 36) idx = slot;
+            else if (slot >= 100 && slot <= 103) idx = 36 + (slot - 100);
+            else if (slot == 150 || slot == 0xFFFFFF9A) idx = 40;
             else continue;
             parseStack(entry).ifPresent(s -> inv[idx] = s);
         }
@@ -235,11 +236,9 @@ public final class VisionOfInformation {
     }
 
     private VisionInfoResultPayload lookUpEntity(String query) {
-        ResourceLocation id = ResourceLocation.tryParse(query.contains(":") ? query : "minecraft:" + query);
-        if (id == null) return VisionInfoResultPayload.notFound(query);
-        Optional<EntityType<?>> typeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(id);
-        if (typeOpt.isEmpty()) return VisionInfoResultPayload.notFound(query);
-        EntityType<?> type = typeOpt.get();
+        EntityType<?> type = resolveEntityType(query);
+        if (type == null) return VisionInfoResultPayload.notFound(query);
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(type);
 
         ServerLevel level = server.overworld();
         float maxHealth = 0;
@@ -262,6 +261,26 @@ public final class VisionOfInformation {
         String name = type.getDescription().getString();
         return VisionInfoResultPayload.ofEntity(query, new VisionInfoResultPayload.EntityData(
                 id.toString(), name, maxHealth, armor, drops, loadedCount));
+    }
+
+    @Nullable
+    private EntityType<?> resolveEntityType(String query) {
+        ResourceLocation id = ResourceLocation.tryParse(query.contains(":") ? query : "minecraft:" + query);
+        EntityType<?> byId = id == null ? null : BuiltInRegistries.ENTITY_TYPE.getOptional(id).orElse(null);
+        if (byId != null) return byId;
+
+        String normalizedQuery = normalizeEntityName(query);
+        if (normalizedQuery.isEmpty()) return null;
+        for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
+            if (normalizeEntityName(type.getDescription().getString()).equals(normalizedQuery)) {
+                return type;
+            }
+        }
+        return null;
+    }
+
+    private static String normalizeEntityName(String name) {
+        return name.toLowerCase(java.util.Locale.ROOT).replaceAll("[\\s_]+", "");
     }
 
     private int countLoaded(EntityType<?> type) {
@@ -349,7 +368,6 @@ public final class VisionOfInformation {
                 flattenEntries(child, out);
             }
         }
-        // Anything else (tag entries, dynamic entries, loot-table references) is skipped rather than guessed.
     }
 
     private float conditionChanceMultiplier(Field conditionsField, Object owner) throws IllegalAccessException {

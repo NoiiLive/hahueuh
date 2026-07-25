@@ -3,12 +3,14 @@ package net.noiilive.hahueuh.network;
 public final class ClientSlothState {
     private static volatile boolean canSloth;
     private static volatile SlothVariant slothVariant = SlothVariant.INVISIBLE_PROVIDENCE;
+    private static volatile int handCount;
 
     private ClientSlothState() {}
 
-    public static void update(boolean canSloth, int slothVariantId) {
+    public static void update(boolean canSloth, int slothVariantId, int handCount) {
         ClientSlothState.canSloth = canSloth;
         ClientSlothState.slothVariant = SlothVariant.byOrdinal(slothVariantId);
+        ClientSlothState.handCount = handCount;
     }
 
     public static boolean canSloth() {
@@ -17,5 +19,9 @@ public final class ClientSlothState {
 
     public static SlothVariant slothVariant() {
         return slothVariant;
+    }
+
+    public static int handCount() {
+        return handCount;
     }
 }

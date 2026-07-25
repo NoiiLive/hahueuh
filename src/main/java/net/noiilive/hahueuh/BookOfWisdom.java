@@ -15,7 +15,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.entity.LevelEntityGetter;
 import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -83,6 +82,8 @@ public final class BookOfWisdom {
             summoned.remove(uuid);
             savePersisted();
             startCooldown(player);
+            player.level().playSound(null, player.blockPosition(), ModSounds.MEMORIES_TOGGLE_OFF.get(),
+                    net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
             player.displayClientMessage(Component.translatable("hahueuh.message.book_of_wisdom_unsummoned")
                     .withStyle(ChatFormatting.LIGHT_PURPLE), true);
         } else {

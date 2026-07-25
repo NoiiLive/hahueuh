@@ -25,7 +25,7 @@ import net.minecraft.world.level.Level;
 public final class DragonSwordReidItem extends SwordItem {
     private static final double SHEATHED_DAMAGE = 10.0;
     private static final double UNSHEATHED_DAMAGE = 40.0;
-    private static final double ATTACK_SPEED = -2.4; // vanilla sword speed → 1.6 attacks/sec
+    private static final double ATTACK_SPEED = -3.0;
     private static final double SHEATHED_KNOCKBACK = 1.0;
     private static final double UNSHEATHED_KNOCKBACK = 3.0;
     private static final ResourceLocation KNOCKBACK_MODIFIER_ID =
@@ -66,7 +66,7 @@ public final class DragonSwordReidItem extends SwordItem {
         if (player.isShiftKeyDown()) {
             if (!level.isClientSide) {
                 if (isSheathed(stack)) {
-                    if (HahUeuh.DRAGON_SWORD_REID.canUnsheath(player)) {
+                    if (player.isCreative() || HahUeuh.DRAGON_SWORD_REID.canUnsheath(player)) {
                         setSheathed(stack, false);
                         level.playSound(null, player, SoundEvents.NETHERITE_BLOCK_HIT, SoundSource.PLAYERS, 0.9f, 1.4f);
                     } else {
@@ -111,6 +111,6 @@ public final class DragonSwordReidItem extends SwordItem {
 
     @Override
     public boolean isBarVisible(ItemStack stack) {
-        return false; // unbreakable — never show a durability bar
+        return false;
     }
 }

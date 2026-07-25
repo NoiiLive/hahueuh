@@ -5,7 +5,7 @@ import net.noiilive.hahueuh.api.Ability;
 import net.noiilive.hahueuh.api.AbilityCooldowns;
 import net.noiilive.hahueuh.api.AbilityContext;
 import net.noiilive.hahueuh.api.AbilityRegistry;
-import net.noiilive.hahueuh.client.gui.AbilityScreen;
+import net.noiilive.hahueuh.client.gui.BookOfLifeScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -34,9 +34,12 @@ public final class AbilityClient {
             "key.hahueuh.slot_3", GLFW.GLFW_KEY_V, "key.categories.hahueuh");
     public static final KeyMapping HIDE_HUD_KEY = new KeyMapping(
             "key.hahueuh.hide_hud", GLFW.GLFW_KEY_GRAVE_ACCENT, "key.categories.hahueuh");
+    public static final KeyMapping CHARGE_MANA_KEY = new KeyMapping(
+            "key.hahueuh.charge_mana", GLFW.GLFW_KEY_LEFT_ALT, "key.categories.hahueuh");
 
     private static final KeyMapping[] SLOT_KEYS = {SLOT_KEY_1, SLOT_KEY_2, SLOT_KEY_3};
     private static final boolean[] slotTapHandledThisHold = new boolean[SLOT_KEYS.length];
+    private static boolean wasChargingMana;
 
     @SubscribeEvent
     static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
@@ -46,6 +49,7 @@ public final class AbilityClient {
         event.register(SLOT_KEY_2);
         event.register(SLOT_KEY_3);
         event.register(HIDE_HUD_KEY);
+        event.register(CHARGE_MANA_KEY);
     }
 
     @SubscribeEvent
@@ -58,12 +62,21 @@ public final class AbilityClient {
         }
 
         while (OPEN_GUI_KEY.consumeClick()) {
-            if (mc.screen instanceof AbilityScreen) {
+            if (mc.screen instanceof net.noiilive.hahueuh.client.gui.BookPageScreen) {
                 mc.setScreen(null);
+                playPageTurn(mc);
             } else if (mc.screen == null) {
-                mc.setScreen(new AbilityScreen());
+                mc.setScreen(new BookOfLifeScreen());
+                playPageTurn(mc);
             }
         }
+        boolean chargingMana = CHARGE_MANA_KEY.isDown();
+        if (chargingMana != wasChargingMana) {
+            wasChargingMana = chargingMana;
+            net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                    new net.noiilive.hahueuh.network.ManaChargePayload(chargingMana));
+        }
+
         while (CYCLE_SLOTS_KEY.consumeClick()) AbilitySlots.advanceCycleGroup();
         while (HIDE_HUD_KEY.consumeClick()) AbilitySlots.toggleHudHidden();
 
@@ -115,6 +128,15 @@ public final class AbilityClient {
         net.noiilive.hahueuh.network.ClientLionsHeartState.updateFloor(
                 player.getY(), player.onGround(), onRealGround,
                 mc.options.keyJump.isDown(), mc.options.keyShift.isDown(), player.isUnderWater());
+    }
+
+    public static void resetChargeManaState() {
+        wasChargingMana = false;
+    }
+
+    private static void playPageTurn(Minecraft mc) {
+        mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                net.minecraft.sounds.SoundEvents.BOOK_PAGE_TURN, 1.0f));
     }
 
     @SubscribeEvent

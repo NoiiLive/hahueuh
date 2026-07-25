@@ -10,7 +10,6 @@ import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -122,7 +121,7 @@ public final class ObjectFreeze {
         }
         launches.put(target.getUUID(), new LaunchState(velocity, LAUNCH_DURATION_TICKS));
 
-        caster.level().playSound(null, caster.blockPosition(), SoundEvents.PLAYER_ATTACK_KNOCKBACK,
+        caster.level().playSound(null, caster.blockPosition(), ModSounds.MATERIAL_FREEZE_SOLID.get(),
                 SoundSource.PLAYERS, 1.0f, 0.8f);
     }
 
@@ -227,11 +226,12 @@ public final class ObjectFreeze {
 
     private void throwHeldItem(LivingEntity caster) {
         ItemStack held = caster.getMainHandItem();
-        boolean shotgun = !held.isEmpty() && caster instanceof Player p && p.isShiftKeyDown();
+        boolean wasEmpty = held.isEmpty();
+        boolean shotgun = !wasEmpty && caster instanceof Player p && p.isShiftKeyDown();
 
         int count;
         ItemStack visual;
-        if (held.isEmpty()) {
+        if (wasEmpty) {
             count = 1;
             visual = ItemStack.EMPTY;
         } else if (shotgun) {
@@ -249,6 +249,9 @@ public final class ObjectFreeze {
             FrozenObjectProjectile projectile = new FrozenObjectProjectile(caster.level(), caster, visual, inaccuracy);
             caster.level().addFreshEntity(projectile);
         }
+
+        var sound = wasEmpty ? ModSounds.MATERIAL_FREEZE_AIR.get() : ModSounds.MATERIAL_FREEZE_SOLID.get();
+        caster.level().playSound(null, caster.blockPosition(), sound, SoundSource.PLAYERS, 1.0f, 1.0f);
     }
 
     public void activateMob(Mob mob) {

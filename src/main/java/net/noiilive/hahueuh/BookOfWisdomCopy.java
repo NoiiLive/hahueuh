@@ -102,7 +102,7 @@ public final class BookOfWisdomCopy {
             switch (ability) {
                 case VISION_OF_LIFE -> HahUeuh.VISION_OF_LIFE.toggleViaBookOfWisdom(player);
                 case VISION_OF_DANGER -> HahUeuh.VISION_OF_DANGER.toggleViaBookOfWisdom(player);
-                case VISION_OF_INFORMATION -> { /* client-only GUI, nothing to do server-side */ }
+                case VISION_OF_INFORMATION -> {  }
             }
             return;
         }

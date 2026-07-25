@@ -2,10 +2,19 @@ package net.noiilive.hahueuh.snapshot;
 
 import net.noiilive.hahueuh.ConfigDomain;
 import net.noiilive.hahueuh.ConfigMain;
+import net.noiilive.hahueuh.compat.CreateRollbackCompat;
+import net.noiilive.hahueuh.compat.SableRollbackCompat;
 import net.noiilive.hahueuh.ConfigReturnByDeath;
 import net.noiilive.hahueuh.ConfigSloth;
 import net.noiilive.hahueuh.FootprintTracker;
+import net.noiilive.hahueuh.ChunkMana;
+import net.noiilive.hahueuh.ChunkMiasma;
 import net.noiilive.hahueuh.HahUeuh;
+import net.noiilive.hahueuh.Miasma;
+import net.noiilive.hahueuh.ModAttachments;
+import net.neoforged.neoforge.attachment.AttachmentHolder;
+import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.noiilive.hahueuh.ModEffects;
 import net.noiilive.hahueuh.ModEntities;
 import net.noiilive.hahueuh.ModGameRules;
@@ -45,6 +54,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockChangedAckPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
+import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.network.protocol.game.ClientboundLightUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.ResourceKey;
@@ -102,6 +112,7 @@ import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.storage.ServerLevelData;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.ServerChatEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -234,7 +245,8 @@ public class SnapshotManager {
         this.domainCooldownUntilTick.clear();
         this.slothCooldownUntilTick.clear();
         this.quickCooldownUntilTick.clear();
-        this.pendingMiasmaBump.clear();
+        this.pendingWitchScentBump.clear();
+        this.rbdPartialActivationTick.clear();
         this.unseenHands.clear();
         this.authorityManager.load(this.server);
         this.abilitySlotsManager.load(this.server);
@@ -344,6 +356,7 @@ public class SnapshotManager {
         List<FootprintTracker.FootprintEntry> footprints = new ArrayList<>();
         Map<UUID, Integer> slothCooldownRemaining = new HashMap<>();
         Map<UUID, Integer> quickActionCooldownRemaining = new HashMap<>();
+        Map<UUID, Integer> fingerGrantCooldownRemaining = new HashMap<>();
         Map<UUID, int[]> lionsHeartActive = new HashMap<>();
         Set<UUID> materialPhaseActive = new HashSet<>();
         Set<UUID> baseShiftActive = new HashSet<>();
@@ -392,6 +405,7 @@ public class SnapshotManager {
                     visionOfLifeCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("VisionOfLife"));
                     slothCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("Sloth"));
                     quickActionCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("QuickAction"));
+                    fingerGrantCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("FingerGrant"));
                     footprints = footprintsFromNbt(root.getList("Footprints", Tag.TAG_COMPOUND));
                     CompoundTag activeStates = root.getCompound("ActiveStates");
                     lionsHeartActive = lionsHeartActiveFromNbt(activeStates.getList("LionsHeart", Tag.TAG_COMPOUND));
@@ -417,7 +431,8 @@ public class SnapshotManager {
                 visionOfDangerCooldownRemaining, visionOfLifeCooldownRemaining, footprints,
                 slothCooldownRemaining, quickActionCooldownRemaining,
                 lionsHeartActive, materialPhaseActive, baseShiftActive, secondShiftActive,
-                visionOfDangerActive, visionOfLifeActive
+                visionOfDangerActive, visionOfLifeActive,
+                fingerGrantCooldownRemaining
         );
     }
 
@@ -585,6 +600,7 @@ public class SnapshotManager {
             cooldowns.put("VisionOfLife", cooldownsToNbt(snapshot.visionOfLifeCooldownRemaining()));
             cooldowns.put("Sloth", cooldownsToNbt(snapshot.slothCooldownRemaining()));
             cooldowns.put("QuickAction", cooldownsToNbt(snapshot.quickActionCooldownRemaining()));
+            cooldowns.put("FingerGrant", cooldownsToNbt(snapshot.fingerGrantCooldownRemaining()));
             root.put("Cooldowns", cooldowns);
             root.put("BookOfWisdomSummoned", uuidSetToNbt(snapshot.bookOfWisdomSummoned()));
             root.put("Footprints", footprintsToNbt(snapshot.footprints()));
@@ -765,6 +781,7 @@ public class SnapshotManager {
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             clearUnseenHand(player.getUUID());
+            rbdPartialActivationTick.remove(player.getUUID());
         }
     }
 
@@ -812,13 +829,14 @@ public class SnapshotManager {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
     public void onLivingDeath(LivingDeathEvent event) {
         if (rollbackInProgress) return;
         if (handleAuthorityDeath(event.getEntity())) {
             event.setCanceled(true);
             return;
         }
+        if (event.isCanceled()) return;
         if (event.getEntity() instanceof ServerPlayer player) {
             handleWitchFactorLossOnDeath(player);
         }
@@ -864,6 +882,34 @@ public class SnapshotManager {
         }
     }
 
+    public boolean onEntityWouldSelfDestruct(LivingEntity entity) {
+        if (rollbackInProgress) return false;
+        return handleAuthorityDeath(entity);
+    }
+
+    public boolean isDomainProtected(UUID uuid) {
+        if (isDomainActive() && isDomainSubject(uuid)) return true;
+        return isAggressorDomain() && isDomainOwner(uuid);
+    }
+
+    public boolean isReturnByDeathActive(UUID uuid) {
+        return authorityManager.canReturnByDeath(uuid) && rbd.isActive();
+    }
+
+    public boolean isDeathCurrentlyProtected(UUID uuid) {
+        return isDomainProtected(uuid) || isReturnByDeathActive(uuid);
+    }
+
+    public void forceNormalDeath(ServerPlayer player) {
+        boolean wasRollingBack = rollbackInProgress;
+        rollbackInProgress = true;
+        try {
+            player.kill();
+        } finally {
+            rollbackInProgress = wasRollingBack;
+        }
+    }
+
     private boolean handleAuthorityDeath(LivingEntity entity) {
         if (rollbackInProgress) return false;
         UUID uuid = entity.getUUID();
@@ -892,11 +938,8 @@ public class SnapshotManager {
 
         if (authorityManager.canReturnByDeath(uuid) && rbd.isActive()) {
             healAndSignal(player);
-            if (ConfigReturnByDeath.WITCH_MIASMA_ENABLED.get() && !player.isCreative() && !player.isSpectator()) {
-                MobEffectInstance existing = player.getEffect(ModEffects.WITCH_MIASMA);
-                int maxAmplifier = ConfigReturnByDeath.WITCH_MIASMA_MAX_LEVEL.getAsInt() - 1;
-                int amplifier = existing != null ? Math.min(existing.getAmplifier() + 1, maxAmplifier) : 0;
-                pendingMiasmaBump.put(uuid, amplifier);
+            if (ConfigReturnByDeath.WITCH_SCENT_ENABLED.get() && !player.isCreative() && !player.isSpectator()) {
+                pendingWitchScentBump.put(uuid, nextWitchScentAmplifier(player));
             }
             scheduleRollback(rbd);
             return true;
@@ -904,28 +947,69 @@ public class SnapshotManager {
         return false;
     }
 
+
+    private static final int RBD_PARTIAL_WINDOW_TICKS = 5 * 20;
+    private final Map<UUID, Integer> rbdPartialActivationTick = new HashMap<>();
+
+    public void handleReturnByDeathActivate(ServerPlayer player) {
+        if (rollbackInProgress || server == null) return;
+        UUID uuid = player.getUUID();
+        if (!authorityManager.canReturnByDeath(uuid)) return;
+
+        int now = server.getTickCount();
+        Integer lastPartial = rbdPartialActivationTick.get(uuid);
+        if (lastPartial != null && now - lastPartial <= RBD_PARTIAL_WINDOW_TICKS) {
+            rbdPartialActivationTick.remove(uuid);
+            broadcastRbdLine(player, "hahueuh.message.rbd_chant_full");
+            handleAuthorityDeath(player);
+            return;
+        }
+
+        rbdPartialActivationTick.put(uuid, now);
+        broadcastRbdLine(player, "hahueuh.message.rbd_chant_partial");
+        if (ConfigReturnByDeath.WITCH_SCENT_ENABLED.get() && !player.isCreative() && !player.isSpectator()) {
+            applyWitchScentLevel(player, nextWitchScentAmplifier(player));
+        }
+    }
+
+    private static int nextWitchScentAmplifier(ServerPlayer player) {
+        MobEffectInstance existing = player.getEffect(ModEffects.WITCH_SCENT);
+        int maxAmplifier = ConfigReturnByDeath.WITCH_SCENT_MAX_LEVEL.getAsInt() - 1;
+        return existing != null ? Math.min(existing.getAmplifier() + 1, maxAmplifier) : 0;
+    }
+
+    private void broadcastRbdLine(ServerPlayer player, String translationKey) {
+        if (server == null) return;
+        Component message = Component.literal("<").append(player.getDisplayName()).append("> ")
+                .append(Component.translatable(translationKey));
+        server.getPlayerList().broadcastSystemMessage(message, false);
+    }
+
     private void healAndSignal(LivingEntity entity) {
+        if (entity instanceof ServerPlayer player) {
+            net.noiilive.hahueuh.compat.PlayerReviveCompat.forceRevive(player);
+        }
         entity.setHealth(entity.getMaxHealth());
         if (entity instanceof ServerPlayer player) {
             playPersonalSound(player, BuiltInRegistries.SOUND_EVENT.wrapAsHolder(SoundEvents.WARDEN_HEARTBEAT));
         }
     }
 
-    private final Map<UUID, Integer> pendingMiasmaBump = new HashMap<>();
-    private static final int MIASMA_DURATION_TICKS = 5 * 60 * 20;
+    private final Map<UUID, Integer> pendingWitchScentBump = new HashMap<>();
+    private static final int WITCH_SCENT_DURATION_TICKS = 5 * 60 * 20;
 
-    private void applyMiasmaLevel(ServerPlayer player, int amplifier) {
-        player.forceAddEffect(new MobEffectInstance(ModEffects.WITCH_MIASMA, MIASMA_DURATION_TICKS, amplifier, false, false, true), null);
+    private void applyWitchScentLevel(ServerPlayer player, int amplifier) {
+        player.forceAddEffect(new MobEffectInstance(ModEffects.WITCH_SCENT, WITCH_SCENT_DURATION_TICKS, amplifier, false, false, true), null);
     }
 
     @SubscribeEvent
     public void onMobEffectExpired(MobEffectEvent.Expired event) {
         MobEffectInstance instance = event.getEffectInstance();
-        if (instance == null || !instance.is(ModEffects.WITCH_MIASMA) || !(event.getEntity() instanceof ServerPlayer player)) return;
+        if (instance == null || !instance.is(ModEffects.WITCH_SCENT) || !(event.getEntity() instanceof ServerPlayer player)) return;
         int amplifier = instance.getAmplifier();
         if (amplifier <= 0) return;
         event.setCanceled(true);
-        applyMiasmaLevel(player, amplifier - 1);
+        applyWitchScentLevel(player, amplifier - 1);
     }
 
     private void scheduleRollback(CheckpointSlot slot) {
@@ -960,7 +1044,15 @@ public class SnapshotManager {
         UnseenHand existing = unseenHands.get(uuid);
         boolean wasActive = existing != null;
 
-        boolean show = active && authorityManager.canUseSloth(uuid);
+        boolean actsAsUnseenHands = authorityManager.canUseSloth(uuid)
+                && authorityManager.getSlothVariant(uuid) == SlothVariant.UNSEEN_HANDS;
+        int fingerHands = HahUeuh.FINGER_GRANT.receivedHands(uuid);
+        boolean isFingerRecipient = fingerHands > 0;
+        boolean canBear = authorityManager.canUseSloth(uuid) || isFingerRecipient;
+        int handCount = actsAsUnseenHands ? HahUeuh.FINGER_GRANT.effectiveCount(uuid)
+                : isFingerRecipient ? fingerHands : 0;
+
+        boolean show = active && canBear;
         if (show && !wasActive && !owner.isCreative()) {
             int remaining = quickSession ? quickCooldownRemainingTicks(uuid) : slothCooldownRemainingTicks(uuid);
             if (remaining > 0) {
@@ -971,8 +1063,12 @@ public class SnapshotManager {
             }
         }
 
-        boolean mobilityAllowed = mobility && authorityManager.getSlothVariant(uuid) == SlothVariant.UNSEEN_HANDS;
+        boolean mobilityAllowed = mobility && handCount >= 2 && (actsAsUnseenHands || isFingerRecipient);
         boolean wasMobility = existing != null && existing.mobility;
+        if (show && quickSession && !wasActive) {
+            Miasma.addSingleUse(owner);
+        }
+
         if (show) {
             UnseenHand hand = unseenHands.computeIfAbsent(uuid, k -> new UnseenHand());
             hand.distance = distance;
@@ -990,24 +1086,36 @@ public class SnapshotManager {
         }
         boolean nowMobility = show && mobilityAllowed;
         if (wasMobility && !nowMobility) owner.setForcedPose(null);
+        int variantOrdinal = (authorityManager.canUseSloth(uuid)
+                ? authorityManager.getSlothVariant(uuid) : SlothVariant.UNSEEN_HANDS).ordinal();
         UnseenHandSyncPayload payload = new UnseenHandSyncPayload(owner.getUUID(), owner.getId(), show, distance,
                 show ? HandMode.byId(modeId).ordinal() : 0,
-                authorityManager.getSlothVariant(owner.getUUID()).ordinal(),
-                show && mobilityAllowed);
+                variantOrdinal,
+                show && mobilityAllowed,
+                handCount);
         ResourceKey<Level> dim = owner.level().dimension();
         for (ServerPlayer viewer : server.getPlayerList().getPlayers()) {
             if (viewer == owner) continue;
-            if (!authorityManager.canUseSloth(viewer.getUUID())) continue;
+            if (!canSeeUnseenHands(viewer.getUUID())) continue;
             if (!viewer.level().dimension().equals(dim)) continue;
             PacketDistributor.sendToPlayer(viewer, payload);
         }
     }
 
+    private boolean canSeeUnseenHands(UUID uuid) {
+        return authorityManager.canUseSloth(uuid) || HahUeuh.FINGER_GRANT.receivedHands(uuid) > 0;
+    }
+
+    public boolean hasSustainedUnseenHand(UUID uuid) {
+        UnseenHand hand = unseenHands.get(uuid);
+        return hand != null && !hand.quickSession;
+    }
+
     private void clearUnseenHand(UUID owner) {
         if (unseenHands.remove(owner) != null && server != null) {
-            UnseenHandSyncPayload off = new UnseenHandSyncPayload(owner, -1, false, 0f, 0, 0, false);
+            UnseenHandSyncPayload off = new UnseenHandSyncPayload(owner, -1, false, 0f, 0, 0, false, 0);
             for (ServerPlayer viewer : server.getPlayerList().getPlayers()) {
-                if (!viewer.getUUID().equals(owner) && authorityManager.canUseSloth(viewer.getUUID())) {
+                if (!viewer.getUUID().equals(owner) && canSeeUnseenHands(viewer.getUUID())) {
                     PacketDistributor.sendToPlayer(viewer, off);
                 }
             }
@@ -1015,17 +1123,30 @@ public class SnapshotManager {
     }
 
     private void sendActiveUnseenHandsTo(ServerPlayer viewer) {
-        if (server == null || !authorityManager.canUseSloth(viewer.getUUID())) return;
+        if (server == null || !canSeeUnseenHands(viewer.getUUID())) return;
         for (Map.Entry<UUID, UnseenHand> entry : unseenHands.entrySet()) {
             if (entry.getKey().equals(viewer.getUUID())) continue;
             ServerPlayer owner = server.getPlayerList().getPlayer(entry.getKey());
             if (owner != null && owner.level().dimension().equals(viewer.level().dimension())) {
                 PacketDistributor.sendToPlayer(viewer, new UnseenHandSyncPayload(entry.getKey(), owner.getId(), true,
                         entry.getValue().distance, entry.getValue().mode.ordinal(),
-                        authorityManager.getSlothVariant(entry.getKey()).ordinal(),
-                        entry.getValue().mobility));
+                        handVariantOrdinal(entry.getKey()),
+                        entry.getValue().mobility,
+                        handRenderCount(entry.getKey())));
             }
         }
+    }
+
+    private int handRenderCount(UUID uuid) {
+        boolean actsAsUnseenHands = authorityManager.canUseSloth(uuid)
+                && authorityManager.getSlothVariant(uuid) == SlothVariant.UNSEEN_HANDS;
+        if (actsAsUnseenHands) return HahUeuh.FINGER_GRANT.effectiveCount(uuid);
+        return HahUeuh.FINGER_GRANT.receivedHands(uuid);
+    }
+
+    private int handVariantOrdinal(UUID uuid) {
+        return (authorityManager.canUseSloth(uuid)
+                ? authorityManager.getSlothVariant(uuid) : SlothVariant.UNSEEN_HANDS).ordinal();
     }
 
     private static boolean isRidingOn(Entity rider, Entity target) {
@@ -1171,10 +1292,7 @@ public class SnapshotManager {
                 for (int i : g.getValue()) centre = centre.add(tips[i]);
                 centre = centre.scale(1.0 / g.getValue().size());
                 Vec3 target = new Vec3(centre.x, centre.y - e.getBbHeight() / 2.0, centre.z);
-                e.setDeltaMovement(target.subtract(e.position()));
-                e.hasImpulse = true;
-                e.hurtMarked = true;
-                if (e instanceof ServerPlayer sp) sp.connection.send(new ClientboundSetEntityMotionPacket(sp));
+                holdGrabbed(e, target);
             }
         } else {
             java.util.Arrays.fill(hand.grabbed, null);
@@ -1379,13 +1497,19 @@ public class SnapshotManager {
         }
         if (grabbed == null) return null;
         Vec3 target = new Vec3(tip.x, tip.y - grabbed.getBbHeight() / 2.0, tip.z);
-        grabbed.setDeltaMovement(target.subtract(grabbed.position()));
-        grabbed.hasImpulse = true;
-        grabbed.hurtMarked = true;
-        if (grabbed instanceof ServerPlayer sp) {
-            sp.connection.send(new ClientboundSetEntityMotionPacket(sp));
-        }
+        holdGrabbed(grabbed, target);
         return grabbed.getUUID();
+    }
+
+    private static void holdGrabbed(Entity e, Vec3 target) {
+        if (e instanceof ServerPlayer sp) {
+            sp.connection.teleport(target.x, target.y, target.z, 0f, 0f,
+                    java.util.Set.of(RelativeMovement.X_ROT, RelativeMovement.Y_ROT));
+        } else {
+            e.setDeltaMovement(target.subtract(e.position()));
+            e.hasImpulse = true;
+            e.hurtMarked = true;
+        }
     }
 
     private void nudgeBlockAtHand(ServerLevel level, ServerPlayer owner, Vec3 tip, UnseenHand hand) {
@@ -1440,7 +1564,9 @@ public class SnapshotManager {
                 authorityManager.canUseSloth(player.getUUID()),
                 authorityManager.getSlothVariant(player.getUUID()).ordinal(),
                 authorityManager.canUseGreed(player.getUUID()),
-                authorityManager.getGreedVariant(player.getUUID()).ordinal()));
+                authorityManager.getGreedVariant(player.getUUID()).ordinal(),
+                HahUeuh.FINGER_GRANT.effectiveCount(player.getUUID()),
+                HahUeuh.FINGER_GRANT.receivedHands(player.getUUID())));
     }
 
 
@@ -1456,6 +1582,14 @@ public class SnapshotManager {
 
     private boolean isAggressorDomain() {
         return isDomainActive() && domainSubjectUuid != null && !domainSubjectUuid.equals(domainOwnerUuid);
+    }
+
+    private void playDomainSound(SoundEvent sound) {
+        if (server == null || domainDimension == null || domainMatrix == null) return;
+        ServerLevel level = server.getLevel(domainDimension);
+        if (level == null) return;
+        level.playSound(null, domainMatrix.x, domainMatrix.y, domainMatrix.z,
+                sound, SoundSource.PLAYERS, 1.0f, 1.0f);
     }
 
     private void deactivateDomainState() {
@@ -1560,6 +1694,7 @@ public class SnapshotManager {
         domainDimension = player.level().dimension();
         createSnapshot(domain, "domain:" + player.getGameProfile().getName());
         PacketDistributor.sendToPlayer(player, activeDomainPayload());
+        playDomainSound(ModSounds.DOMAIN_OPEN.get());
 
         if (target != null) {
             player.displayClientMessage(Component.translatable("hahueuh.message.domain_cast_on_target",
@@ -1609,6 +1744,7 @@ public class SnapshotManager {
         if (!isDomainActive()) return;
         UUID formerOwner = domainOwnerUuid;
         LOGGER.info("Closing domain (owner: {}, reason: {})", formerOwner, reason);
+        playDomainSound(ModSounds.DOMAIN_CLOSE.get());
         deactivateDomainState();
         domain.clear();
 
@@ -1789,7 +1925,8 @@ public class SnapshotManager {
                     HahUeuh.BASE_SHIFT.captureActive(),
                     HahUeuh.SECOND_SHIFT.captureActive(),
                     HahUeuh.VISION_OF_DANGER.captureActive(),
-                    HahUeuh.VISION_OF_LIFE.captureActive()
+                    HahUeuh.VISION_OF_LIFE.captureActive(),
+                    HahUeuh.FINGER_GRANT.captureCooldownRemaining()
             );
             saveSnapshotMetadataToDisk(checkpointDir, slot.snapshot);
 
@@ -1855,6 +1992,12 @@ public class SnapshotManager {
                 internalSaveInProgress = false;
             }
             stepStart = logStepTime("saveEverything (drain)", stepStart);
+
+            if (SableRollbackCompat.isPresent()) {
+                SableRollbackCompat.unloadAllSubLevels(server);
+                stepStart = logStepTime("Sable: unload sub-levels", stepStart);
+            }
+
             closeAllRegionStorages();
             stepStart = logStepTime("closeAllRegionStorages", stepStart);
 
@@ -1863,6 +2006,8 @@ public class SnapshotManager {
             Set<String> protectedNames = checkpointProtectedNames();
             int restoredFiles = restoreChangedFiles(worldDir, checkpointDir, protectedNames, snapshot.fileTimestamps());
             stepStart = logStepTime("restoreChangedFiles (" + restoredFiles + " files)", stepStart);
+
+            HahUeuh.POCKET_DIMENSION.reloadFromDisk();
 
             for (ServerLevel level : server.getAllLevels()) {
                 resetSavedDataCache(level);
@@ -1888,6 +2033,8 @@ public class SnapshotManager {
             }
             stepStart = logStepTime("restoreEntitiesForLevel (all levels)", stepStart);
 
+            HahUeuh.POCKET_DIMENSION.reconcileAfterRollback(server);
+
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 if (player.containerMenu != player.inventoryMenu) {
                     try {
@@ -1909,14 +2056,14 @@ public class SnapshotManager {
             }
             stepStart = logStepTime("restore online players", stepStart);
 
-            if (!pendingMiasmaBump.isEmpty()) {
-                for (Map.Entry<UUID, Integer> entry : pendingMiasmaBump.entrySet()) {
+            if (!pendingWitchScentBump.isEmpty()) {
+                for (Map.Entry<UUID, Integer> entry : pendingWitchScentBump.entrySet()) {
                     ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
                     if (player != null && !player.isCreative() && !player.isSpectator()) {
-                        applyMiasmaLevel(player, entry.getValue());
+                        applyWitchScentLevel(player, entry.getValue());
                     }
                 }
-                pendingMiasmaBump.clear();
+                pendingWitchScentBump.clear();
             }
 
             authorityManager.load(server);
@@ -1929,6 +2076,21 @@ public class SnapshotManager {
             HahUeuh.VISION_OF_LIFE.reloadPersisted();
             HahUeuh.SLOTH_COMPAT.reload();
             HahUeuh.GREED_COMPAT.reload();
+
+            if (CreateRollbackCompat.isPresent()) {
+                CreateRollbackCompat.reloadAndResync(server);
+            }
+
+            if (SableRollbackCompat.isPresent()) {
+                for (ServerLevel level : server.getAllLevels()) {
+                    List<ChunkPos> loadedChunkPositions = new ArrayList<>();
+                    for (ChunkHolder holder : getLoadedChunkHolders(level)) {
+                        LevelChunk loadedChunk = getLoadedChunk(holder);
+                        if (loadedChunk != null) loadedChunkPositions.add(loadedChunk.getPos());
+                    }
+                    SableRollbackCompat.reactivateSubLevels(level, loadedChunkPositions);
+                }
+            }
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 sendAuthoritiesTo(player);
                 sendAbilitySlotsTo(player);
@@ -1942,6 +2104,7 @@ public class SnapshotManager {
             HahUeuh.VISION_OF_LIFE.restoreActiveOnRollback(snapshot.visionOfLifeActive());
             HahUeuh.LITTLE_KING.refreshAllOnRollback();
             HahUeuh.ALLY_TRACKER.refreshAllOnRollback();
+            HahUeuh.FINGER_GRANT.refreshAllOnRollback();
             restoreCooldowns(domainCooldownUntilTick, snapshot.domainCooldownRemaining(),
                     HahUeuhAbilities.DOMAIN_VICTIM_ABILITY, HahUeuhAbilities.DOMAIN_AGGRESSOR_ABILITY);
             HahUeuh.LIONS_HEART.restoreCooldownRemaining(snapshot.lionsHeartCooldownRemaining());
@@ -1961,7 +2124,8 @@ public class SnapshotManager {
                     HahUeuhAbilities.SLOTH_COOLDOWN_KEY);
             restoreCooldowns(quickCooldownUntilTick, snapshot.quickActionCooldownRemaining(),
                     HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY);
-            stepStart = logStepTime("reload authorities + compatibility", stepStart);
+            HahUeuh.FINGER_GRANT.restoreCooldownRemaining(snapshot.fingerGrantCooldownRemaining());
+            logStepTime("reload authorities + compatibility", stepStart);
 
             ServerLevel overworld = server.overworld();
             overworld.setDayTime(snapshot.dayTime());
@@ -2299,6 +2463,27 @@ public class SnapshotManager {
         return holder.getLatestChunk() instanceof LevelChunk levelChunk ? levelChunk : null;
     }
 
+    private void restoreChunkAttachments(LevelChunk chunk, CompoundTag chunkNbt) {
+        CompoundTag attachments = chunkNbt.contains(AttachmentHolder.ATTACHMENTS_NBT_KEY, Tag.TAG_COMPOUND)
+                ? chunkNbt.getCompound(AttachmentHolder.ATTACHMENTS_NBT_KEY)
+                : new CompoundTag();
+        restoreChunkAttachment(chunk, attachments, ModAttachments.CHUNK_AMBIENT_MANA.get(), ChunkMana.CODEC);
+        restoreChunkAttachment(chunk, attachments, ModAttachments.CHUNK_MIASMA.get(), ChunkMiasma.CODEC);
+    }
+
+    private <T> void restoreChunkAttachment(LevelChunk chunk, CompoundTag attachments,
+                                            AttachmentType<T> type, Codec<T> codec) {
+        ResourceLocation key = NeoForgeRegistries.ATTACHMENT_TYPES.getKey(type);
+        Tag stored = key == null ? null : attachments.get(key.toString());
+        if (stored == null) {
+            chunk.removeData(type);
+            return;
+        }
+        codec.parse(NbtOps.INSTANCE, stored).result().ifPresentOrElse(
+                value -> chunk.setData(type, value),
+                () -> chunk.removeData(type));
+    }
+
     private void applyChunkNbtInMemory(ServerLevel level, LevelChunk chunk, CompoundTag chunkNbt) {
         ChunkPos pos = chunk.getPos();
 
@@ -2382,6 +2567,8 @@ public class SnapshotManager {
                 Heightmap.Types.OCEAN_FLOOR
         ));
 
+        restoreChunkAttachments(chunk, chunkNbt);
+
 
         boolean relit = !lightRechecks.isEmpty();
         if (relit) {
@@ -2446,12 +2633,24 @@ public class SnapshotManager {
             if (!(e instanceof Player)) current.add(e);
         }
 
-        int reverted = 0, removed = 0, spawned = 0;
+        boolean createCompat = CreateRollbackCompat.isPresent();
+
+        int reverted = 0, removed = 0, spawned = 0, carriages = 0;
         Set<UUID> handled = new HashSet<>();
         for (Entity e : current) {
             UUID id = e.getUUID();
+            if (createCompat && isCreateCarriage(e)) {
+                e.discard();
+                handled.add(id);
+                carriages++;
+                continue;
+            }
             CompoundTag snap = snapshotByUuid.get(id);
             if (snap != null) {
+                if (e instanceof LivingEntity dying && dying.deathTime > 0) {
+                    e.discard();
+                    continue;
+                }
                 try {
                     e.load(snap);
                     resetTransientAiState(e);
@@ -2472,6 +2671,7 @@ public class SnapshotManager {
 
         for (Map.Entry<UUID, CompoundTag> entry : snapshotByUuid.entrySet()) {
             if (handled.contains(entry.getKey())) continue;
+            if (createCompat && CREATE_CARRIAGE_ENTITY_ID.equals(entry.getValue().getString("id"))) continue;
             try {
                 Entity result = EntityType.loadEntityRecursive(entry.getValue(), level, entity -> {
                     BlockPos pos = entity.blockPosition();
@@ -2485,10 +2685,17 @@ public class SnapshotManager {
             }
         }
 
-        if (reverted + removed + spawned > 0) {
-            LOGGER.debug("Entities in {}: {} reverted, {} removed (post-checkpoint), {} re-added",
-                    level.dimension().location(), reverted, removed, spawned);
+        if (reverted + removed + spawned + carriages > 0) {
+            LOGGER.debug("Entities in {}: {} reverted, {} removed (post-checkpoint), {} re-added, {} carriages left to Create",
+                    level.dimension().location(), reverted, removed, spawned, carriages);
         }
+    }
+
+    private static final String CREATE_CARRIAGE_ENTITY_ID = "create:carriage_contraption";
+
+    private static boolean isCreateCarriage(Entity e) {
+        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType());
+        return key != null && CREATE_CARRIAGE_ENTITY_ID.equals(key.toString());
     }
 
     private void resetTransientAiState(Entity entity) {

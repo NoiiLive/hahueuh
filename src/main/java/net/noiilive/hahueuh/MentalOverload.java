@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class MentalOverload {
     private static final double RANGE = 16.0;
-    private static final int EFFECT_DURATION_TICKS = 200; // 10 seconds
+    private static final int EFFECT_DURATION_TICKS = 200;
 
     private final Map<UUID, Integer> cooldownUntilTick = new ConcurrentHashMap<>();
     private MinecraftServer server;
@@ -69,6 +69,8 @@ public final class MentalOverload {
 
         applyInsanity(target);
         startCooldown(player);
+        player.level().playSound(null, player.blockPosition(), ModSounds.MENTAL_OVERLOAD.get(),
+                net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
         player.displayClientMessage(Component.translatable("hahueuh.message.mental_overload_activated",
                 target.getName()).withStyle(ChatFormatting.LIGHT_PURPLE), true);
     }

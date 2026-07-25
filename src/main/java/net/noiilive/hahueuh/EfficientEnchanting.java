@@ -137,7 +137,6 @@ public final class EfficientEnchanting {
         Optional<HolderSet.Named<Enchantment>> tableSet = registry.getTag(EnchantmentTags.IN_ENCHANTING_TABLE);
         if (tableSet.isEmpty()) return out;
 
-        // The strongest modified enchant level a table could ever produce for this item.
         int maxModified = Math.round((MAX_TABLE_BASE_LEVEL + 1 + 2 * (enchantValue / 4)) * 1.15f);
         ItemEnchantments existing = EnchantmentHelper.getEnchantmentsForCrafting(stack);
 
@@ -154,7 +153,7 @@ public final class EfficientEnchanting {
                 }
             }
             if (maxLevel <= 0) continue;
-            if (existing.getLevel(holder) >= maxLevel) continue; // already at/above the table cap
+            if (existing.getLevel(holder) >= maxLevel) continue;
 
             final int level = maxLevel;
             holder.unwrapKey().ifPresent(key ->
@@ -171,7 +170,7 @@ public final class EfficientEnchanting {
 
     private static boolean compatibleWithExisting(Holder<Enchantment> candidate, ItemEnchantments existing) {
         for (Holder<Enchantment> present : existing.keySet()) {
-            if (present.value() == candidate.value()) continue; // upgrading the same enchantment is fine
+            if (present.value() == candidate.value()) continue;
             if (!Enchantment.areCompatible(candidate, present)) return false;
         }
         return true;

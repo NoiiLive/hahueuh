@@ -97,12 +97,17 @@ public final class MobWitchFactor {
             unregisterWandering(wf);
             return;
         }
+        dropWitchFactor(entity);
+    }
+
+    public void dropWitchFactor(LivingEntity entity) {
         if (entity.level().isClientSide || !(entity.level() instanceof ServerLevel level)) return;
 
         WitchFactorAuthority sin = entity.getData(ModAttachments.MOB_WITCH_FACTOR.get());
         if (sin == WitchFactorAuthority.NONE) return;
 
         clearMobHolder(entity.getUUID());
+        entity.setData(ModAttachments.MOB_WITCH_FACTOR.get(), WitchFactorAuthority.NONE);
         WitchFactorEntity spawned = new WitchFactorEntity(ModEntities.WITCH_FACTOR.get(), level);
         spawned.moveTo(entity.getX(), entity.getY(), entity.getZ(), 0.0f, 0.0f);
         spawned.setAssignedAuthority(sin);
@@ -127,6 +132,10 @@ public final class MobWitchFactor {
         if (candidates.isEmpty()) return;
 
         WitchFactorAuthority sin = candidates.get(mob.getRandom().nextInt(candidates.size()));
+        assign(mob, sin);
+    }
+
+    private void assign(Mob mob, WitchFactorAuthority sin) {
         mob.setData(ModAttachments.MOB_WITCH_FACTOR.get(), sin);
         String variantId = switch (sin) {
             case SLOTH -> SlothVariant.randomForMob(mob.getRandom()).id;
@@ -140,6 +149,35 @@ public final class MobWitchFactor {
             case SLOTH -> HahUeuh.SLOTH_COMPAT.ensureStartingScore(mob.getUUID());
             case GREED -> HahUeuh.GREED_COMPAT.ensureStartingScore(mob.getUUID());
             case NONE -> {}
+        }
+    }
+
+    public boolean forceAssign(Mob mob, WitchFactorAuthority sin) {
+        if (sin == WitchFactorAuthority.NONE) return false;
+        if (ConfigMain.MOB_WITCH_FACTOR_FORCE_WHITELIST_ENABLED.get() && !isEligibleMobType(mob)) return false;
+        if (ConfigMain.SINGLE_AUTHORITY_HOLDER.get() && mob.level() instanceof ServerLevel level) {
+            WitchFactorGrant.revokeOtherHolders(level.getServer(), sin, mob.getUUID(), mob.getName());
+        }
+        assign(mob, sin);
+        return true;
+    }
+
+    public void revokeOtherMobHolders(MinecraftServer server, WitchFactorAuthority sin, UUID exempt) {
+        for (UUID uuid : List.copyOf(mobHolders.keySet())) {
+            if (uuid.equals(exempt) || mobHolders.get(uuid) != sin) continue;
+            revokeMobHolder(server, uuid);
+        }
+    }
+
+    private void revokeMobHolder(MinecraftServer server, UUID uuid) {
+        clearMobHolder(uuid);
+        for (ServerLevel level : server.getAllLevels()) {
+            Entity entity = level.getEntity(uuid);
+            if (entity != null) {
+                entity.setData(ModAttachments.MOB_WITCH_FACTOR.get(), WitchFactorAuthority.NONE);
+                entity.setData(ModAttachments.MOB_WITCH_FACTOR_VARIANT.get(), "");
+                break;
+            }
         }
     }
 

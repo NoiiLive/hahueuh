@@ -9,14 +9,21 @@ import net.noiilive.hahueuh.network.WitchFactorAuthority;
 import net.noiilive.hahueuh.snapshot.PlayerAuthorityManager;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.OwnableEntity;
+import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -29,17 +36,48 @@ public final class MobAbilityAI {
     private static final int ATTEMPT_INTERVAL_TICKS = 20;
     private static final int HAND_HOLD_TICKS = 16;
     private static final int HAND_APPLY_AT_REMAINING = 6;
+    private static final int SIN_PURSUIT_PRIORITY = 0;
+    private static final double SIN_PURSUIT_SPEED = 1.0;
+    private static final float SIN_PURSUIT_FALLBACK_DAMAGE = 1.0f;
 
     private record ActiveHand(HandMode mode, float distance, int ticksRemaining, boolean applied, int grabbedTargetId) {}
 
     private final Map<UUID, ActiveHand> activeHands = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> slothQuickCooldownUntilTick = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> retaliationUntilTick = new ConcurrentHashMap<>();
+
+    private static final class SinPursuitGoal extends MeleeAttackGoal {
+        SinPursuitGoal(PathfinderMob mob) {
+            super(mob, SIN_PURSUIT_SPEED, false);
+        }
+
+        @Override
+        protected void checkAndPerformAttack(LivingEntity target) {
+            if (mob.getAttribute(Attributes.ATTACK_DAMAGE) != null) {
+                super.checkAndPerformAttack(target);
+                return;
+            }
+            if (canPerformAttack(target)) {
+                resetAttackCooldown();
+                mob.swing(InteractionHand.MAIN_HAND);
+                target.hurt(mob.damageSources().mobAttack(mob), SIN_PURSUIT_FALLBACK_DAMAGE);
+            }
+        }
+    }
 
     @SubscribeEvent
     public void onEntityTick(EntityTickEvent.Post event) {
         if (!(event.getEntity() instanceof Mob mob) || !(mob.level() instanceof ServerLevel level)) return;
         WitchFactorAuthority sin = mob.getData(ModAttachments.MOB_WITCH_FACTOR.get());
-        if (sin == WitchFactorAuthority.NONE) return;
+        boolean fingerMob = sin == WitchFactorAuthority.NONE
+                && mob.getData(ModAttachments.MOB_FINGER_HANDS.get()) > 0;
+        if (sin == WitchFactorAuthority.NONE && !fingerMob) return;
+
+        if (mob.tickCount % 20 == 0 && Miasma.hasActiveSinToggle(mob)) {
+            Miasma.addToggleSecond(mob);
+        }
+
+        expireRetaliation(level, mob);
 
         ActiveHand hand = activeHands.get(mob.getUUID());
         if (hand != null) {
@@ -51,11 +89,72 @@ public final class MobAbilityAI {
         LivingEntity target = mob.getTarget();
         if (target == null || !target.isAlive()) return;
 
+        if (fingerMob) {
+            tryStartSlothQuickAction(level, mob, target);
+            return;
+        }
         switch (sin) {
             case SLOTH -> tryStartSlothQuickAction(level, mob, target);
             case GREED -> tryGreedAbility(mob, target);
             case NONE -> {}
         }
+    }
+
+    @SubscribeEvent
+    public void onSinMobHurt(LivingIncomingDamageEvent event) {
+        if (!(event.getEntity() instanceof Mob mob) || !(mob.level() instanceof ServerLevel level)) return;
+        if (!isSinOrFingerMob(mob)) return;
+        if (!(event.getSource().getEntity() instanceof LivingEntity attacker) || attacker == mob) return;
+        if (hasNativeMeleeGoal(mob)) return;
+        if (isProtectedFrom(mob, attacker)) return;
+
+        int seconds = ConfigMain.MOB_SIN_RETALIATION_SECONDS.get();
+        if (seconds <= 0) return;
+
+        ensureSinPursuitGoal(mob);
+        retaliationUntilTick.put(mob.getUUID(), level.getServer().getTickCount() + seconds * 20);
+        LivingEntity current = mob.getTarget();
+        if (current == null || !current.isAlive()) {
+            mob.setTarget(attacker);
+        }
+    }
+
+    private void expireRetaliation(ServerLevel level, Mob mob) {
+        Integer until = retaliationUntilTick.get(mob.getUUID());
+        if (until == null || level.getServer().getTickCount() < until) return;
+        retaliationUntilTick.remove(mob.getUUID());
+        if (mob.getTarget() != null) mob.setTarget(null);
+    }
+
+    private static boolean isSinOrFingerMob(Mob mob) {
+        return mob.getData(ModAttachments.MOB_WITCH_FACTOR.get()) != WitchFactorAuthority.NONE
+                || mob.getData(ModAttachments.MOB_FINGER_HANDS.get()) > 0;
+    }
+
+    private static boolean hasNativeMeleeGoal(Mob mob) {
+        for (WrappedGoal wrapped : mob.goalSelector.getAvailableGoals()) {
+            Goal goal = wrapped.getGoal();
+            if (goal instanceof MeleeAttackGoal && !(goal instanceof SinPursuitGoal)) return true;
+        }
+        return false;
+    }
+
+    private static boolean hasSinPursuitGoal(Mob mob) {
+        for (WrappedGoal wrapped : mob.goalSelector.getAvailableGoals()) {
+            if (wrapped.getGoal() instanceof SinPursuitGoal) return true;
+        }
+        return false;
+    }
+
+    private static void ensureSinPursuitGoal(Mob mob) {
+        if (!(mob instanceof PathfinderMob pathfinder) || hasSinPursuitGoal(mob)) return;
+        mob.goalSelector.addGoal(SIN_PURSUIT_PRIORITY, new SinPursuitGoal(pathfinder));
+    }
+
+    private static boolean isProtectedFrom(Mob mob, LivingEntity attacker) {
+        UUID attackerId = attacker.getUUID();
+        if (mob instanceof OwnableEntity ownable && attackerId.equals(ownable.getOwnerUUID())) return true;
+        return attackerId.equals(HahUeuh.FINGER_GRANT.ownerOf(mob.getUUID()));
     }
 
     private void tryStartSlothQuickAction(ServerLevel level, Mob mob, LivingEntity target) {
@@ -72,6 +171,7 @@ public final class MobAbilityAI {
         float distance = Math.max(1.0f, Math.min(reach, maxRange));
         activeHands.put(uuid, new ActiveHand(mode, distance, HAND_HOLD_TICKS, false, -1));
         broadcastHand(level, mob, true, mode, distance);
+        Miasma.addSingleUse(mob);
 
         int cooldownSeconds = ConfigSloth.QUICK_ACTION_COOLDOWN_SECONDS.getAsInt();
         if (cooldownSeconds > 0) {
@@ -123,7 +223,7 @@ public final class MobAbilityAI {
         double dx = mob.getX() - target.getX();
         double dz = mob.getZ() - target.getZ();
         double horiz = Math.sqrt(dx * dx + dz * dz);
-        if (horiz < 0.8) return; // already in melee range — don't jitter them into/through the mob
+        if (horiz < 0.8) return;
         double step = Math.min(horiz - 0.6, 0.9);
         target.setDeltaMovement(dx / horiz * step, 0.1, dz / horiz * step);
         target.hasImpulse = true;
@@ -141,15 +241,27 @@ public final class MobAbilityAI {
 
     private void broadcastHand(ServerLevel level, Mob mob, boolean active, HandMode mode, float distance) {
         PlayerAuthorityManager am = HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager();
-        int variantOrdinal = SlothVariant.byId(mob.getData(ModAttachments.MOB_WITCH_FACTOR_VARIANT.get())).ordinal();
+        SlothVariant variant;
+        int count;
+        if (mob.getData(ModAttachments.MOB_WITCH_FACTOR.get()) == WitchFactorAuthority.SLOTH) {
+            variant = SlothVariant.byId(mob.getData(ModAttachments.MOB_WITCH_FACTOR_VARIANT.get()));
+            count = variant == SlothVariant.UNSEEN_HANDS ? SlothVariant.unseenHandCount(mob.getUUID()) : 0;
+        } else {
+            variant = SlothVariant.UNSEEN_HANDS;
+            count = mob.getData(ModAttachments.MOB_FINGER_HANDS.get());
+        }
         UnseenHandSyncPayload payload = new UnseenHandSyncPayload(mob.getUUID(), mob.getId(), active, distance,
-                mode.ordinal(), variantOrdinal, false);
+                mode.ordinal(), variant.ordinal(), false, count);
         ResourceKey<Level> dim = mob.level().dimension();
         for (ServerPlayer viewer : level.getServer().getPlayerList().getPlayers()) {
-            if (!am.canUseSloth(viewer.getUUID())) continue;
+            if (!canSeeUnseenHands(am, viewer)) continue;
             if (!viewer.level().dimension().equals(dim)) continue;
             PacketDistributor.sendToPlayer(viewer, payload);
         }
+    }
+
+    private static boolean canSeeUnseenHands(PlayerAuthorityManager am, ServerPlayer viewer) {
+        return am.canUseSloth(viewer.getUUID()) || HahUeuh.FINGER_GRANT.receivedHands(viewer.getUUID()) > 0;
     }
 
     private void broadcastGrab(ServerLevel level, Mob mob, List<Integer> grabbedIds) {
@@ -157,7 +269,7 @@ public final class MobAbilityAI {
         UnseenHandGrabSyncPayload payload = new UnseenHandGrabSyncPayload(mob.getUUID(), grabbedIds);
         ResourceKey<Level> dim = mob.level().dimension();
         for (ServerPlayer viewer : level.getServer().getPlayerList().getPlayers()) {
-            if (!am.canUseSloth(viewer.getUUID())) continue;
+            if (!canSeeUnseenHands(am, viewer)) continue;
             if (!viewer.level().dimension().equals(dim)) continue;
             PacketDistributor.sendToPlayer(viewer, payload);
         }
@@ -171,6 +283,7 @@ public final class MobAbilityAI {
         if (HahUeuh.LIONS_HEART.isActive(uuid)) {
             if (mob.getRandom().nextDouble() * 100.0 < ConfigGreed.MOB_OBJECT_FREEZE_CHANCE.get()) {
                 HahUeuh.OBJECT_FREEZE.activateMob(mob);
+                Miasma.addSingleUse(mob);
             }
         } else if (!HahUeuh.LIONS_HEART.isOnCooldown(uuid)
                 && mob.getRandom().nextDouble() * 100.0 < ConfigGreed.MOB_LIONS_HEART_ACTIVATE_CHANCE.get()) {

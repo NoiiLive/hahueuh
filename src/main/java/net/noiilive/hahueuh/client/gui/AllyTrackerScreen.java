@@ -56,7 +56,7 @@ public final class AllyTrackerScreen extends Screen {
 
     private int dataVersion = -1;
     private List<AllyDataPayload.Ally> allies = List.of();
-    private double[] weights = new double[0]; // aligned to `allies`
+    private double[] weights = new double[0];
     private double selfWeight = 100.0;
     private float selfHealth = 20.0f;
     private float selfMaxHealth = 20.0f;
@@ -65,7 +65,7 @@ public final class AllyTrackerScreen extends Screen {
 
     private UUID selectedAlly;
     private boolean selfSelected;
-    private int draggingParticipant = -1; // -1 none, 0 self, i+1 = allies[i]
+    private int draggingParticipant = -1;
     private boolean panning;
     private double panX;
     private double panY;
@@ -324,7 +324,7 @@ public final class AllyTrackerScreen extends Screen {
         graphics.drawString(font, Component.translatable("hahueuh.gui.ally_tracker.health",
                 String.format("%.1f", selfHealth), String.format("%.1f", selfMaxHealth)), tx, ty, withAlpha(0xFFFF6B6B, uiAlpha));
         ty += 13;
-        ty = renderEffectsBlock(graphics, tx, ty, selfEffects, uiAlpha);
+        renderEffectsBlock(graphics, tx, ty, selfEffects, uiAlpha);
 
         renderSlider(graphics, infoSliderX(), infoSliderY(), SLIDER_W, selfWeight,
                 Component.translatable("hahueuh.gui.ally_tracker.burden", Math.round(selfWeight)), uiAlpha,
@@ -355,7 +355,7 @@ public final class AllyTrackerScreen extends Screen {
                 graphics.drawString(font, Component.translatable(unloadedLabelKey(ally)), tx, ty, withAlpha(0xFF808080, uiAlpha));
                 ty += 11;
             }
-            ty = renderEffectsBlock(graphics, tx, ty, ally.effects(), uiAlpha);
+            renderEffectsBlock(graphics, tx, ty, ally.effects(), uiAlpha);
         } else {
             graphics.drawString(font, Component.translatable("hahueuh.gui.ally_tracker.no_data"), tx, ty, withAlpha(0xFF808080, uiAlpha));
         }

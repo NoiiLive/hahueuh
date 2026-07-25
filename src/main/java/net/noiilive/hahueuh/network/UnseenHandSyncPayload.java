@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.UUID;
 
-public record UnseenHandSyncPayload(UUID owner, int entityId, boolean active, float distance, int mode, int variant, boolean mobility) implements CustomPacketPayload {
+public record UnseenHandSyncPayload(UUID owner, int entityId, boolean active, float distance, int mode, int variant, boolean mobility, int count) implements CustomPacketPayload {
     public static final Type<UnseenHandSyncPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "unseen_hand_sync"));
 
@@ -22,9 +22,10 @@ public record UnseenHandSyncPayload(UUID owner, int entityId, boolean active, fl
                 buf.writeVarInt(p.mode);
                 buf.writeVarInt(p.variant);
                 buf.writeBoolean(p.mobility);
+                buf.writeVarInt(p.count);
             },
             buf -> new UnseenHandSyncPayload(UUIDUtil.STREAM_CODEC.decode(buf), buf.readVarInt(), buf.readBoolean(),
-                    buf.readFloat(), buf.readVarInt(), buf.readVarInt(), buf.readBoolean()));
+                    buf.readFloat(), buf.readVarInt(), buf.readVarInt(), buf.readBoolean(), buf.readVarInt()));
 
     @Override
     public Type<UnseenHandSyncPayload> type() {

@@ -33,5 +33,9 @@ public final class ModDataComponents {
             DATA_COMPONENT_TYPES.register("dragon_sword_sheathed",
                     () -> DataComponentType.<Boolean>builder().persistent(Codec.BOOL).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.BOOL).build());
 
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> MIASMA_CONTAMINATED =
+            DATA_COMPONENT_TYPES.register("miasma_contaminated",
+                    () -> DataComponentType.<Boolean>builder().persistent(Codec.BOOL).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.BOOL).build());
+
     private ModDataComponents() {}
 }

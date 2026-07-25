@@ -93,6 +93,8 @@ public final class VisionOfLife {
         active.add(uuid);
         PacketDistributor.sendToPlayer(player, new VisionOfLifeStatePayload(true));
         HahUeuh.FOOTPRINT_TRACKER.syncNow(player);
+        player.level().playSound(null, player.blockPosition(), ModSounds.VISION_OF_LIFE.get(),
+                net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
         player.displayClientMessage(Component.translatable("hahueuh.message.vision_of_life_activated")
                 .withStyle(ChatFormatting.LIGHT_PURPLE), true);
     }
@@ -110,6 +112,8 @@ public final class VisionOfLife {
         activatedViaBookOfWisdom.add(uuid);
         PacketDistributor.sendToPlayer(player, new VisionOfLifeStatePayload(true));
         HahUeuh.FOOTPRINT_TRACKER.syncNow(player);
+        player.level().playSound(null, player.blockPosition(), ModSounds.VISION_OF_LIFE.get(),
+                net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
         player.displayClientMessage(Component.translatable("hahueuh.message.vision_of_life_activated")
                 .withStyle(ChatFormatting.LIGHT_PURPLE), true);
     }
@@ -139,6 +143,8 @@ public final class VisionOfLife {
         lastSentGlow.remove(uuid);
         PacketDistributor.sendToPlayer(player, new VisionOfLifeGlowPayload(List.of(), List.of(), List.of(), List.of()));
         HahUeuh.FOOTPRINT_TRACKER.clearFor(player);
+        player.level().playSound(null, player.blockPosition(), ModSounds.MEMORIES_TOGGLE_OFF.get(),
+                net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.0f);
         player.displayClientMessage(Component.translatable(messageKey).withStyle(messageColor), true);
     }
 

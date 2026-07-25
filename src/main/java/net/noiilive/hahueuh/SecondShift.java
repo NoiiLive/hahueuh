@@ -273,7 +273,7 @@ public final class SecondShift {
                 if (weightFraction <= 0.0) continue;
 
                 Integer awardedAmplifier = splitAmplifier(originalLevel, weightFraction, minShare);
-                if (awardedAmplifier == null) continue; // diluted below the floor — nullified for them
+                if (awardedAmplifier == null) continue;
 
                 int awardedDuration = originalDuration < 0 ? originalDuration
                         : Math.max(1, (int) Math.round(originalDuration * weightFraction));

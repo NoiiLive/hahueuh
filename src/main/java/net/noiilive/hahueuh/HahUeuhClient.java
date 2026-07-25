@@ -1,5 +1,6 @@
 package net.noiilive.hahueuh;
 
+import net.noiilive.hahueuh.client.AbilityClient;
 import net.noiilive.hahueuh.client.AbilitySlots;
 import net.noiilive.hahueuh.network.DeathFadeState;
 import net.minecraft.client.DeltaTracker;
@@ -47,6 +48,20 @@ public class HahUeuhClient {
     static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.FROZEN_OBJECT_PROJECTILE.get(), ThrownItemRenderer::new);
         event.registerEntityRenderer(ModEntities.WITCH_FACTOR.get(), net.noiilive.hahueuh.client.WitchFactorRenderer::new);
+        event.registerEntityRenderer(ModEntities.BLACK_HOLE.get(), net.noiilive.hahueuh.client.BlackHoleRenderer::new);
+        event.registerEntityRenderer(ModEntities.MINYA_SPIKE.get(), net.noiilive.hahueuh.client.MinyaSpikeRenderer::new);
+        event.registerEntityRenderer(ModEntities.MINYA_RING.get(), net.noiilive.hahueuh.client.MinyaRingRenderer::new);
+        event.registerBlockEntityRenderer(ModBlocks.POCKET_VOID_BE.get(), net.noiilive.hahueuh.client.PocketVoidRenderer::new);
+    }
+
+    @SubscribeEvent
+    static void onRegisterLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.model.BlackHoleModel.LAYER,
+                net.noiilive.hahueuh.client.model.BlackHoleModel::createBodyLayer);
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.model.MinyaSpikeModel.LAYER,
+                net.noiilive.hahueuh.client.model.MinyaSpikeModel::createBodyLayer);
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.model.MinyaRingModel.LAYER,
+                net.noiilive.hahueuh.client.model.MinyaRingModel::createBodyLayer);
     }
 
     @SubscribeEvent
@@ -58,6 +73,14 @@ public class HahUeuhClient {
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "ability_hud"),
                 net.noiilive.hahueuh.client.AbilityHud::render);
+
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "mana_od_bar"),
+                net.noiilive.hahueuh.client.ManaOdBarHud::render);
+
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "sensory_deprivation"),
+                net.noiilive.hahueuh.client.SensoryDeprivationClient::renderOverlay);
     }
 
     @SubscribeEvent
@@ -67,9 +90,12 @@ public class HahUeuhClient {
         net.noiilive.hahueuh.network.RemoteUnseenHands.clear();
         net.noiilive.hahueuh.network.ClientLionsHeartState.clear();
         net.noiilive.hahueuh.network.ClientLittleKingState.clear();
+        net.noiilive.hahueuh.network.ClientFingerHighlightState.clear();
         net.noiilive.hahueuh.network.ClientMaterialPhaseState.clear();
+        net.noiilive.hahueuh.network.ClientDualWieldState.clear();
         net.noiilive.hahueuh.api.AbilityCooldowns.reset();
         AbilitySlots.reset();
+        AbilityClient.resetChargeManaState();
     }
 
     private static void renderDeathFade(GuiGraphics graphics, DeltaTracker deltaTracker) {

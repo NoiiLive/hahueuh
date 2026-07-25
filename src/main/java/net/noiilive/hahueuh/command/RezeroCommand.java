@@ -1,9 +1,22 @@
 package net.noiilive.hahueuh.command;
 
+import net.noiilive.hahueuh.BookOfLifeStats;
+import net.noiilive.hahueuh.ConfigMagic;
 import net.noiilive.hahueuh.ConfigMain;
 import net.noiilive.hahueuh.ConfigSloth;
 import net.noiilive.hahueuh.HahUeuh;
+import net.noiilive.hahueuh.BookOfLifeAging;
+import net.noiilive.hahueuh.ChunkManaData;
+import net.noiilive.hahueuh.ChunkMiasmaData;
+import net.noiilive.hahueuh.GateDefectiveState;
+import net.noiilive.hahueuh.GateStrain;
+import net.noiilive.hahueuh.MagicSchool;
+import net.noiilive.hahueuh.ModAttachments;
+import net.noiilive.hahueuh.PlayerLifespan;
+import net.noiilive.hahueuh.network.GateDefectiveVariant;
+import net.noiilive.hahueuh.network.GateStatus;
 import net.noiilive.hahueuh.network.GreedVariant;
+import net.noiilive.hahueuh.network.PlayerRace;
 import net.noiilive.hahueuh.network.SlothVariant;
 import net.noiilive.hahueuh.network.WitchFactorAuthority;
 import net.noiilive.hahueuh.snapshot.PlayerAuthorityManager;
@@ -21,8 +34,10 @@ import net.minecraft.commands.arguments.GameProfileArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.portal.DimensionTransition;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
@@ -97,6 +112,7 @@ public class RezeroCommand {
                                                 .then(Commands.literal("set")
                                                         .then(Commands.argument("amount", IntegerArgumentType.integer(0))
                                                                 .executes(RezeroCommand::runSetGreedCompat)))))))
+                .then(magicCommand())
                 .then(Commands.literal("sagecandidate")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.argument("player", EntityArgument.player())
@@ -118,7 +134,101 @@ public class RezeroCommand {
                                         .executes(ctx -> runAllyResponse(ctx, false))))
                         .then(Commands.literal("remove")
                                 .then(Commands.argument("player", GameProfileArgument.gameProfile())
-                                        .executes(RezeroCommand::runAllyRemove)))));
+                                        .executes(RezeroCommand::runAllyRemove))))
+                .then(Commands.literal("race")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.literal("get")
+                                        .executes(RezeroCommand::runGetRace))
+                                .then(Commands.literal("set")
+                                        .then(Commands.literal("human")
+                                                .executes(ctx -> runSetRace(ctx, PlayerRace.HUMAN)))
+                                        .then(Commands.literal("elf")
+                                                .executes(ctx -> runSetRace(ctx, PlayerRace.ELF)))
+                                        .then(Commands.literal("half_elf")
+                                                .executes(ctx -> runSetRace(ctx, PlayerRace.HALF_ELF))))))
+                .then(Commands.literal("gate")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.literal("get")
+                                        .executes(RezeroCommand::runGetGate))
+                                .then(Commands.literal("set")
+                                        .then(Commands.literal("open")
+                                                .executes(ctx -> runSetGate(ctx, GateStatus.OPEN)))
+                                        .then(Commands.literal("partly_open")
+                                                .executes(ctx -> runSetGate(ctx, GateStatus.PARTLY_OPEN)))
+                                        .then(Commands.literal("damaged")
+                                                .executes(ctx -> runSetGate(ctx, GateStatus.DAMAGED)))
+                                        .then(Commands.literal("destroyed")
+                                                .executes(ctx -> runSetGate(ctx, GateStatus.DESTROYED)))
+                                        .then(Commands.literal("defective")
+                                                .executes(ctx -> runSetGate(ctx, GateStatus.DEFECTIVE))))
+                                .then(Commands.literal("defective")
+                                        .then(Commands.literal("get")
+                                                .executes(RezeroCommand::runGetGateDefective))
+                                        .then(Commands.literal("set")
+                                                .then(Commands.literal("no_absorption")
+                                                        .executes(ctx -> runSetGateDefective(ctx, GateDefectiveVariant.NO_ABSORPTION)))
+                                                .then(Commands.literal("no_release")
+                                                        .executes(ctx -> runSetGateDefective(ctx, GateDefectiveVariant.NO_RELEASE)))))
+                                .then(Commands.literal("output")
+                                        .then(Commands.literal("get")
+                                                .executes(RezeroCommand::runGetGateOutput))
+                                        .then(Commands.literal("set")
+                                                .then(Commands.argument("amount", IntegerArgumentType.integer(1, 10))
+                                                        .executes(RezeroCommand::runSetGateOutput))))
+                                .then(Commands.literal("efficiency")
+                                        .then(Commands.literal("get")
+                                                .executes(RezeroCommand::runGetGateEfficiency))
+                                        .then(Commands.literal("set")
+                                                .then(Commands.argument("amount", IntegerArgumentType.integer(1, 10))
+                                                        .executes(RezeroCommand::runSetGateEfficiency))))
+                                .then(Commands.literal("strain")
+                                        .then(Commands.literal("get")
+                                                .executes(RezeroCommand::runGetGateStrain))
+                                        .then(Commands.literal("set")
+                                                .then(Commands.argument("amount", IntegerArgumentType.integer(0, 100))
+                                                        .executes(RezeroCommand::runSetGateStrain))))))
+                .then(Commands.literal("age")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.literal("get")
+                                        .executes(RezeroCommand::runGetAge))
+                                .then(Commands.literal("set")
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                .executes(RezeroCommand::runSetAge)))))
+                .then(Commands.literal("lifespan")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.literal("get")
+                                        .executes(RezeroCommand::runGetLifespan))
+                                .then(Commands.literal("set")
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                                                .executes(RezeroCommand::runSetLifespan)))))
+                .then(Commands.literal("od")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.literal("get")
+                                        .executes(RezeroCommand::runGetOd))
+                                .then(Commands.literal("set")
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                .executes(RezeroCommand::runSetOd)))
+                                .then(Commands.literal("max")
+                                        .executes(RezeroCommand::runMaxOd))))
+                .then(Commands.literal("chunkmana")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.literal("get")
+                                .executes(RezeroCommand::runGetChunkMana))
+                        .then(Commands.literal("set")
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                        .executes(RezeroCommand::runSetChunkMana))))
+                .then(Commands.literal("chunkmiasma")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.literal("get")
+                                .executes(RezeroCommand::runGetChunkMiasma))
+                        .then(Commands.literal("set")
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                        .executes(RezeroCommand::runSetChunkMiasma)))));
     }
 
     private static int runCheckpoint(CommandContext<CommandSourceStack> ctx) {
@@ -417,5 +527,275 @@ public class RezeroCommand {
         ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.revived", target.getName())
                 .withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    private static int runGetRace(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        PlayerRace race = target.getData(ModAttachments.PLAYER_RACE.get());
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.race_get",
+                target.getName(), Component.translatable(race.translationKey)
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return 1;
+    }
+
+    private static int runSetRace(CommandContext<CommandSourceStack> ctx, PlayerRace race) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        PlayerRace previousRace = target.getData(ModAttachments.PLAYER_RACE.get());
+        target.setData(ModAttachments.PLAYER_RACE.get(), race);
+        if (previousRace != race) {
+            PlayerLifespan.reroll(target, race);
+        }
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.race_set",
+                target.getName(), Component.translatable(race.translationKey)
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int runGetGate(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        GateStatus gate = target.getData(ModAttachments.PLAYER_GATE_STATUS.get());
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.gate_get",
+                target.getName(), Component.translatable(gate.translationKey)
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return 1;
+    }
+
+    private static int runSetGate(CommandContext<CommandSourceStack> ctx, GateStatus gate) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        GateStatus previousGate = target.getData(ModAttachments.PLAYER_GATE_STATUS.get());
+        target.setData(ModAttachments.PLAYER_GATE_STATUS.get(), gate);
+        if (gate == GateStatus.DEFECTIVE && previousGate != GateStatus.DEFECTIVE) {
+            GateDefectiveState.reroll(target);
+        }
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.gate_set",
+                target.getName(), Component.translatable(gate.translationKey)
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int runGetGateDefective(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        GateDefectiveState.ensureRolled(target);
+        GateDefectiveVariant variant = GateDefectiveVariant.byOrdinal(
+                target.getData(ModAttachments.PLAYER_GATE_DEFECTIVE_VARIANT.get()));
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.gate_defective_get",
+                target.getName(), Component.translatable(variant.translationKey)
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return 1;
+    }
+
+    private static int runSetGateDefective(CommandContext<CommandSourceStack> ctx, GateDefectiveVariant variant) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        target.setData(ModAttachments.PLAYER_GATE_DEFECTIVE_VARIANT.get(), variant.ordinal());
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.gate_defective_set",
+                target.getName(), Component.translatable(variant.translationKey)
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int runGetGateOutput(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        GateStrain.ensureRolled(target);
+        int output = target.getData(ModAttachments.PLAYER_GATE_OUTPUT.get());
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.gate_output_get",
+                target.getName(), output
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return output;
+    }
+
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> magicCommand() {
+        var playerArg = Commands.argument("player", EntityArgument.player());
+        for (MagicSchool school : MagicSchool.values()) {
+            playerArg.then(Commands.literal(school.id)
+                    .then(Commands.literal("acquired")
+                            .then(Commands.argument("value", BoolArgumentType.bool())
+                                    .executes(ctx -> runMagicAcquired(ctx, school)))));
+        }
+        return Commands.literal("magic").requires(source -> source.hasPermission(2)).then(playerArg);
+    }
+
+    private static int runMagicAcquired(CommandContext<CommandSourceStack> ctx, MagicSchool school)
+            throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        boolean value = BoolArgumentType.getBool(ctx, "value");
+        school.grant(target, value);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.magic_acquired_set",
+                target.getName(), Component.translatable(school.translationKey), String.valueOf(value)
+        ).withStyle(value ? ChatFormatting.GREEN : ChatFormatting.RED), true);
+        return 1;
+    }
+
+    private static int runSetGateOutput(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        target.setData(ModAttachments.PLAYER_GATE_OUTPUT.get(), amount);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.gate_output_set",
+                target.getName(), amount
+        ).withStyle(ChatFormatting.GREEN), true);
+        return amount;
+    }
+
+    private static int runGetGateEfficiency(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        GateStrain.ensureRolled(target);
+        int efficiency = target.getData(ModAttachments.PLAYER_GATE_EFFICIENCY.get());
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.gate_efficiency_get",
+                target.getName(), efficiency
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return efficiency;
+    }
+
+    private static int runSetGateEfficiency(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        target.setData(ModAttachments.PLAYER_GATE_EFFICIENCY.get(), amount);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.gate_efficiency_set",
+                target.getName(), amount
+        ).withStyle(ChatFormatting.GREEN), true);
+        return amount;
+    }
+
+    private static int runGetGateStrain(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int strain = target.getData(ModAttachments.PLAYER_GATE_STRAIN.get());
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.gate_strain_get",
+                target.getName(), strain
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return strain;
+    }
+
+    private static int runSetGateStrain(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        GateStrain.setStrain(target, amount);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.gate_strain_set",
+                target.getName(), amount
+        ).withStyle(ChatFormatting.GREEN), true);
+        return amount;
+    }
+
+    private static int runGetAge(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int age = target.getData(ModAttachments.PLAYER_AGE.get());
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.age_get",
+                target.getName(), age
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return age;
+    }
+
+    private static int runSetAge(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        target.setData(ModAttachments.PLAYER_AGE.get(), amount);
+        BookOfLifeAging.checkOldAge(target);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.age_set",
+                target.getName(), amount
+        ).withStyle(ChatFormatting.GREEN), true);
+        return amount;
+    }
+
+    private static int runGetLifespan(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        PlayerLifespan.ensureRolled(target);
+        int lifespan = target.getData(ModAttachments.PLAYER_LIFESPAN.get());
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.lifespan_get",
+                target.getName(), lifespan
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return lifespan;
+    }
+
+    private static int runSetLifespan(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        target.setData(ModAttachments.PLAYER_LIFESPAN.get(), amount);
+        BookOfLifeStats.clampToMax(target);
+        BookOfLifeStats.setOdToMax(target);
+        BookOfLifeAging.checkOldAge(target);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.lifespan_set",
+                target.getName(), amount
+        ).withStyle(ChatFormatting.GREEN), true);
+        return amount;
+    }
+
+    private static int runGetOd(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int od = target.getData(ModAttachments.PLAYER_OD_CURRENT.get());
+        int max = BookOfLifeStats.maxOd(target);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.od_get",
+                target.getName(), od, max
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return od;
+    }
+
+    private static int runSetOd(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        int max = BookOfLifeStats.maxOd(target);
+        int clamped = Math.min(amount, max);
+        target.setData(ModAttachments.PLAYER_OD_CURRENT.get(), clamped);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.od_set",
+                target.getName(), clamped, max
+        ).withStyle(ChatFormatting.GREEN), true);
+        return clamped;
+    }
+
+    private static int runMaxOd(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        BookOfLifeStats.setOdToMax(target);
+        int max = BookOfLifeStats.maxOd(target);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.od_max",
+                target.getName(), max
+        ).withStyle(ChatFormatting.GREEN), true);
+        return max;
+    }
+
+    private static int runGetChunkMana(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        LevelChunk chunk = player.serverLevel().getChunkAt(player.blockPosition());
+        int mana = ChunkManaData.available(chunk);
+        int cap = ConfigMagic.CHUNK_AMBIENT_MANA_CAP.getAsInt();
+        ChunkPos pos = chunk.getPos();
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.chunk_mana_get",
+                pos.x, pos.z, mana, cap
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return mana;
+    }
+
+    private static int runSetChunkMana(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        LevelChunk chunk = player.serverLevel().getChunkAt(player.blockPosition());
+        ChunkManaData.set(chunk, amount);
+        ChunkPos pos = chunk.getPos();
+        int now = ChunkManaData.available(chunk);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.chunk_mana_set",
+                pos.x, pos.z, now
+        ).withStyle(ChatFormatting.GREEN), true);
+        return now;
+    }
+
+    private static int runGetChunkMiasma(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        LevelChunk chunk = player.serverLevel().getChunkAt(player.blockPosition());
+        int miasma = ChunkMiasmaData.get(chunk);
+        int cap = ConfigMagic.MIASMA_CAP.getAsInt();
+        ChunkPos pos = chunk.getPos();
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.chunk_miasma_get",
+                pos.x, pos.z, miasma, cap
+        ).withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        return miasma;
+    }
+
+    private static int runSetChunkMiasma(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        LevelChunk chunk = player.serverLevel().getChunkAt(player.blockPosition());
+        ChunkMiasmaData.set(chunk, amount);
+        ChunkPos pos = chunk.getPos();
+        int now = ChunkMiasmaData.get(chunk);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.chunk_miasma_set",
+                pos.x, pos.z, now
+        ).withStyle(ChatFormatting.GREEN), true);
+        return now;
     }
 }

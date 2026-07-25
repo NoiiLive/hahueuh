@@ -26,6 +26,12 @@ public final class ConfigSloth {
                      "disable. Default: 5. Range: 0 to 3600.")
             .defineInRange("quickActionCooldownSeconds", 5, 0, 3600);
 
+    public static final ModConfigSpec.IntValue FINGER_GRANT_COOLDOWN_SECONDS = BUILDER
+            .comment("Cooldown (in seconds) for the Unseen Hands 'Finger Grant' ability between granting or",
+                     "reclaiming individual hands to/from a subordinate. Set to 0 to disable. Default: 30.",
+                     "Range: 0 to 3600.")
+            .defineInRange("fingerGrantCooldownSeconds", 30, 0, 3600);
+
     public static final ModConfigSpec.IntValue SLOTH_COMPAT_THRESHOLD = BUILDER
             .comment("Compatibility score a player must reach to use Sloth without drawbacks.",
                      "Default: 100. Range: 1 to 1000000.")

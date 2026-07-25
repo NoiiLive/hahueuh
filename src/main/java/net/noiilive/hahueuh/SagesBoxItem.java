@@ -9,6 +9,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -42,7 +43,11 @@ public final class SagesBoxItem extends Item {
 
     @Override
     public InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
-        if (!(target instanceof WitchFactorEntity witchFactor)) return InteractionResult.PASS;
+        if (target instanceof WitchFactorEntity witchFactor) return trap(stack, player, witchFactor);
+        return forceOnto(stack, player, target);
+    }
+
+    private InteractionResult trap(ItemStack stack, Player player, WitchFactorEntity witchFactor) {
         if (player.level().isClientSide) return InteractionResult.CONSUME;
 
         if (trappedAuthority(stack) != null) {
@@ -63,6 +68,32 @@ public final class SagesBoxItem extends Item {
         witchFactor.discard();
         player.displayClientMessage(Component.translatable("hahueuh.message.sages_box_trapped",
                 Component.translatable(authority.translationKey)).withStyle(ChatFormatting.LIGHT_PURPLE), true);
+        return InteractionResult.SUCCESS;
+    }
+
+    private InteractionResult forceOnto(ItemStack stack, Player player, LivingEntity target) {
+        WitchFactorAuthority authority = trappedAuthority(stack);
+        if (authority == null) return InteractionResult.PASS;
+        if (player.level().isClientSide) return InteractionResult.CONSUME;
+
+        if (target instanceof ServerPlayer targetPlayer) {
+            WitchFactorGrant.grant(targetPlayer, authority);
+        } else if (target instanceof Mob mob) {
+            if (!HahUeuh.MOB_WITCH_FACTOR.forceAssign(mob, authority)) {
+                player.displayClientMessage(Component.translatable("hahueuh.message.sages_box_invalid_target")
+                        .withStyle(ChatFormatting.RED), true);
+                return InteractionResult.FAIL;
+            }
+        } else {
+            player.displayClientMessage(Component.translatable("hahueuh.message.sages_box_invalid_target")
+                    .withStyle(ChatFormatting.RED), true);
+            return InteractionResult.FAIL;
+        }
+
+        stack.remove(ModDataComponents.SAGES_BOX_SIN.get());
+        player.displayClientMessage(Component.translatable("hahueuh.message.sages_box_forced",
+                Component.translatable(authority.translationKey), target.getName())
+                .withStyle(ChatFormatting.LIGHT_PURPLE), true);
         return InteractionResult.SUCCESS;
     }
 

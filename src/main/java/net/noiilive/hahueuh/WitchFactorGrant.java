@@ -22,43 +22,57 @@ public final class WitchFactorGrant {
         MinecraftServer server = player.serverLevel().getServer();
 
         if (ConfigMain.SINGLE_AUTHORITY_HOLDER.get()) {
-            List<UUID> currentHolders = switch (authority) {
-                case SLOTH -> am.holdersOfWitchFactorSloth();
-                case GREED -> am.holdersOfWitchFactorGreed();
-                case NONE -> List.of();
-            };
-            for (UUID holder : currentHolders) {
-                if (holder.equals(uuid)) continue;
-                switch (authority) {
-                    case SLOTH -> am.setWitchFactorSloth(holder, false);
-                    case GREED -> am.setWitchFactorGreed(holder, false);
-                    case NONE -> {}
-                }
-                ServerPlayer previous = server.getPlayerList().getPlayer(holder);
-                if (previous != null) {
-                    previous.displayClientMessage(Component.translatable("hahueuh.message.witch_factor_reassigned",
-                            Component.translatable(authority.translationKey), player.getName())
-                            .withStyle(ChatFormatting.RED), true);
-                }
-            }
+            revokeOtherHolders(server, authority, uuid, player.getName());
         }
 
         switch (authority) {
             case SLOTH -> {
+                boolean hadAuthority = am.canUseSloth(uuid);
                 am.setSloth(uuid, true);
                 am.setWitchFactorSloth(uuid, true);
-                am.setSlothVariant(uuid, SlothVariant.randomWeighted(player.getRandom()));
+                if (!hadAuthority) {
+                    am.setSlothVariant(uuid, SlothVariant.randomWeighted(player.getRandom()));
+                }
                 HahUeuh.SLOTH_COMPAT.ensureStartingScore(uuid);
             }
             case GREED -> {
+                boolean hadAuthority = am.canUseGreed(uuid);
                 am.setGreed(uuid, true);
                 am.setWitchFactorGreed(uuid, true);
-                am.setGreedVariant(uuid, GreedVariant.randomWeighted(player.getRandom()));
+                if (!hadAuthority) {
+                    am.setGreedVariant(uuid, GreedVariant.randomWeighted(player.getRandom()));
+                }
                 HahUeuh.GREED_COMPAT.ensureStartingScore(uuid);
             }
             case NONE -> {}
         }
         HahUeuh.SNAPSHOT_MANAGER.sendAuthoritiesTo(player);
+    }
+
+    public static void revokeOtherHolders(MinecraftServer server, WitchFactorAuthority authority,
+                                          UUID exempt, Component newHolderName) {
+        if (authority == WitchFactorAuthority.NONE) return;
+        PlayerAuthorityManager am = HahUeuh.SNAPSHOT_MANAGER.getAuthorityManager();
+        List<UUID> currentHolders = switch (authority) {
+            case SLOTH -> am.holdersOfWitchFactorSloth();
+            case GREED -> am.holdersOfWitchFactorGreed();
+            case NONE -> List.of();
+        };
+        for (UUID holder : currentHolders) {
+            if (holder.equals(exempt)) continue;
+            switch (authority) {
+                case SLOTH -> am.setWitchFactorSloth(holder, false);
+                case GREED -> am.setWitchFactorGreed(holder, false);
+                case NONE -> {}
+            }
+            ServerPlayer previous = server.getPlayerList().getPlayer(holder);
+            if (previous != null) {
+                previous.displayClientMessage(Component.translatable("hahueuh.message.witch_factor_reassigned",
+                        Component.translatable(authority.translationKey), newHolderName)
+                        .withStyle(ChatFormatting.RED), true);
+            }
+        }
+        HahUeuh.MOB_WITCH_FACTOR.revokeOtherMobHolders(server, authority, exempt);
     }
 
     public static void revokeAllForRelease(MinecraftServer server, WitchFactorAuthority authority) {

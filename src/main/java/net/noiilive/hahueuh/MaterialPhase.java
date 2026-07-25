@@ -267,7 +267,7 @@ public final class MaterialPhase {
         for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
             BlockState state = level.getBlockState(pos);
             if (state.isAir() || state.getBlock() instanceof LiquidBlock) continue;
-            if (state.getDestroySpeed(level, pos) < 0) continue; // unbreakable (bedrock, barrier, ...)
+            if (state.getDestroySpeed(level, pos) < 0) continue;
 
             level.sendParticles(ParticleTypes.EXPLOSION,
                     pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 1, 0.0, 0.0, 0.0, 0.0);

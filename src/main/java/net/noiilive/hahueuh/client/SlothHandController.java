@@ -1,8 +1,9 @@
 package net.noiilive.hahueuh.client;
 
-import net.noiilive.hahueuh.ConfigSloth;
 import net.noiilive.hahueuh.HahUeuhAbilities;
+import net.noiilive.hahueuh.ModSounds;
 import net.noiilive.hahueuh.api.AbilityCooldowns;
+import net.noiilive.hahueuh.network.ClientFingerState;
 import net.noiilive.hahueuh.network.ClientSlothState;
 import net.noiilive.hahueuh.network.HandMode;
 import net.noiilive.hahueuh.network.RemoteUnseenHands;
@@ -11,7 +12,10 @@ import net.noiilive.hahueuh.network.UnseenHandPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.resources.sounds.EntityBoundSoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -25,7 +29,8 @@ final class SlothHandController {
     private static final float QUICK_SPEED_BOOST = 1.5f;
     private static final double RETRACT_DONE_DISTANCE = 0.35;
 
-    private boolean summonHeld;
+    private boolean summonToggled;
+    private boolean pendingSummonToggle;
     private boolean selfPropelHeld;
     private boolean pendingQuickRequested;
     private HandMode pendingQuickMode = HandMode.NONE;
@@ -33,7 +38,6 @@ final class SlothHandController {
     private boolean quickSequenceActive;
     private HandMode quickMode = HandMode.NONE;
     private boolean quickRetracting;
-    private boolean summonSuppressedUntilRelease;
 
     private boolean wasHeld;
     private boolean wasServerActive;
@@ -49,8 +53,8 @@ final class SlothHandController {
 
     private SlothHandController() {}
 
-    void reportSummonHeld(boolean down) {
-        summonHeld = down;
+    void requestSummonToggle() {
+        pendingSummonToggle = true;
     }
 
     void reportSelfPropelHeld(boolean down) {
@@ -71,21 +75,37 @@ final class SlothHandController {
     void tick(LocalPlayer player) {
         Minecraft mc = Minecraft.getInstance();
 
-        boolean variantIsUnseenHands = ClientSlothState.slothVariant() == SlothVariant.UNSEEN_HANDS;
-        boolean canSloth = ClientSlothState.canSloth();
+        boolean slothUnseenHands = ClientSlothState.canSloth()
+                && ClientSlothState.slothVariant() == SlothVariant.UNSEEN_HANDS;
+        boolean fingerRecipient = ClientFingerState.hasHands();
+        boolean canSloth = ClientSlothState.canSloth() || fingerRecipient;
+        boolean actsAsUnseenHands = slothUnseenHands || fingerRecipient;
+        int effectiveHands = slothUnseenHands ? ClientSlothState.handCount()
+                : fingerRecipient ? ClientFingerState.hands() : 0;
+        boolean canMobility = actsAsUnseenHands && effectiveHands >= 2;
         boolean summonOnCooldown = AbilityCooldowns.secondsRemaining(HahUeuhAbilities.SLOTH_COOLDOWN_KEY) > 0 && !player.isCreative();
         boolean quickOnCooldown = AbilityCooldowns.secondsRemaining(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY) > 0 && !player.isCreative();
 
-        if (!summonHeld) summonSuppressedUntilRelease = false;
+        if (!canSloth) summonToggled = false;
 
-        boolean wantsSummon = summonHeld && canSloth && !summonOnCooldown && !summonSuppressedUntilRelease;
-        boolean wantsSelfPropel = selfPropelHeld && canSloth && !quickOnCooldown && variantIsUnseenHands;
-
-        if (summonHeld && summonOnCooldown) {
-            player.displayClientMessage(Component.translatable("hahueuh.message.sloth_cooldown",
-                            AbilityCooldowns.secondsRemaining(HahUeuhAbilities.SLOTH_COOLDOWN_KEY))
-                    .withStyle(ChatFormatting.LIGHT_PURPLE), true);
+        if (pendingSummonToggle) {
+            pendingSummonToggle = false;
+            if (summonToggled) {
+                summonToggled = false;
+                playHandSound(player, resolveUseSound());
+            } else if (canSloth && !summonOnCooldown) {
+                summonToggled = true;
+                playHandSound(player, resolveSummonSound());
+            } else if (summonOnCooldown) {
+                player.displayClientMessage(Component.translatable("hahueuh.message.sloth_cooldown",
+                                AbilityCooldowns.secondsRemaining(HahUeuhAbilities.SLOTH_COOLDOWN_KEY))
+                        .withStyle(ChatFormatting.LIGHT_PURPLE), true);
+            }
         }
+
+        boolean wantsSummon = summonToggled && canSloth && !summonOnCooldown;
+        boolean wantsSelfPropel = selfPropelHeld && canSloth && !quickOnCooldown && canMobility;
+
         if (selfPropelHeld && quickOnCooldown) {
             player.displayClientMessage(Component.translatable("hahueuh.message.quick_action_cooldown",
                             AbilityCooldowns.secondsRemaining(HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY))
@@ -104,16 +124,17 @@ final class SlothHandController {
                 quickMode = pendingQuickMode;
                 quickRetracting = wantsSummon || cancelingActiveSummon;
                 if (wantsSummon || cancelingActiveSummon) {
-                    summonSuppressedUntilRelease = true;
+                    summonToggled = false;
                     retractingGrab = false;
                     lastModeWhileHeld = HandMode.NONE;
                 }
+                playHandSound(player, resolveUseSound());
             }
         }
 
         boolean quickHeldPhase = quickSequenceActive && !quickRetracting;
 
-        boolean mobilityMode = (wantsSummon && player.isShiftKeyDown() && variantIsUnseenHands) || wantsSelfPropel;
+        boolean mobilityMode = (wantsSummon && player.isShiftKeyDown() && canMobility) || wantsSelfPropel;
         if (mobilityMode != wasMobility) {
             player.displayClientMessage(Component.translatable(mobilityMode
                             ? "hahueuh.message.hands_anchored" : "hahueuh.message.hands_released")
@@ -184,6 +205,29 @@ final class SlothHandController {
 
     private void forceLocalNotCrouching(LocalPlayer player) {
         player.crouching = false;
+    }
+
+    private static void playHandSound(LocalPlayer player, SoundEvent sound) {
+        Minecraft.getInstance().getSoundManager().play(new EntityBoundSoundInstance(
+                sound, SoundSource.PLAYERS, 1.0f, 1.0f, player, player.getRandom().nextLong()));
+    }
+
+    private static SoundEvent resolveSummonSound() {
+        if (!ClientSlothState.canSloth()) return ModSounds.SLOTH_HAND_SUMMON.get();
+        return switch (ClientSlothState.slothVariant()) {
+            case UNSEEN_HANDS -> ModSounds.UNSEEN_HAND_SUMMON.get();
+            case INVISIBLE_PROVIDENCE -> ModSounds.INVISIBLE_PROVIDENCE_SUMMON.get();
+            case SEKHMET -> ModSounds.SEKHMET_SUMMON.get();
+        };
+    }
+
+    private static SoundEvent resolveUseSound() {
+        if (!ClientSlothState.canSloth()) return ModSounds.SLOTH_HAND_USE.get();
+        return switch (ClientSlothState.slothVariant()) {
+            case UNSEEN_HANDS -> ModSounds.UNSEEN_HAND_USE.get();
+            case INVISIBLE_PROVIDENCE -> ModSounds.INVISIBLE_PROVIDENCE_USE.get();
+            case SEKHMET -> ModSounds.SEKHMET_USE.get();
+        };
     }
 
     private void syncUnseenHandToServer(Minecraft mc) {

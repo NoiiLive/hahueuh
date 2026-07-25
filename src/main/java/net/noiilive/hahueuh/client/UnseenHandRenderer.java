@@ -6,6 +6,7 @@ import net.noiilive.hahueuh.client.model.UnseenHandHierModel;
 import net.noiilive.hahueuh.client.model.UnseenHandModel;
 import net.noiilive.hahueuh.client.model.UnseenTendrilModel;
 import net.noiilive.hahueuh.network.ClientSlothState;
+import net.noiilive.hahueuh.network.ClientFingerState;
 import net.noiilive.hahueuh.network.RemoteUnseenHands;
 import net.noiilive.hahueuh.network.SlothVariant;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -115,7 +116,7 @@ public final class UnseenHandRenderer {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) { VISUALS.clear(); return; }
-        if (!ClientSlothState.canSloth()) { VISUALS.clear(); return; }
+        if (!ClientSlothState.canSloth() && !ClientFingerState.hasHands()) { VISUALS.clear(); return; }
 
         UnseenHandHierModel hand = handModel();
         ModelPart tendril = tendrilPart();
@@ -137,12 +138,18 @@ public final class UnseenHandRenderer {
             LivingEntity owner = e.getKey().equals(self) ? mc.player : resolveLiving(mc.level, r.entityId());
             if (owner == null) continue;
             addInstances(instances, e.getKey(), r.entityId(), owner, r.distance(),
-                    r.mode(), SlothVariant.byOrdinal(r.variant()), r.mobility(), 1f);
+                    r.mode(), SlothVariant.byOrdinal(r.variant()), r.mobility(), 1f, r.count());
         }
         if (UnseenHandState.isActive()) {
+            boolean slothUnseenHands = ClientSlothState.canSloth()
+                    && ClientSlothState.slothVariant() == SlothVariant.UNSEEN_HANDS;
+            SlothVariant selfVariant = slothUnseenHands ? ClientSlothState.slothVariant()
+                    : ClientFingerState.hasHands() ? SlothVariant.UNSEEN_HANDS : ClientSlothState.slothVariant();
+            int selfCount = slothUnseenHands ? ClientSlothState.handCount()
+                    : ClientFingerState.hasHands() ? ClientFingerState.hands() : 0;
             addInstances(instances, self, mc.player.getId(), mc.player, (float) UnseenHandState.maxRange(),
-                    UnseenHandState.mode().ordinal(), ClientSlothState.slothVariant(), UnseenHandState.isMobility(),
-                    UnseenHandState.speedBoost());
+                    UnseenHandState.mode().ordinal(), selfVariant, UnseenHandState.isMobility(),
+                    UnseenHandState.speedBoost(), selfCount);
         }
 
         Set<VisualKey> all = new HashSet<>(instances.keySet());
@@ -209,7 +216,8 @@ public final class UnseenHandRenderer {
     }
 
     private static void addInstances(Map<VisualKey, Instance> out, UUID id, int entityId, LivingEntity owner,
-                                     float target, int modeId, SlothVariant variant, boolean mobility, float extraSpeedMul) {
+                                     float target, int modeId, SlothVariant variant, boolean mobility, float extraSpeedMul,
+                                     int handCount) {
         if (variant == SlothVariant.SEKHMET) {
             float size = SlothVariant.sekhmetSize(id);
             float off = SlothVariant.sekhmetShoulderOffset(size);
@@ -221,7 +229,7 @@ public final class UnseenHandRenderer {
             out.put(new VisualKey(id, 1), new Instance(entityId, owner, target, modeId, size, SEKHMET_SPEED_MUL * extraSpeedMul, false,
                     new HandShape(height, off, back, 0f, splay, 0f, splay + 0.3f * size, 0.2f, 0f, 0f, 0), false));
         } else if (variant == SlothVariant.UNSEEN_HANDS) {
-            int count = SlothVariant.unseenHandCount(id);
+            int count = handCount > 0 ? handCount : SlothVariant.unseenHandCount(id);
             for (int i = 0; i < count; i++) {
                 HandShape shape = new HandShape(
                         SlothVariant.UNSEEN_ANCHOR_HEIGHT,

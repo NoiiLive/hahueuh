@@ -482,7 +482,6 @@ public final class AllyTracker {
                 releaseBurdenTicket(pb);
                 it.remove();
             } else if (--pb.ticksRemaining <= 0) {
-                // Chunk loaded but the mob's gone (despawned/removed while unloaded), or it never came in.
                 releaseBurdenTicket(pb);
                 it.remove();
             }

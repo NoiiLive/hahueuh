@@ -19,6 +19,10 @@ public final class ModCreativeTabs {
                     .icon(() -> new ItemStack(ModItems.SAGES_BOX.get()))
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.DRAGON_SWORD_REID.get());
+                        output.accept(ModItems.BOWEL_HUNTER_KUKRI.get());
+                        output.accept(ModItems.BOWEL_HUNTER_WHITE_BLADE.get());
+                        output.accept(ModItems.BOWEL_HUNTER_BLACK_BLADE.get());
+                        output.accept(ModItems.SPIKED_CLUB.get());
                         output.accept(ModItems.SAGES_BOX.get());
                         for (WitchFactorAuthority authority : new WitchFactorAuthority[]{WitchFactorAuthority.SLOTH, WitchFactorAuthority.GREED}) {
                             ItemStack stack = new ItemStack(ModItems.SAGES_BOX.get());

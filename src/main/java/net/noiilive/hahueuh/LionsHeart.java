@@ -15,11 +15,13 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.storage.LevelResource;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.damagesource.DamageContainer;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingShieldBlockEvent;
+import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
@@ -62,6 +64,10 @@ public final class LionsHeart {
 
     public boolean isActive(UUID uuid) {
         return activations.containsKey(uuid);
+    }
+
+    public boolean isActiveOrPersisted(UUID uuid) {
+        return activations.containsKey(uuid) || persistedActivations.containsKey(uuid);
     }
 
     public boolean isOnCooldown(UUID uuid) {
@@ -134,6 +140,7 @@ public final class LionsHeart {
 
     private void activate(ServerPlayer player) {
         activations.put(player.getUUID(), new ActivationState(server.getTickCount(), rollDurationTicks()));
+        player.removeAllEffects();
         PacketDistributor.sendToPlayer(player, new LionsHeartStatePayload(true));
         player.level().playSound(null, player, ModSounds.LIONSHEART_ACTIVATE.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
         player.displayClientMessage(Component.translatable("hahueuh.message.lions_heart_activated")
@@ -355,6 +362,7 @@ public final class LionsHeart {
             float progress = Math.min(1f, (float) burnoutElapsed / effectiveDuration);
             float damage = BURNOUT_DAMAGE_MIN + progress * (BURNOUT_DAMAGE_MAX - BURNOUT_DAMAGE_MIN);
             burnoutInProgress.add(uuid);
+            player.invulnerableTime = 0;
             player.hurt(player.damageSources().indirectMagic(player, player), damage);
             burnoutInProgress.remove(uuid);
         }
@@ -385,9 +393,14 @@ public final class LionsHeart {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
     public void onIncomingDamage(LivingIncomingDamageEvent event) {
-        if (isActive(event.getEntity().getUUID()) && !burnoutInProgress.contains(event.getEntity().getUUID())) {
+        UUID targetId = event.getEntity().getUUID();
+        if (burnoutInProgress.contains(targetId)) {
+            event.setCanceled(false);
+            return;
+        }
+        if (isActive(targetId)) {
             event.setCanceled(true);
             return;
         }
@@ -396,6 +409,13 @@ public final class LionsHeart {
         if (attacker instanceof LivingEntity attackingEntity && isActive(attackingEntity.getUUID())) {
             event.addReductionModifier(DamageContainer.Reduction.ARMOR, (container, reduction) -> 0f);
             event.addReductionModifier(DamageContainer.Reduction.ENCHANTMENTS, (container, reduction) -> 0f);
+        }
+    }
+
+    @SubscribeEvent
+    public void onEffectApplicable(MobEffectEvent.Applicable event) {
+        if (isActive(event.getEntity().getUUID())) {
+            event.setResult(MobEffectEvent.Applicable.Result.DO_NOT_APPLY);
         }
     }
 

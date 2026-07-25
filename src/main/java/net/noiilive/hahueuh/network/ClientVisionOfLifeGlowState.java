@@ -46,9 +46,6 @@ public final class ClientVisionOfLifeGlowState {
         return hostile.isEmpty() && passive.isEmpty() && player.isEmpty() && witchFactor.isEmpty();
     }
 
-    /** {@code null} if this entity isn't currently tracked by Vision of Life at all. Holding a Witch Factor
-     *  takes priority over any other category — the server only ever puts an entity's id in one of these
-     *  four lists to begin with, but checking it first keeps that priority explicit here too. */
     public static Category categoryOf(int entityId) {
         if (witchFactor.contains(entityId)) return Category.WITCH_FACTOR;
         if (hostile.contains(entityId)) return Category.HOSTILE;

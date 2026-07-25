@@ -51,7 +51,7 @@ public final class LittleKing {
             ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "little_king_heart_debt");
     private static final String FILE_NAME = "hahueuh_little_king.json";
     private static final double IMPLANT_REACH = 6.0;
-    private static final double MIN_MAX_HEALTH = 1.0; // half a heart
+    private static final double MIN_MAX_HEALTH = 1.0;
     private static final int HEARTBEAT_INTERVAL_TICKS = 60;
     private static final int HIGHLIGHT_REFRESH_INTERVAL_TICKS = 10;
 

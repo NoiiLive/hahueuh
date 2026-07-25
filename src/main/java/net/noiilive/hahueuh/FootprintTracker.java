@@ -112,7 +112,7 @@ public final class FootprintTracker {
         UUID self = player.getUUID();
         for (FootprintEntry e : footprints) {
             if (!e.dimension().equals(dim)) continue;
-            if (e.owner().equals(self)) continue; // you never see your own footprints, only other people's
+            if (e.owner().equals(self)) continue;
             double dx = e.x() - pp.x, dy = e.y() - pp.y, dz = e.z() - pp.z;
             if (dx * dx + dy * dy + dz * dz > SYNC_RADIUS_SQR) continue;
             out.add(new FootprintSyncPayload.Footprint(e.x(), e.y(), e.z(), e.yaw(), e.category(), e.timestamp(), e.name()));

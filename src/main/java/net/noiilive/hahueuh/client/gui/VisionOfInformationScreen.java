@@ -17,7 +17,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
@@ -352,7 +351,7 @@ public final class VisionOfInformationScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 257 || keyCode == 335) { // Enter / numpad Enter
+        if (keyCode == 257 || keyCode == 335) {
             if (searchBox != null && searchBox.isFocused()) {
                 submitQuery();
                 return true;

@@ -5,12 +5,18 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "hahueuh.refmap.json",
   "mixins": [
+    "AttackStrengthTickerAccessor",
+    "CookingRecipeContaminationMixin",
+    "CraftingRecipeContaminationMixin",
+    "CreeperExplodeMixin",
     "EntityIgnoresBlockTriggersMixin",
     "ServerMovementPhaseMixin",
     "ServerEntityPhaseMixin"
   ],
   "client": [
-    "EntityCollideMixin"
+    "EntityCollideMixin",
+    "MouseInvertMixin",
+    "PlayerAttackDelayMixin"
   ],
   "server": []
 }
