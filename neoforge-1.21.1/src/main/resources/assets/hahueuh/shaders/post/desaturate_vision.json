@@ -1,0 +1,18 @@
+{
+    "targets": [ "swap" ],
+    "passes": [
+        {
+            "name": "hahueuh:desaturate_vision",
+            "intarget": "minecraft:main",
+            "outtarget": "swap",
+            "uniforms": [
+                { "name": "Intensity", "values": [ 1.0 ] }
+            ]
+        },
+        {
+            "name": "blit",
+            "intarget": "swap",
+            "outtarget": "minecraft:main"
+        }
+    ]
+}
