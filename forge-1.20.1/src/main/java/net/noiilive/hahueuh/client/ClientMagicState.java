@@ -9,6 +9,16 @@ import net.noiilive.hahueuh.network.ClientPlayerData;
 public final class ClientMagicState {
     private ClientMagicState() {}
 
+    public static boolean emmActive() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        return player != null && ClientPlayerData.of(player).isEmmActive();
+    }
+
+    public static boolean sealed() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        return player != null && ClientPlayerData.of(player).isSealed();
+    }
+
     public static boolean hasYin() {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) return false;

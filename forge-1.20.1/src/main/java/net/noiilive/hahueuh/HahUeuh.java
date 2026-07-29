@@ -33,6 +33,7 @@ public class HahUeuh {
     public static final DualWield DUAL_WIELD = new DualWield();
     public static final MobAbilityAI MOB_ABILITY_AI = new MobAbilityAI();
     public static final SpikedClubHandler SPIKED_CLUB_HANDLER = new SpikedClubHandler();
+    public static final StatEffects STAT_EFFECTS = new StatEffects();
     public static final BaseShift BASE_SHIFT = new BaseShift();
     public static final SecondShift SECOND_SHIFT = new SecondShift();
     public static final LionsHeart LIONS_HEART = new LionsHeart();
@@ -51,6 +52,15 @@ public class HahUeuh {
     public static final PocketDimension POCKET_DIMENSION = new PocketDimension();
     public static final Crystallize CRYSTALLIZE = new Crystallize();
     public static final ElMinyaChain EL_MINYA_CHAIN = new ElMinyaChain();
+    public static final Murak MURAK = new Murak();
+    public static final Vita VITA = new Vita();
+    public static final ElVita EL_VITA = new ElVita();
+    public static final IncreasedGravity INCREASED_GRAVITY = new IncreasedGravity();
+    public static final Teleportation TELEPORTATION = new Teleportation();
+    public static final OlShamak OL_SHAMAK = new OlShamak();
+    public static final DoorCrossing DOOR_CROSSING = new DoorCrossing();
+    public static final Emm EMM = new Emm();
+    public static final Emt EMT = new Emt();
     public static final BookOfLifeAging BOOK_OF_LIFE_AGING = new BookOfLifeAging();
     public static final MiasmaTick MIASMA_TICK = new MiasmaTick();
     public static final MiasmaContamination MIASMA_CONTAMINATION = new MiasmaContamination();
@@ -86,6 +96,7 @@ public class HahUeuh {
         MinecraftForge.EVENT_BUS.register(DUAL_WIELD);
         MinecraftForge.EVENT_BUS.register(MOB_ABILITY_AI);
         MinecraftForge.EVENT_BUS.register(SPIKED_CLUB_HANDLER);
+        MinecraftForge.EVENT_BUS.register(STAT_EFFECTS);
         MinecraftForge.EVENT_BUS.register(BASE_SHIFT);
         MinecraftForge.EVENT_BUS.register(SECOND_SHIFT);
         MinecraftForge.EVENT_BUS.register(LIONS_HEART);
@@ -104,6 +115,14 @@ public class HahUeuh {
         MinecraftForge.EVENT_BUS.register(POCKET_DIMENSION);
         MinecraftForge.EVENT_BUS.register(CRYSTALLIZE);
         MinecraftForge.EVENT_BUS.register(EL_MINYA_CHAIN);
+        MinecraftForge.EVENT_BUS.register(MURAK);
+        MinecraftForge.EVENT_BUS.register(EL_VITA);
+        MinecraftForge.EVENT_BUS.register(INCREASED_GRAVITY);
+        MinecraftForge.EVENT_BUS.register(TELEPORTATION);
+        MinecraftForge.EVENT_BUS.register(OL_SHAMAK);
+        MinecraftForge.EVENT_BUS.register(DOOR_CROSSING);
+        MinecraftForge.EVENT_BUS.register(EMM);
+        MinecraftForge.EVENT_BUS.register(EMT);
         MinecraftForge.EVENT_BUS.register(BOOK_OF_LIFE_AGING);
         MinecraftForge.EVENT_BUS.register(MIASMA_TICK);
         MinecraftForge.EVENT_BUS.register(MIASMA_CONTAMINATION);

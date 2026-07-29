@@ -165,10 +165,31 @@ public final class ModAttachments {
                             .copyOnDeath()
                             .build());
 
-    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Integer>> PLAYER_HEAT_LAST_RESET_DAY =
-            ATTACHMENT_TYPES.register("player_heat_last_reset_day",
-                    () -> AttachmentType.builder(() -> -1)
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Integer>> PLAYER_HEAT_DECAY_BASE =
+            ATTACHMENT_TYPES.register("player_heat_decay_base",
+                    () -> AttachmentType.builder(() -> 0)
                             .serialize(Codec.INT)
+                            .copyOnDeath()
+                            .build());
+
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Long>> PLAYER_HEAT_DECAY_START =
+            ATTACHMENT_TYPES.register("player_heat_decay_start",
+                    () -> AttachmentType.builder(() -> 0L)
+                            .serialize(Codec.LONG)
+                            .copyOnDeath()
+                            .build());
+
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Integer>> PLAYER_STRAIN_DECAY_BASE =
+            ATTACHMENT_TYPES.register("player_strain_decay_base",
+                    () -> AttachmentType.builder(() -> 0)
+                            .serialize(Codec.INT)
+                            .copyOnDeath()
+                            .build());
+
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Long>> PLAYER_STRAIN_DECAY_START =
+            ATTACHMENT_TYPES.register("player_strain_decay_start",
+                    () -> AttachmentType.builder(() -> 0L)
+                            .serialize(Codec.LONG)
                             .copyOnDeath()
                             .build());
 
@@ -178,6 +199,28 @@ public final class ModAttachments {
                             .serialize(Codec.STRING)
                             .sync(ByteBufCodecs.STRING_UTF8)
                             .copyOnDeath()
+                            .build());
+
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<net.noiilive.hahueuh.network.PlayerStatBlock>> PLAYER_STATS =
+            ATTACHMENT_TYPES.register("player_stats",
+                    () -> AttachmentType.builder(() -> net.noiilive.hahueuh.network.PlayerStatBlock.UNROLLED)
+                            .serialize(net.noiilive.hahueuh.network.PlayerStatBlock.CODEC)
+                            .sync(net.noiilive.hahueuh.network.PlayerStatBlock.STREAM_CODEC)
+                            .copyOnDeath()
+                            .build());
+
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Boolean>> PLAYER_SEALED =
+            ATTACHMENT_TYPES.register("player_sealed",
+                    () -> AttachmentType.builder(() -> false)
+                            .serialize(Codec.BOOL)
+                            .sync(ByteBufCodecs.BOOL)
+                            .build());
+
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Boolean>> PLAYER_EMM_ACTIVE =
+            ATTACHMENT_TYPES.register("player_emm_active",
+                    () -> AttachmentType.builder(() -> false)
+                            .serialize(Codec.BOOL)
+                            .sync(ByteBufCodecs.BOOL)
                             .build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Boolean>> PLAYER_HAS_TRAPPED_ENTITIES =

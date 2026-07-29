@@ -257,6 +257,16 @@ public final class PocketDimension {
         }
         if (changed) savePersisted();
 
+        if (pocket != null) {
+            Set<Integer> liveCells = new HashSet<>();
+            for (Capture capture : captures.values()) liveCells.add(capture.cell);
+            for (int cell : liveCells) {
+                BlockPos origin = cellOrigin(cell);
+                forceCellChunks(pocket, origin, true);
+                buildRoom(pocket, origin, true);
+            }
+        }
+
         for (UUID casterUuid : affectedCasters) {
             ServerPlayer caster = server.getPlayerList().getPlayer(casterUuid);
             if (caster != null) syncTrappedFlag(caster);

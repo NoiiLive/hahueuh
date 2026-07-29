@@ -14,11 +14,12 @@ public final class BookOfLifeStats {
     }
 
     public static int maxMana(IAttachmentHolder player) {
-        return maxOd(player);
+        return (int) Math.round(maxOd(player) * StatBonuses.manaCapacityMultiplier(player));
     }
 
     public static void setOdToMax(ServerPlayer player) {
         player.setData(ModAttachments.PLAYER_OD_CURRENT.get(), maxOd(player));
+        HahUeuh.CRIPPLED_STATE.checkRecovery(player);
     }
 
     public static void clampToMax(ServerPlayer player) {

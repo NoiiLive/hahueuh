@@ -1,9 +1,14 @@
 package net.noiilive.hahueuh.client.gui;
 
 import net.noiilive.hahueuh.BookOfLifeStats;
+import net.noiilive.hahueuh.StatBonuses;
+import net.noiilive.hahueuh.ConfigPlayer;
 import net.noiilive.hahueuh.ConfigMagic;
 import net.noiilive.hahueuh.HahUeuh;
 import net.noiilive.hahueuh.ModAttachments;
+import net.noiilive.hahueuh.network.PlayerStat;
+import net.noiilive.hahueuh.network.PlayerStatBlock;
+import net.noiilive.hahueuh.network.StatEntry;
 import net.noiilive.hahueuh.network.GateDefectiveVariant;
 import net.noiilive.hahueuh.network.GateStatus;
 import net.noiilive.hahueuh.network.PlayerRace;
@@ -31,6 +36,21 @@ public final class BookOfLifeScreen extends BookPageScreen {
     private static final double[] INFO_Y = {106, 117, 128, 139, 150};
     private static final int GATE_FIELD_INDEX = 2;
 
+    private static final ResourceLocation STAT_BAR_EMPTY =
+            ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "textures/gui/stat_bar_empty.png");
+    private static final ResourceLocation STAT_BAR_FULL =
+            ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "textures/gui/stat_bar_full.png");
+
+    private static final int STAT_BAR_W = 108;
+    private static final int STAT_BAR_H = 7;
+
+    private static final double STATS_TITLE_X = 206.5, STATS_TITLE_Y = 25;
+    private static final double STAT_TEXT_X = 206.5;
+    private static final double STAT_TEXT_Y0 = 38;
+    private static final int STAT_BAR_X = 153;
+    private static final int STAT_BAR_Y0 = 42;
+    private static final int STAT_ROW_STEP = 21;
+
     public BookOfLifeScreen() {
         super(Component.translatable("hahueuh.gui.book_of_life.title"));
     }
@@ -56,12 +76,20 @@ public final class BookOfLifeScreen extends BookPageScreen {
             drawAligned(graphics, infoFields[i], left + INFO_X, top + INFO_Y[i], Align.LEFT);
         }
 
+        renderStats(graphics, player);
+
         renderPlayerModel(graphics, mouseX, mouseY, player);
         renderBookTabs(graphics, mouseX, mouseY);
 
         if (player != null && isHoveringGateField(infoFields[GATE_FIELD_INDEX], mouseX, mouseY)) {
             graphics.renderComponentTooltip(font, buildGateTooltip(player, infoFields[GATE_FIELD_INDEX]), mouseX, mouseY);
         }
+
+        PlayerStat hoveredStat = statBarAt(mouseX, mouseY);
+        if (player != null && hoveredStat != null) {
+            graphics.renderComponentTooltip(font, buildStatTooltip(player, hoveredStat), mouseX, mouseY);
+        }
+
         renderBookTabTooltip(graphics, mouseX, mouseY);
     }
 
@@ -79,8 +107,8 @@ public final class BookOfLifeScreen extends BookPageScreen {
     }
 
     private List<Component> buildGateTooltip(LocalPlayer player, Component gateText) {
-        int output = Math.max(0, player.getData(ModAttachments.PLAYER_GATE_OUTPUT.get()));
-        int efficiency = Math.max(0, player.getData(ModAttachments.PLAYER_GATE_EFFICIENCY.get()));
+        int output = StatBonuses.effectiveGateOutput(player);
+        int efficiency = StatBonuses.effectiveGateEfficiency(player);
         int strain = player.getData(ModAttachments.PLAYER_GATE_STRAIN.get());
 
         int damagedThreshold = ConfigMagic.GATE_STRAIN_DAMAGED.getAsInt();
@@ -126,6 +154,66 @@ public final class BookOfLifeScreen extends BookPageScreen {
                 player.getData(ModAttachments.PLAYER_GATE_DEFECTIVE_VARIANT.get()));
         return Component.translatable("hahueuh.gui.book_of_life.field_gate_defective",
                 Component.translatable(gate.translationKey), Component.translatable(variant.translationKey));
+    }
+
+    private PlayerStat statBarAt(int mouseX, int mouseY) {
+        for (PlayerStat stat : PlayerStat.ORDERED) {
+            int barX = left + STAT_BAR_X;
+            int barY = top + STAT_BAR_Y0 + stat.ordinal() * STAT_ROW_STEP;
+            if (mouseX >= barX && mouseX < barX + STAT_BAR_W
+                    && mouseY >= barY && mouseY < barY + STAT_BAR_H) {
+                return stat;
+            }
+        }
+        return null;
+    }
+
+    private List<Component> buildStatTooltip(LocalPlayer player, PlayerStat stat) {
+        StatEntry entry = player.getData(ModAttachments.PLAYER_STATS.get()).get(stat);
+        int perLevel = Math.max(1, ConfigPlayer.STAT_PROGRESS_PER_LEVEL.getAsInt());
+        int cap = StatBonuses.levelCap(entry);
+        boolean maxed = StatBonuses.atCap(entry);
+
+        return List.of(
+                Component.translatable(stat.translationKey).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD),
+                maxed
+                        ? Component.translatable("hahueuh.gui.book_of_life.stat_maxed").withStyle(ChatFormatting.GREEN)
+                        : Component.translatable("hahueuh.gui.book_of_life.stat_progress",
+                                entry.progress(), perLevel).withStyle(ChatFormatting.AQUA),
+                Component.translatable("hahueuh.gui.book_of_life.stat_level", entry.level(), cap)
+                        .withStyle(ChatFormatting.YELLOW),
+                Component.translatable("hahueuh.gui.book_of_life.stat_proficiency", entry.proficiency())
+                        .withStyle(ChatFormatting.LIGHT_PURPLE),
+                Component.translatable("hahueuh.gui.book_of_life.stat_capacity", entry.capacity())
+                        .withStyle(ChatFormatting.LIGHT_PURPLE)
+        );
+    }
+
+    private void renderStats(GuiGraphics graphics, LocalPlayer player) {
+        drawAligned(graphics, Component.translatable("hahueuh.gui.book_of_life.stats_title"),
+                left + STATS_TITLE_X, top + STATS_TITLE_Y, Align.CENTER);
+
+        PlayerStatBlock stats = player != null
+                ? player.getData(ModAttachments.PLAYER_STATS.get()) : PlayerStatBlock.UNROLLED;
+        int perLevel = Math.max(1, ConfigPlayer.STAT_PROGRESS_PER_LEVEL.getAsInt());
+
+        for (PlayerStat stat : PlayerStat.ORDERED) {
+            int row = stat.ordinal();
+            StatEntry entry = stats.get(stat);
+
+            drawAligned(graphics, Component.translatable("hahueuh.gui.book_of_life.stat_line",
+                            Component.translatable(stat.translationKey), entry.level()),
+                    left + STAT_TEXT_X, top + STAT_TEXT_Y0 + row * STAT_ROW_STEP, Align.CENTER);
+
+            int barX = left + STAT_BAR_X;
+            int barY = top + STAT_BAR_Y0 + row * STAT_ROW_STEP;
+            graphics.blit(STAT_BAR_EMPTY, barX, barY, 0f, 0f, STAT_BAR_W, STAT_BAR_H, STAT_BAR_W, STAT_BAR_H);
+
+            int filled = Math.clamp(Math.round(entry.progress() * (float) STAT_BAR_W / perLevel), 0, STAT_BAR_W);
+            if (filled > 0) {
+                graphics.blit(STAT_BAR_FULL, barX, barY, 0f, 0f, filled, STAT_BAR_H, STAT_BAR_W, STAT_BAR_H);
+            }
+        }
     }
 
     private void renderPlayerModel(GuiGraphics graphics, int mouseX, int mouseY, LocalPlayer player) {

@@ -27,6 +27,9 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import net.noiilive.hahueuh.mixin.EquipmentTrackerAccessor;
+import net.noiilive.hahueuh.mixin.PlayerListAdvancementsAccessor;
+import net.noiilive.hahueuh.mixin.ServerPlayerAdvancementsAccessor;
 import net.noiilive.hahueuh.ModEffects;
 import org.slf4j.Logger;
 
@@ -255,14 +258,15 @@ public class PlayerSnapshot {
         try {
             AttributeMap attributes = player.getAttributes();
 
-            Map<String, EquipmentSlot[]> trackers = Map.of(
-                    "lastHandItemStacks", new EquipmentSlot[]{EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND},
-                    "lastArmorItemStacks", new EquipmentSlot[]{
+            EquipmentTrackerAccessor tracker = (EquipmentTrackerAccessor) player;
+            Map<NonNullList<ItemStack>, EquipmentSlot[]> trackers = Map.of(
+                    tracker.hahueuh$getLastHandItemStacks(),
+                    new EquipmentSlot[]{EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND},
+                    tracker.hahueuh$getLastArmorItemStacks(),
+                    new EquipmentSlot[]{
                             EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD});
-            for (Map.Entry<String, EquipmentSlot[]> entry : trackers.entrySet()) {
-                Field field = LivingEntity.class.getDeclaredField(entry.getKey());
-                field.setAccessible(true);
-                NonNullList<ItemStack> tracked = (NonNullList<ItemStack>) field.get(player);
+            for (Map.Entry<NonNullList<ItemStack>, EquipmentSlot[]> entry : trackers.entrySet()) {
+                NonNullList<ItemStack> tracked = entry.getKey();
                 EquipmentSlot[] slots = entry.getValue();
                 for (int i = 0; i < tracked.size(); i++) {
                     ItemStack stale = tracked.get(i);
@@ -298,16 +302,10 @@ public class PlayerSnapshot {
 
             player.getAdvancements().stopListening();
 
-            Field cacheField = PlayerList.class.getDeclaredField("advancements");
-            cacheField.setAccessible(true);
-            Map<UUID, PlayerAdvancements> cache = (Map<UUID, PlayerAdvancements>) cacheField.get(playerList);
-            cache.remove(player.getUUID());
+            ((PlayerListAdvancementsAccessor) playerList).hahueuh$getAdvancements().remove(player.getUUID());
 
             PlayerAdvancements fresh = playerList.getPlayerAdvancements(player);
-
-            Field playerField = ServerPlayer.class.getDeclaredField("advancements");
-            playerField.setAccessible(true);
-            playerField.set(player, fresh);
+            ((ServerPlayerAdvancementsAccessor) player).hahueuh$setAdvancements(fresh);
 
             fresh.flushDirty(player);
         } catch (Exception e) {

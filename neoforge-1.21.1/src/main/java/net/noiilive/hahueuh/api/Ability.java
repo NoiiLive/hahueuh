@@ -39,13 +39,25 @@ public final class Ability {
     public String shortLabel() { return shortLabel.get(); }
     public ResourceLocation iconLocation() { return iconLocation.get(); }
     public boolean isAvailable() { return availabilityCheck.get(); }
+
+    private boolean lockedByEmm() {
+        if (!net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) return false;
+        if (net.noiilive.hahueuh.client.ClientMagicState.sealed()) return true;
+        return !id.equals(net.noiilive.hahueuh.HahUeuhAbilities.EMM_ABILITY)
+                && net.noiilive.hahueuh.client.ClientMagicState.emmActive();
+    }
     public ResourceLocation cooldownId() { return cooldownId; }
 
     public void onActivate(AbilityContext ctx) {
+        if (lockedByEmm()) {
+            net.noiilive.hahueuh.client.EmmLockFeedback.deny();
+            return;
+        }
         if (onActivate != null) onActivate.onActivate(ctx);
     }
 
     public void onHeldTick(AbilityContext ctx, boolean down) {
+        if (lockedByEmm()) return;
         if (onHeldTick != null) onHeldTick.onHeldTick(ctx, down);
     }
 

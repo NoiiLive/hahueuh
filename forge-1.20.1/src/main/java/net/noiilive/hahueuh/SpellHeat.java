@@ -6,8 +6,6 @@ import net.noiilive.hahueuh.capability.PlayerData;
 import net.noiilive.hahueuh.capability.PlayerDataEvents;
 
 public final class SpellHeat {
-    private static final long DAY_TICKS = 24000L;
-
     private SpellHeat() {}
 
     public static int heatFor(int manaPerTick) {
@@ -16,44 +14,51 @@ public final class SpellHeat {
 
     public static void addHeat(ServerPlayer player, int heat) {
         if (heat <= 0 || player.isCreative()) return;
-        ensureCurrentDay(player);
 
         PlayerData data = PlayerData.get(player);
         int maxHeat = BookOfLifeStats.maxMana(data);
         if (maxHeat <= 0) return;
 
         int after = data.getSpellHeat() + heat;
-        if (after <= maxHeat) {
-            data.setSpellHeat(after);
-            PlayerDataEvents.sync(player);
-            return;
-        }
+        int capped = Math.min(after, maxHeat);
 
-        int overflow = after - maxHeat;
-        data.setSpellHeat(maxHeat);
-        GateStrain.addStrain(player, overflow);
+        data.setSpellHeat(capped);
+        data.setHeatDecayBase(capped);
+        data.setHeatDecayStart(ResourceDecay.gameTime(player));
+        PlayerDataEvents.sync(player);
+
+        if (after > maxHeat) {
+            GateStrain.addStrain(player, after - maxHeat);
+        }
     }
 
     public static void clear(ServerPlayer player) {
-        PlayerData.get(player).setSpellHeat(0);
+        PlayerData data = PlayerData.get(player);
+        data.setSpellHeat(0);
+        data.setHeatDecayBase(0);
+        data.setHeatDecayStart(ResourceDecay.gameTime(player));
         PlayerDataEvents.sync(player);
     }
 
-    private static void ensureCurrentDay(ServerPlayer player) {
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        int currentDay = (int) (server.overworld().getDayTime() / DAY_TICKS);
+    public static void tickDecay(MinecraftServer server) {
+        int windowSeconds = ConfigMagic.SPELL_HEAT_DECAY_SECONDS.get();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            PlayerData data = PlayerData.get(player);
+            int current = data.getSpellHeat();
+            if (current <= 0) continue;
 
-        PlayerData data = PlayerData.get(player);
-        int lastDay = data.getHeatLastResetDay();
-        if (lastDay < 0) {
-            data.setHeatLastResetDay(currentDay);
-            return;
-        }
+            if (data.getHeatDecayBase() <= 0) {
+                data.setHeatDecayBase(current);
+                data.setHeatDecayStart(ResourceDecay.gameTime(player));
+                continue;
+            }
 
-        if (currentDay != lastDay) {
-            data.setSpellHeat(0);
-            data.setHeatLastResetDay(currentDay);
+            int decayed = ResourceDecay.valueNow(data.getHeatDecayBase(), data.getHeatDecayStart(),
+                    ResourceDecay.gameTime(player), windowSeconds, current);
+            if (decayed < current) {
+                data.setSpellHeat(decayed);
+                PlayerDataEvents.sync(player);
+            }
         }
     }
 }

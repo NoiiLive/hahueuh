@@ -49,6 +49,32 @@ public final class HahUeuhClientSetup {
                 net.noiilive.hahueuh.client.model.MinyaRingModel::createBodyLayer);
         event.registerLayerDefinition(net.noiilive.hahueuh.client.model.BlackHoleModel.LAYER,
                 net.noiilive.hahueuh.client.model.BlackHoleModel::createBodyLayer);
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.model.YinSealModel.LAYER,
+                net.noiilive.hahueuh.client.model.YinSealModel::createBodyLayer);
+
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.EmmSwirlLayer.DEFAULT_LAYER,
+                () -> net.minecraft.client.model.geom.builders.LayerDefinition.create(
+                        net.minecraft.client.model.PlayerModel.createMesh(
+                                new net.minecraft.client.model.geom.builders.CubeDeformation(0.25f), false),
+                        64, 64));
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.EmmSwirlLayer.SLIM_LAYER,
+                () -> net.minecraft.client.model.geom.builders.LayerDefinition.create(
+                        net.minecraft.client.model.PlayerModel.createMesh(
+                                new net.minecraft.client.model.geom.builders.CubeDeformation(0.25f), true),
+                        64, 64));
+    }
+
+    @SubscribeEvent
+    public static void onAddLayers(EntityRenderersEvent.AddLayers event) {
+        addEmmSwirlLayer(event, "default", false);
+        addEmmSwirlLayer(event, "slim", true);
+    }
+
+    private static void addEmmSwirlLayer(EntityRenderersEvent.AddLayers event, String skin, boolean slim) {
+        if (!(event.getSkin(skin) instanceof net.minecraft.client.renderer.entity.player.PlayerRenderer renderer)) {
+            return;
+        }
+        renderer.addLayer(new net.noiilive.hahueuh.client.EmmSwirlLayer(renderer, event.getEntityModels(), slim));
     }
 
     @SubscribeEvent
@@ -61,5 +87,6 @@ public final class HahUeuhClientSetup {
         event.registerBlockEntityRenderer(net.noiilive.hahueuh.ModBlocks.POCKET_VOID_BE.get(),
                 net.noiilive.hahueuh.client.PocketVoidRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACK_HOLE.get(), BlackHoleRenderer::new);
+        event.registerEntityRenderer(ModEntities.YIN_SEAL.get(), YinSealRenderer::new);
     }
 }

@@ -41,7 +41,18 @@ public final class Ability {
     public boolean isAvailable() { return availabilityCheck.get(); }
     public ResourceLocation cooldownId() { return cooldownId; }
 
+    private boolean lockedByEmm() {
+        if (!net.minecraftforge.fml.loading.FMLEnvironment.dist.isClient()) return false;
+        if (net.noiilive.hahueuh.client.ClientMagicState.sealed()) return true;
+        return !id.equals(net.noiilive.hahueuh.HahUeuhAbilities.EMM_ABILITY)
+                && net.noiilive.hahueuh.client.ClientMagicState.emmActive();
+    }
+
     public void onActivate(AbilityContext ctx) {
+        if (lockedByEmm()) {
+            net.noiilive.hahueuh.client.EmmLockFeedback.deny();
+            return;
+        }
         if (onActivate != null) onActivate.onActivate(ctx);
     }
 

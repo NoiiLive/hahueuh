@@ -46,7 +46,7 @@ public final class BaseShift {
 
     private final Set<UUID> active = ConcurrentHashMap.newKeySet();
     private final Set<UUID> persistedActive = ConcurrentHashMap.newKeySet();
-    private final Map<UUID, Integer> cooldownUntilTick = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> cooldownUntilTick = new ConcurrentHashMap<>();
     private MinecraftServer server;
     private Path persistFilePath;
 
@@ -226,23 +226,27 @@ public final class BaseShift {
         if (server == null || king.isCreative()) return;
         int cooldownSeconds = ConfigGreed.BASE_SHIFT_COOLDOWN_SECONDS.get();
         if (cooldownSeconds <= 0) return;
-        cooldownUntilTick.put(king.getUUID(), server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20));
+        cooldownUntilTick.put(king.getUUID(), worldTime() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20));
         ModNetworking.sendToPlayer(king,
                 new AbilityCooldownPacket(HahUeuhAbilities.BASE_SHIFT_ABILITY, HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20)));
     }
 
+    private long worldTime() {
+        return server == null ? 0L : server.overworld().getGameTime();
+    }
+
     private int cooldownRemainingTicks(UUID uuid) {
-        Integer until = cooldownUntilTick.get(uuid);
+        Long until = cooldownUntilTick.get(uuid);
         if (until == null || server == null) return 0;
-        return Math.max(0, until - server.getTickCount());
+        return (int) Math.max(0L, until - worldTime());
     }
 
     public Map<UUID, Integer> captureCooldownRemaining() {
         Map<UUID, Integer> result = new HashMap<>();
         if (server == null) return result;
-        int tick = server.getTickCount();
+        long tick = worldTime();
         cooldownUntilTick.forEach((uuid, until) -> {
-            int remaining = until - tick;
+            int remaining = (int) (until - tick);
             if (remaining > 0) result.put(uuid, remaining);
         });
         return result;
@@ -251,7 +255,7 @@ public final class BaseShift {
     public void restoreCooldownRemaining(Map<UUID, Integer> remainingByUuid) {
         if (server == null) return;
         cooldownUntilTick.clear();
-        int tick = server.getTickCount();
+        long tick = worldTime();
         remainingByUuid.forEach((uuid, remaining) -> cooldownUntilTick.put(uuid, tick + remaining));
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             int remaining = remainingByUuid.getOrDefault(player.getUUID(), 0);

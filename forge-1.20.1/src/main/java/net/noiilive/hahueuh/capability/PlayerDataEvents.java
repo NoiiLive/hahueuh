@@ -24,8 +24,10 @@ public final class PlayerDataEvents {
 
     @SubscribeEvent
     public static void onAttachEntityCapabilities(AttachCapabilitiesEvent<Entity> event) {
-        if (event.getObject() instanceof Player && !event.getCapabilities().containsKey(PLAYER_DATA_ID)) {
-            event.addCapability(PLAYER_DATA_ID, new PlayerDataProvider());
+        if (event.getObject() instanceof Player player && !event.getCapabilities().containsKey(PLAYER_DATA_ID)) {
+            PlayerDataProvider provider = new PlayerDataProvider();
+            event.addCapability(PLAYER_DATA_ID, provider);
+            PlayerData.register(player, provider.data());
         }
         if (event.getObject() instanceof net.minecraft.world.entity.Mob
                 && !event.getCapabilities().containsKey(MOB_WITCH_FACTOR_ID)) {

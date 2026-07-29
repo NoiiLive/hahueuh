@@ -44,9 +44,10 @@ public class SpellCasting {
     private static final UUID CASTING_SLOW_ID = UUID.fromString("6c1b3a4d-2e5f-4a7b-9c8d-0e1f2a3b4c5d");
 
     private final Map<UUID, ActiveCast> activeCasts = new HashMap<>();
-    private final Map<UUID, Map<ResourceLocation, Integer>> cooldownEnd = new HashMap<>();
+    private final Map<UUID, Map<ResourceLocation, Long>> cooldownEnd = new HashMap<>();
     private final Map<UUID, Integer> pendingBanishTarget = new HashMap<>();
     private final Map<UUID, Integer> pendingCooldownOverrideSeconds = new HashMap<>();
+    private final Map<UUID, Integer> pendingTotalManaOverride = new HashMap<>();
     private final Map<UUID, Integer> pendingUlMinyaTarget = new HashMap<>();
     private final List<Cloud> clouds = new ArrayList<>();
 
@@ -56,8 +57,21 @@ public class SpellCasting {
 
     private void startCast(ServerPlayer player, Spell spell, boolean checkCooldown, boolean forStorage) {
         UUID id = player.getUUID();
+        Integer manaOverride = pendingTotalManaOverride.remove(id);
         if (activeCasts.containsKey(id)) {
             actionBar(player, "hahueuh.message.spell_already_casting", ChatFormatting.GRAY);
+            return;
+        }
+        if (HahUeuh.OL_SHAMAK.isSealed(player)) {
+            actionBar(player, "hahueuh.message.ol_shamak_silenced", ChatFormatting.RED);
+            return;
+        }
+        if (!spell.id().equals(Spells.EMM) && HahUeuh.EMM.isActive(player)) {
+            actionBar(player, "hahueuh.message.emm_locked", ChatFormatting.RED);
+            return;
+        }
+        if (!spell.id().equals(Spells.EMT) && HahUeuh.EMT.suppresses(player)) {
+            actionBar(player, "hahueuh.message.emt_silenced", ChatFormatting.RED);
             return;
         }
         if (checkCooldown && isOnCooldown(player, spell)) return;
@@ -77,8 +91,8 @@ public class SpellCasting {
             return;
         }
 
-        int output = Math.max(1, data.getGateOutput());
-        int efficiency = Math.max(1, data.getGateEfficiency());
+        int output = net.noiilive.hahueuh.StatBonuses.effectiveGateOutput(data);
+        int efficiency = net.noiilive.hahueuh.StatBonuses.effectiveGateEfficiency(data);
         int manaPerTick = spell.manaPerTick();
 
         boolean creative = player.isCreative();
@@ -88,7 +102,7 @@ public class SpellCasting {
             return;
         }
 
-        int totalMana = spell.totalMana();
+        int totalMana = manaOverride != null ? manaOverride : spell.totalMana();
         int effectiveCost = effectiveManaCost(totalMana, efficiency);
         boolean willFizzle = !creative && data.getManaCurrent() + data.getOdCurrent() < effectiveCost;
 
@@ -160,7 +174,11 @@ public class SpellCasting {
         if (server == null) return;
         if (!activeCasts.isEmpty()) tickCasts(server);
         if (!clouds.isEmpty()) tickClouds();
-        if (server.getTickCount() % TICKS_PER_SECOND == 0) sweepCreativeStrainAndHeat(server);
+        if (server.getTickCount() % TICKS_PER_SECOND == 0) {
+            sweepCreativeStrainAndHeat(server);
+            net.noiilive.hahueuh.SpellHeat.tickDecay(server);
+            GateStrain.tickDecay(server);
+        }
     }
 
     private static void sweepCreativeStrainAndHeat(MinecraftServer server) {
@@ -170,6 +188,16 @@ public class SpellCasting {
             if (data.getGateStrain() > 0) GateStrain.setStrain(player, 0);
             if (data.getSpellHeat() > 0) SpellHeat.clear(player);
         }
+    }
+
+    @SubscribeEvent
+    public void onPlayerWakeUp(net.minecraftforge.event.entity.player.PlayerWakeUpEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (!player.isSleepingLongEnough()) return;
+        if (net.noiilive.hahueuh.capability.PlayerData.get(player).getSpellHeat() <= 0) return;
+
+        net.noiilive.hahueuh.SpellHeat.clear(player);
+        actionBar(player, "hahueuh.message.spell_heat_rested", ChatFormatting.AQUA);
     }
 
     @SubscribeEvent
@@ -198,6 +226,7 @@ public class SpellCasting {
             if (drainNow > 0) {
                 drainReservoir(player, drainNow);
                 cast.drainedSoFar = targetDrain;
+                net.noiilive.hahueuh.HahUeuh.STAT_EFFECTS.awardManaSpent(player, drainNow);
             }
 
             if (cast.straining && ++cast.strainTicks >= TICKS_PER_SECOND) {
@@ -231,13 +260,13 @@ public class SpellCasting {
 
     private boolean isOnCooldown(ServerPlayer player, Spell spell) {
         if (player.isCreative()) return false;
-        Map<ResourceLocation, Integer> map = cooldownEnd.get(player.getUUID());
+        Map<ResourceLocation, Long> map = cooldownEnd.get(player.getUUID());
         if (map == null) return false;
-        Integer end = map.get(spell.cooldownId());
-        return end != null && player.getServer().getTickCount() < end;
+        Long end = map.get(spell.cooldownId());
+        return end != null && worldTime(player) < end;
     }
 
-    private void startCooldown(ServerPlayer player, Spell spell) {
+    public void startCooldown(ServerPlayer player, Spell spell) {
         if (player.isCreative()) return;
         int seconds = spell.cooldownSeconds();
         if (seconds <= 0) return;
@@ -251,10 +280,15 @@ public class SpellCasting {
         }
     }
 
+    private static long worldTime(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        return server == null ? 0L : server.overworld().getGameTime();
+    }
+
     private void setCooldown(ServerPlayer player, ResourceLocation cooldownId, int seconds) {
         int ticks = seconds * TICKS_PER_SECOND;
         cooldownEnd.computeIfAbsent(player.getUUID(), k -> new HashMap<>())
-                .put(cooldownId, player.getServer().getTickCount() + ticks);
+                .put(cooldownId, worldTime(player) + ticks);
         ModNetworking.sendToPlayer(player, new AbilityCooldownPacket(cooldownId, ticks));
     }
 
@@ -286,10 +320,26 @@ public class SpellCasting {
     }
 
     @SubscribeEvent
+    public void onDeath(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) cancelCastSilently(player);
+    }
+
+    @SubscribeEvent
     public void onDamaged(LivingDamageEvent event) {
         if (event.getAmount() <= 0f) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         interruptCast(player);
+    }
+
+    public void cancelCastSilently(ServerPlayer player) {
+        UUID id = player.getUUID();
+        activeCasts.remove(id);
+        pendingBanishTarget.remove(id);
+        pendingUlMinyaTarget.remove(id);
+        pendingCooldownOverrideSeconds.remove(id);
+        pendingTotalManaOverride.remove(id);
+        removeCastingSlow(player);
+        HahUeuh.TELEPORTATION.clearPending(id);
     }
 
     private void interruptCast(ServerPlayer player) {
@@ -515,5 +565,9 @@ public class SpellCasting {
 
     public void overrideNextCooldown(ServerPlayer player, int seconds) {
         pendingCooldownOverrideSeconds.put(player.getUUID(), seconds);
+    }
+
+    public void overrideNextTotalMana(ServerPlayer player, int totalMana) {
+        pendingTotalManaOverride.put(player.getUUID(), Math.max(1, totalMana));
     }
 }

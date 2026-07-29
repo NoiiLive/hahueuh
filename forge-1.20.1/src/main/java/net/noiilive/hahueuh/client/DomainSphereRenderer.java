@@ -51,6 +51,7 @@ public final class DomainSphereRenderer {
             uniform vec3 SphereCenterEye;
             uniform float SphereRadius;
             uniform float Opacity;
+            uniform vec3 ShellColor;
 
             void main() {
                 float depth = texture(DepthSampler, texCoord).r;
@@ -79,7 +80,7 @@ public final class DomainSphereRenderer {
                     float sqrtDisc = sqrt(disc);
                     float t1 = b - sqrtDisc;
                     float t2 = b + sqrtDisc;
-                    vec3 shellColor = vec3(1.0);
+                    vec3 shellColor = ShellColor;
 
                     if (t1 > 0.0 && t1 < Lmax + 0.5) {
                         vec3 P = D * t1;
@@ -131,15 +132,34 @@ public final class DomainSphereRenderer {
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
 
-        float fade = DomainRenderState.advanceAndGetAlpha();
-        if (fade <= 0.001f) return;
+        float domainFade = DomainRenderState.advanceAndGetAlpha();
+        float emtFade = net.noiilive.hahueuh.network.EmtRenderState.advanceAndGetAlpha();
 
+        if (domainFade > 0.001f) {
+            drawSphere(event, domainFade,
+                    DomainRenderState.dimension(), DomainRenderState.x(), DomainRenderState.y(),
+                    DomainRenderState.z(), (float) DomainRenderState.radius(),
+                    1.0f, 1.0f, 1.0f);
+        }
+        if (emtFade > 0.001f) {
+            drawSphere(event, emtFade,
+                    net.noiilive.hahueuh.network.EmtRenderState.dimension(),
+                    net.noiilive.hahueuh.network.EmtRenderState.x(),
+                    net.noiilive.hahueuh.network.EmtRenderState.y(),
+                    net.noiilive.hahueuh.network.EmtRenderState.z(),
+                    (float) net.noiilive.hahueuh.network.EmtRenderState.radius(),
+                    0.36f, 0.05f, 0.55f);
+        }
+    }
+
+    private static void drawSphere(RenderLevelStageEvent event, float fade,
+                                   net.minecraft.resources.ResourceLocation dimension,
+                                   double cx, double cy, double cz, float radius,
+                                   float red, float green, float blue) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
-        if (DomainRenderState.dimension() == null) return;
-        if (!mc.level.dimension().location().equals(DomainRenderState.dimension())) return;
-
-        float radius = (float) DomainRenderState.radius();
+        if (dimension == null) return;
+        if (!mc.level.dimension().location().equals(dimension)) return;
         if (radius <= 0.05f) return;
 
         initShaderIfNeeded();
@@ -155,6 +175,7 @@ public final class DomainSphereRenderer {
         int centerLoc = GL20.glGetUniformLocation(shaderProgram, "SphereCenterEye");
         int radiusLoc = GL20.glGetUniformLocation(shaderProgram, "SphereRadius");
         int opacityLoc = GL20.glGetUniformLocation(shaderProgram, "Opacity");
+        int shellColorLoc = GL20.glGetUniformLocation(shaderProgram, "ShellColor");
 
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, screenCopyTex);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
@@ -178,13 +199,14 @@ public final class DomainSphereRenderer {
         GL20.glUniformMatrix4fv(invProjLoc, false, matBuf);
 
         Vector4f centerEye = new Vector4f(
-                (float) (DomainRenderState.x() - camera.x),
-                (float) (DomainRenderState.y() - camera.y),
-                (float) (DomainRenderState.z() - camera.z), 1.0f);
+                (float) (cx - camera.x),
+                (float) (cy - camera.y),
+                (float) (cz - camera.z), 1.0f);
         viewMat.transform(centerEye);
         GL20.glUniform3f(centerLoc, centerEye.x, centerEye.y, centerEye.z);
         GL20.glUniform1f(radiusLoc, radius);
         GL20.glUniform1f(opacityLoc, OPACITY * fade);
+        GL20.glUniform3f(shellColorLoc, red, green, blue);
 
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);

@@ -117,6 +117,16 @@ public class HahUeuh {
     public static final ManaCharging MANA_CHARGING = new ManaCharging();
     public static final MiasmaTick MIASMA_TICK = new MiasmaTick();
     public static final MiasmaContamination MIASMA_CONTAMINATION = new MiasmaContamination();
+    public static final Murak MURAK = new Murak();
+    public static final Vita VITA = new Vita();
+    public static final ElVita EL_VITA = new ElVita();
+    public static final OlShamak OL_SHAMAK = new OlShamak();
+    public static final Teleportation TELEPORTATION = new Teleportation();
+    public static final DoorCrossing DOOR_CROSSING = new DoorCrossing();
+    public static final Emm EMM = new Emm();
+    public static final Emt EMT = new Emt();
+    public static final StatEffects STAT_EFFECTS = new StatEffects();
+    public static final IncreasedGravity INCREASED_GRAVITY = new IncreasedGravity();
     public static final VisionOfInformation VISION_OF_INFO = new VisionOfInformation();
     public static final EfficientEnchanting EFFICIENT_ENCHANTING = new EfficientEnchanting();
     public static final MobWitchFactor MOB_WITCH_FACTOR = new MobWitchFactor();
@@ -169,6 +179,15 @@ public class HahUeuh {
         NeoForge.EVENT_BUS.register(MANA_CHARGING);
         NeoForge.EVENT_BUS.register(MIASMA_TICK);
         NeoForge.EVENT_BUS.register(MIASMA_CONTAMINATION);
+        NeoForge.EVENT_BUS.register(MURAK);
+        NeoForge.EVENT_BUS.register(EL_VITA);
+        NeoForge.EVENT_BUS.register(OL_SHAMAK);
+        NeoForge.EVENT_BUS.register(TELEPORTATION);
+        NeoForge.EVENT_BUS.register(DOOR_CROSSING);
+        NeoForge.EVENT_BUS.register(EMM);
+        NeoForge.EVENT_BUS.register(EMT);
+        NeoForge.EVENT_BUS.register(STAT_EFFECTS);
+        NeoForge.EVENT_BUS.register(INCREASED_GRAVITY);
         NeoForge.EVENT_BUS.register(SPELL_CASTING);
         NeoForge.EVENT_BUS.register(CRIPPLED_STATE);
         NeoForge.EVENT_BUS.register(BODILY_DISCONNECT);
@@ -357,6 +376,89 @@ public class HahUeuh {
                 FingerHighlightPayload.TYPE,
                 FingerHighlightPayload.STREAM_CODEC,
                 (payload, context) -> ClientFingerHighlightState.set(payload.entityIds()));
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.MurakActivatePayload.TYPE,
+                net.noiilive.hahueuh.network.MurakActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        MURAK.tryCast(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.VitaActivatePayload.TYPE,
+                net.noiilive.hahueuh.network.VitaActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        VITA.tryCast(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.ElVitaActivatePayload.TYPE,
+                net.noiilive.hahueuh.network.ElVitaActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        EL_VITA.tryCast(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.EmtActivatePayload.TYPE,
+                net.noiilive.hahueuh.network.EmtActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        EMT.tryCast(sp);
+                    }
+                });
+
+        registrar.playToClient(
+                net.noiilive.hahueuh.network.EmtStatePayload.TYPE,
+                net.noiilive.hahueuh.network.EmtStatePayload.STREAM_CODEC,
+                (payload, context) -> net.noiilive.hahueuh.network.EmtRenderState.update(payload));
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.EmmActivatePayload.TYPE,
+                net.noiilive.hahueuh.network.EmmActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        EMM.tryCast(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.TeleportCastPayload.TYPE,
+                net.noiilive.hahueuh.network.TeleportCastPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        TELEPORTATION.request(sp, payload.x(), payload.y(), payload.z(), payload.portal());
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.DoorCrossingActivatePayload.TYPE,
+                net.noiilive.hahueuh.network.DoorCrossingActivatePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        DOOR_CROSSING.tryCast(sp);
+                    }
+                });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.MurakFlightTogglePayload.TYPE,
+                net.noiilive.hahueuh.network.MurakFlightTogglePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        MURAK.setFlying(sp, payload.wantsFlight());
+                    }
+                });
+
+        registrar.playToClient(
+                net.noiilive.hahueuh.network.MurakStatePayload.TYPE,
+                net.noiilive.hahueuh.network.MurakStatePayload.STREAM_CODEC,
+                (payload, context) -> net.noiilive.hahueuh.network.ClientMurakState.update(
+                        payload.reducedGravity(), payload.flying()));
 
         registrar.playToServer(
                 MaterialPhaseTogglePayload.TYPE,

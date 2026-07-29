@@ -30,6 +30,24 @@ public final class GateStrain {
         if (delta > 0 && player.isCreative()) return;
         int current = player.getData(ModAttachments.PLAYER_GATE_STRAIN.get());
         setStrain(player, current + delta);
+        if (delta > 0) {
+            ResourceDecay.restart(player, ModAttachments.PLAYER_STRAIN_DECAY_BASE.get(),
+                    ModAttachments.PLAYER_STRAIN_DECAY_START.get(),
+                    player.getData(ModAttachments.PLAYER_GATE_STRAIN.get()));
+        }
+    }
+
+    public static void tickDecay(net.minecraft.server.MinecraftServer server) {
+        int windowSeconds = ConfigMagic.GATE_STRAIN_DECAY_SECONDS.getAsInt();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            int current = player.getData(ModAttachments.PLAYER_GATE_STRAIN.get());
+            if (current <= 0) continue;
+            int decayed = ResourceDecay.valueNow(player, ModAttachments.PLAYER_STRAIN_DECAY_BASE.get(),
+                    ModAttachments.PLAYER_STRAIN_DECAY_START.get(), windowSeconds, current);
+            if (decayed < current) {
+                player.setData(ModAttachments.PLAYER_GATE_STRAIN.get(), decayed);
+            }
+        }
     }
 
     private static void applyThresholds(ServerPlayer player, int strain) {

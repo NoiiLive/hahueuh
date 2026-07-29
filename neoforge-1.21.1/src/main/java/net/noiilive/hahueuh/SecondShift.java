@@ -43,7 +43,7 @@ public final class SecondShift {
 
     private final Set<UUID> active = ConcurrentHashMap.newKeySet();
     private final Set<UUID> persistedActive = ConcurrentHashMap.newKeySet();
-    private final Map<UUID, Integer> cooldownUntilTick = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> cooldownUntilTick = new ConcurrentHashMap<>();
     private MinecraftServer server;
     private Path persistFilePath;
     private boolean redistributing;
@@ -160,23 +160,35 @@ public final class SecondShift {
         UUID kingUuid = findSharingKing(source.getUUID());
         if (kingUuid == null) return;
 
-        event.setNewDamage(0f);
         Map<UUID, Double> weights = HahUeuh.ALLY_TRACKER.effectiveWeights(kingUuid);
         Map<UUID, LivingEntity> participants = participantsOf(kingUuid);
 
         boolean prev = redistributing;
         redistributing = true;
+        float undelivered = 0f;
+        float selfShare = 0f;
         try {
             for (Map.Entry<UUID, Double> entry : weights.entrySet()) {
                 float share = (float) (amount * (entry.getValue() / 100.0));
                 if (share <= 0f) continue;
 
-                LivingEntity participant = participants.get(entry.getKey());
-                if (participant == null) {
-                    HahUeuh.ALLY_TRACKER.applyToMob(entry.getKey(), mob -> applyShareGuarded(mob, share));
+                if (entry.getKey().equals(source.getUUID())) {
+                    selfShare += share;
                     continue;
                 }
-                if (!participant.isAlive()) continue;
+
+                LivingEntity participant = participants.get(entry.getKey());
+                if (participant == null) {
+                    if (!HahUeuh.ALLY_TRACKER.applyToMob(entry.getKey(), mob -> applyShareGuarded(mob, share))) {
+                        undelivered += share;
+                    }
+                    continue;
+                }
+                if (!participant.isAlive()) {
+                    undelivered += share;
+                    continue;
+                }
+                if (isImmortal(participant)) continue;
 
                 hurtWithoutAggro(participant, share);
                 if (participant != source && participant instanceof ServerPlayer sp) {
@@ -184,9 +196,28 @@ public final class SecondShift {
                             String.format("%.1f", share), source.getName().getString()).withStyle(ChatFormatting.RED), true);
                 }
             }
+
+            if (undelivered > 0.01f) {
+                LivingEntity fallback = participants.get(kingUuid);
+                if (fallback == null || !fallback.isAlive() || isImmortal(fallback)) {
+                    fallback = source.isAlive() ? source : null;
+                }
+                if (fallback == source) {
+                    selfShare += undelivered;
+                } else if (fallback != null) {
+                    hurtWithoutAggro(fallback, undelivered);
+                }
+            }
         } finally {
             redistributing = prev;
         }
+
+        event.setNewDamage(isImmortal(source) ? 0f : selfShare);
+    }
+
+    private static boolean isImmortal(LivingEntity entity) {
+        UUID uuid = entity.getUUID();
+        return HahUeuh.LIONS_HEART.isActive(uuid) && !HahUeuh.LIONS_HEART.isStraining(uuid);
     }
 
     private void applyShareGuarded(LivingEntity mob, float share) {
@@ -261,6 +292,8 @@ public final class SecondShift {
         Map<UUID, Double> weights = HahUeuh.ALLY_TRACKER.effectiveWeights(kingUuid);
         Map<UUID, LivingEntity> participants = participantsOf(kingUuid);
 
+        boolean harmful = instance.getEffect().value().getCategory()
+                == net.minecraft.world.effect.MobEffectCategory.HARMFUL;
         int originalLevel = instance.getAmplifier() + 1;
         int originalDuration = instance.getDuration();
         double minShare = ConfigGreed.SECOND_SHIFT_MIN_EFFECT_SHARE.getAsDouble();
@@ -272,8 +305,14 @@ public final class SecondShift {
                 double weightFraction = entry.getValue() / 100.0;
                 if (weightFraction <= 0.0) continue;
 
-                Integer awardedAmplifier = splitAmplifier(originalLevel, weightFraction, minShare);
-                if (awardedAmplifier == null) continue;
+                int awardedAmplifier;
+                if (harmful) {
+                    Integer split = splitAmplifier(originalLevel, weightFraction, minShare);
+                    if (split == null) continue;
+                    awardedAmplifier = split;
+                } else {
+                    awardedAmplifier = instance.getAmplifier();
+                }
 
                 int awardedDuration = originalDuration < 0 ? originalDuration
                         : Math.max(1, (int) Math.round(originalDuration * weightFraction));
@@ -288,10 +327,13 @@ public final class SecondShift {
                 }
                 if (!participant.isAlive()) continue;
 
-                participant.addEffect(shared);
-                if (participant != source && participant instanceof ServerPlayer sp) {
-                    sp.displayClientMessage(Component.translatable("hahueuh.message.base_shift_received_effect",
-                            effectDisplayName(shared), source.getName().getString()).withStyle(ChatFormatting.RED), true);
+                boolean applied = participant.addEffect(shared);
+                if (applied && participant != source && participant instanceof ServerPlayer sp) {
+                    sp.displayClientMessage(Component.translatable(harmful
+                                    ? "hahueuh.message.base_shift_received_effect"
+                                    : "hahueuh.message.base_shift_received_boon",
+                            effectDisplayName(shared), source.getName().getString())
+                            .withStyle(harmful ? ChatFormatting.RED : ChatFormatting.GREEN), true);
                 }
             }
         } finally {
@@ -326,23 +368,27 @@ public final class SecondShift {
         if (server == null || king.isCreative()) return;
         int cooldownSeconds = ConfigGreed.BASE_SHIFT_COOLDOWN_SECONDS.getAsInt();
         if (cooldownSeconds <= 0) return;
-        cooldownUntilTick.put(king.getUUID(), server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20));
+        cooldownUntilTick.put(king.getUUID(), worldTime() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20));
         PacketDistributor.sendToPlayer(king,
                 new AbilityCooldownPayload(HahUeuhAbilities.SECOND_SHIFT_ABILITY, HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20)));
     }
 
+    private long worldTime() {
+        return server == null ? 0L : server.overworld().getGameTime();
+    }
+
     private int cooldownRemainingTicks(UUID uuid) {
-        Integer until = cooldownUntilTick.get(uuid);
+        Long until = cooldownUntilTick.get(uuid);
         if (until == null || server == null) return 0;
-        return Math.max(0, until - server.getTickCount());
+        return (int) Math.max(0L, until - worldTime());
     }
 
     public Map<UUID, Integer> captureCooldownRemaining() {
         Map<UUID, Integer> result = new HashMap<>();
         if (server == null) return result;
-        int tick = server.getTickCount();
+        long tick = worldTime();
         cooldownUntilTick.forEach((uuid, until) -> {
-            int remaining = until - tick;
+            int remaining = (int) (until - tick);
             if (remaining > 0) result.put(uuid, remaining);
         });
         return result;
@@ -351,7 +397,7 @@ public final class SecondShift {
     public void restoreCooldownRemaining(Map<UUID, Integer> remainingByUuid) {
         if (server == null) return;
         cooldownUntilTick.clear();
-        int tick = server.getTickCount();
+        long tick = worldTime();
         remainingByUuid.forEach((uuid, remaining) -> cooldownUntilTick.put(uuid, tick + remaining));
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             int remaining = remainingByUuid.getOrDefault(player.getUUID(), 0);

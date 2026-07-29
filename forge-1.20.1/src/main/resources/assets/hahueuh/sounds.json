@@ -148,5 +148,20 @@
     "sounds": [
       "hahueuh:domain_close"
     ]
+  },
+  "door_crossing_open": {
+    "sounds": [
+      "hahueuh:door_crossing_open"
+    ]
+  },
+  "door_crossing_exit": {
+    "sounds": [
+      "hahueuh:door_crossing_exit"
+    ]
+  },
+  "emm_activate": {
+    "sounds": [
+      "hahueuh:emm_activate"
+    ]
   }
 }

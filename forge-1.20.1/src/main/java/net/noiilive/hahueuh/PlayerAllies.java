@@ -40,6 +40,7 @@ public final class PlayerAllies {
 
     private final Map<UUID, Set<UUID>> allies = new ConcurrentHashMap<>();
     private final Map<UUID, String> nameCache = new ConcurrentHashMap<>();
+    private final Set<UUID> allyAttacksDisabled = ConcurrentHashMap.newKeySet();
     private final Map<UUID, Map<UUID, PendingRequest>> pendingRequests = new ConcurrentHashMap<>();
     private MinecraftServer server;
     private Path filePath;
@@ -57,6 +58,20 @@ public final class PlayerAllies {
     private static final class StoredData {
         Map<String, List<String>> allies = new HashMap<>();
         Map<String, String> names = new HashMap<>();
+        List<String> attacksDisabled = new ArrayList<>();
+    }
+
+    public boolean allyAttacksEnabled(UUID uuid) {
+        return !allyAttacksDisabled.contains(uuid);
+    }
+
+    public void setAllyAttacks(UUID uuid, boolean enabled) {
+        if (enabled) {
+            allyAttacksDisabled.remove(uuid);
+        } else {
+            allyAttacksDisabled.add(uuid);
+        }
+        save();
     }
 
     public boolean areAllies(UUID a, UUID b) {
@@ -222,6 +237,28 @@ public final class PlayerAllies {
         if (name != null && !name.isEmpty()) nameCache.put(uuid, name);
     }
 
+    private boolean alliedEitherWay(java.util.UUID a, java.util.UUID b) {
+        return areAllies(a, b) || areAllies(b, a)
+                || HahUeuh.ALLY_TRACKER.isAlly(a, b) || HahUeuh.ALLY_TRACKER.isAlly(b, a);
+    }
+
+    public boolean blocksAllyDamage(net.minecraft.world.entity.Entity attacker,
+                                    net.minecraft.world.entity.Entity victim) {
+        if (attacker == null || victim == null || attacker == victim) return false;
+        java.util.UUID attackerId = attacker.getUUID();
+        java.util.UUID victimId = victim.getUUID();
+        if (!alliedEitherWay(attackerId, victimId)) return false;
+        if (attacker instanceof net.minecraft.world.entity.player.Player && !allyAttacksEnabled(attackerId)) return true;
+        return victim instanceof net.minecraft.world.entity.player.Player && !allyAttacksEnabled(victimId);
+    }
+
+    @SubscribeEvent
+    public void onAllyDamage(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
+        net.minecraft.world.entity.Entity attacker = event.getSource().getEntity();
+        if (attacker == null) return;
+        if (blocksAllyDamage(attacker, event.getEntity())) event.setCanceled(true);
+    }
+
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer target)) return;
@@ -258,6 +295,7 @@ public final class PlayerAllies {
         save();
         allies.clear();
         nameCache.clear();
+        allyAttacksDisabled.clear();
         pendingRequests.clear();
         this.server = null;
         this.filePath = null;
@@ -295,6 +333,14 @@ public final class PlayerAllies {
                     }
                 });
             }
+            if (raw.attacksDisabled != null) {
+                for (String uuidStr : raw.attacksDisabled) {
+                    try {
+                        allyAttacksDisabled.add(UUID.fromString(uuidStr));
+                    } catch (IllegalArgumentException ignored) {
+                    }
+                }
+            }
         } catch (IOException e) {
             HahUeuh.LOGGER.error("Failed to load Player Allies data from {}", filePath, e);
         }
@@ -310,6 +356,7 @@ public final class PlayerAllies {
                 raw.allies.put(uuid.toString(), list);
             });
             nameCache.forEach((uuid, name) -> raw.names.put(uuid.toString(), name));
+            for (UUID uuid : allyAttacksDisabled) raw.attacksDisabled.add(uuid.toString());
             Files.createDirectories(filePath.getParent());
             Files.writeString(filePath, GSON.toJson(raw, STORE_TYPE), StandardCharsets.UTF_8);
         } catch (IOException e) {

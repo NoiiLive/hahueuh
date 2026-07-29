@@ -68,7 +68,7 @@ public final class AllyTracker {
     private static final Type STORE_TYPE = new TypeToken<Map<String, StoredKing>>() {}.getType();
 
     private final Map<UUID, KingData> kings = new ConcurrentHashMap<>();
-    private final Map<UUID, Integer> cooldownUntilTick = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> cooldownUntilTick = new ConcurrentHashMap<>();
     private final List<PendingBurden> pendingBurdens = new ArrayList<>();
     private MinecraftServer server;
     private Path filePath;
@@ -97,6 +97,7 @@ public final class AllyTracker {
         boolean hasData;
         double lastX, lastY, lastZ;
         float lastHealth, lastMaxHealth;
+        float lastYRot;
         ResourceKey<Level> lastDimension;
         List<AllyDataPayload.Effect> lastEffects = List.of();
 
@@ -262,10 +263,18 @@ public final class AllyTracker {
         }
         for (Ally a : data.allies) {
             if (a.type == AllyType.PLAYER) {
-                if (server == null || server.getPlayerList().getPlayer(a.uuid) == null) continue;
+                ServerPlayer ally = server == null ? null : server.getPlayerList().getPlayer(a.uuid);
+                if (ally == null || !ally.isAlive()) continue;
+            } else if (server != null && findEntity(a.uuid) instanceof LivingEntity living && !living.isAlive()) {
+                continue;
             }
             ids.add(a.uuid);
             raw.add(a.weight);
+        }
+
+        if (ids.isEmpty()) {
+            result.put(king, 100.0);
+            return result;
         }
 
         double[] weights = new double[raw.size()];
@@ -334,7 +343,8 @@ public final class AllyTracker {
                 double dz = sameDim ? a.lastZ - kingZ : 0.0;
                 out.add(new AllyDataPayload.Ally(a.uuid, a.name, a.type.ordinal(), online, a.hasData,
                         a.lastHealth, a.lastMaxHealth, a.lastX, a.lastY, a.lastZ,
-                        dx, dz, sameDim, (float) a.weight, a.lastEffects));
+                        dx, dz, sameDim, (float) a.weight, online && living != null ? living.getYRot() : a.lastYRot,
+                        a.lastEffects));
             }
         }
 
@@ -358,6 +368,7 @@ public final class AllyTracker {
         a.lastZ = living.getZ();
         a.lastHealth = living.getHealth();
         a.lastMaxHealth = living.getMaxHealth();
+        a.lastYRot = living.getYRot();
         a.lastDimension = living.level().dimension();
         a.lastEffects = effectsOf(living);
     }
@@ -387,22 +398,24 @@ public final class AllyTracker {
         }
     }
 
-    public void applyToMob(UUID mobUuid, Consumer<LivingEntity> action) {
-        if (server == null) return;
+    public boolean applyToMob(UUID mobUuid, Consumer<LivingEntity> action) {
+        if (server == null) return false;
         Entity loaded = findEntity(mobUuid);
-        if (loaded instanceof LivingEntity living && living.isAlive()) {
+        if (loaded instanceof LivingEntity living) {
+            if (!living.isAlive()) return false;
             action.accept(living);
             refreshMobSnapshot(living);
-            return;
+            return true;
         }
         Ally known = lastKnownMob(mobUuid);
-        if (known == null || known.lastDimension == null) return;
+        if (known == null || known.lastDimension == null) return false;
         ServerLevel level = server.getLevel(known.lastDimension);
-        if (level == null) return;
+        if (level == null) return false;
         ChunkPos chunk = new ChunkPos(SectionPos.blockToSectionCoord(Mth.floor(known.lastX)),
                 SectionPos.blockToSectionCoord(Mth.floor(known.lastZ)));
         level.getChunkSource().addRegionTicket(ALLY_BURDEN_TICKET, chunk, BURDEN_TICKET_RADIUS, chunk, true);
         pendingBurdens.add(new PendingBurden(mobUuid, known.lastDimension, chunk, action));
+        return true;
     }
 
     private Ally lastKnownMob(UUID mobUuid) {
@@ -519,23 +532,27 @@ public final class AllyTracker {
         if (king.isCreative()) return;
         int cooldownSeconds = ConfigGreed.ALLY_TRACKER_COOLDOWN_SECONDS.getAsInt();
         if (cooldownSeconds <= 0) return;
-        cooldownUntilTick.put(king.getUUID(), server.getTickCount() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20));
+        cooldownUntilTick.put(king.getUUID(), worldTime() + HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20));
         PacketDistributor.sendToPlayer(king,
                 new AbilityCooldownPayload(HahUeuhAbilities.ALLY_TRACKER_ABILITY, HahUeuh.GREED_COMPAT.scaleCooldownTicks(king.getUUID(), cooldownSeconds * 20)));
     }
 
+    private long worldTime() {
+        return server == null ? 0L : server.overworld().getGameTime();
+    }
+
     private int cooldownRemainingTicks(UUID uuid) {
-        Integer until = cooldownUntilTick.get(uuid);
+        Long until = cooldownUntilTick.get(uuid);
         if (until == null || server == null) return 0;
-        return Math.max(0, until - server.getTickCount());
+        return (int) Math.max(0L, until - worldTime());
     }
 
     public Map<UUID, Integer> captureCooldownRemaining() {
         Map<UUID, Integer> result = new HashMap<>();
         if (server == null) return result;
-        int tick = server.getTickCount();
+        long tick = worldTime();
         cooldownUntilTick.forEach((uuid, until) -> {
-            int remaining = until - tick;
+            int remaining = (int) (until - tick);
             if (remaining > 0) result.put(uuid, remaining);
         });
         return result;
@@ -544,7 +561,7 @@ public final class AllyTracker {
     public void restoreCooldownRemaining(Map<UUID, Integer> remainingByUuid) {
         if (server == null) return;
         cooldownUntilTick.clear();
-        int tick = server.getTickCount();
+        long tick = worldTime();
         remainingByUuid.forEach((uuid, remaining) -> cooldownUntilTick.put(uuid, tick + remaining));
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             int remaining = remainingByUuid.getOrDefault(player.getUUID(), 0);

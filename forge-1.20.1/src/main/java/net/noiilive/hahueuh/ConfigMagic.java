@@ -141,13 +141,29 @@ public final class ConfigMagic {
 
     public static final ForgeConfigSpec.DoubleValue SPELL_HEAT_PER_MANA_PER_TICK = BUILDER
             .comment("Heat a cast adds to the caster's Gate = the spell's raw manaPerTick multiplied by",
-                     "this. Heat's cap is the caster's max Mana, and it resets every in-game day. Casting",
+                     "this. Heat is capped at the caster max Mana, and bleeds off over spellHeatDecaySeconds",
+                     "or clears instantly by sleeping. Casting",
                      "past the cap doesn't add more heat — instead it strains the Gate by exactly the",
                      "amount that would have overflowed the cap. E.g. on a 100-max gate, a 25-heat spell",
                      "(manaPerTick 5 at this default) can be cast 4 times heat-free; a 5th cast (already at",
                      "the 100 cap) strains the gate by the full 25; casting at 90 heat instead strains by",
                      "just the 15 that would have overflowed. Default: 5. Range: 0.01 to 1000.")
             .defineInRange("spellHeatPerManaPerTick", 5.0, 0.01, 1000.0);
+
+    public static final ForgeConfigSpec.IntValue SPELL_HEAT_DECAY_SECONDS = BUILDER
+            .comment("How long Gate heat takes to bleed away to nothing once you stop casting. The countdown",
+                     "restarts every time you gain heat, and always empties the bar over exactly this long —",
+                     "so 10 heat and a full bar both finish at the same moment, the full bar just falls much",
+                     "faster. Sleeping through a night clears heat instantly instead. Default: 900 (15",
+                     "minutes). Range: 1 to 100000.")
+            .defineInRange("spellHeatDecaySeconds", 900, 1, 100_000);
+
+    public static final ForgeConfigSpec.IntValue GATE_STRAIN_DECAY_SECONDS = BUILDER
+            .comment("How long Gate strain takes to bleed away to nothing, on the same countdown-from-last-gain",
+                     "rule as spellHeatDecaySeconds. Unlike heat, sleeping does NOT clear strain — you can only",
+                     "wait it off. Note this only lowers the strain number; a Gate already knocked down to",
+                     "Damaged or Destroyed stays that way. Default: 1200 (20 minutes). Range: 1 to 100000.")
+            .defineInRange("gateStrainDecaySeconds", 1200, 1, 100_000);
 
 
     public static final ForgeConfigSpec.BooleanValue CRIPPLED_ENABLED = BUILDER

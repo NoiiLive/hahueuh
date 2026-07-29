@@ -49,6 +49,15 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> DOMAIN_CLOSE = SOUND_EVENTS.register("domain_close",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(HahUeuh.MODID, "domain_close")));
 
+    public static final RegistryObject<SoundEvent> DOOR_CROSSING_OPEN = SOUND_EVENTS.register("door_crossing_open",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(HahUeuh.MODID, "door_crossing_open")));
+
+    public static final RegistryObject<SoundEvent> DOOR_CROSSING_EXIT = SOUND_EVENTS.register("door_crossing_exit",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(HahUeuh.MODID, "door_crossing_exit")));
+
+    public static final RegistryObject<SoundEvent> EMM_ACTIVATE = SOUND_EVENTS.register("emm_activate",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(HahUeuh.MODID, "emm_activate")));
+
     public static final RegistryObject<SoundEvent> EL_SHAMAK_USE = SOUND_EVENTS.register("el_shamak_use",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(HahUeuh.MODID, "el_shamak_use")));
 

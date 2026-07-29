@@ -2,8 +2,13 @@ package net.noiilive.hahueuh.capability;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.noiilive.hahueuh.network.GateStatus;
 import net.noiilive.hahueuh.network.PlayerRace;
+import net.noiilive.hahueuh.network.PlayerStatBlock;
 
 public class PlayerData {
     public static final int DEFAULT_AGE = 16;
@@ -25,7 +30,13 @@ public class PlayerData {
     private boolean hasTrappedEntities;
     private String storedSpell = "";
     private int spellHeat;
-    private int heatLastResetDay = -1;
+    private int heatDecayBase;
+    private long heatDecayStart;
+    private int strainDecayBase;
+    private long strainDecayStart;
+    private PlayerStatBlock stats = PlayerStatBlock.UNROLLED;
+    private boolean sealed;
+    private boolean emmActive;
 
     public PlayerRace getRace() { return race; }
     public void setRace(PlayerRace race) { this.race = race; }
@@ -78,8 +89,26 @@ public class PlayerData {
     public int getSpellHeat() { return spellHeat; }
     public void setSpellHeat(int heat) { this.spellHeat = heat; }
 
-    public int getHeatLastResetDay() { return heatLastResetDay; }
-    public void setHeatLastResetDay(int day) { this.heatLastResetDay = day; }
+    public int getHeatDecayBase() { return heatDecayBase; }
+    public void setHeatDecayBase(int value) { this.heatDecayBase = value; }
+
+    public long getHeatDecayStart() { return heatDecayStart; }
+    public void setHeatDecayStart(long tick) { this.heatDecayStart = tick; }
+
+    public int getStrainDecayBase() { return strainDecayBase; }
+    public void setStrainDecayBase(int value) { this.strainDecayBase = value; }
+
+    public long getStrainDecayStart() { return strainDecayStart; }
+    public void setStrainDecayStart(long tick) { this.strainDecayStart = tick; }
+
+    public boolean isEmmActive() { return emmActive; }
+    public void setEmmActive(boolean active) { this.emmActive = active; }
+
+    public boolean isSealed() { return sealed; }
+    public void setSealed(boolean sealed) { this.sealed = sealed; }
+
+    public PlayerStatBlock getStats() { return stats; }
+    public void setStats(PlayerStatBlock stats) { this.stats = stats == null ? PlayerStatBlock.UNROLLED : stats; }
 
     public void copyFrom(PlayerData other) {
         this.race = other.race;
@@ -99,7 +128,13 @@ public class PlayerData {
         this.hasTrappedEntities = other.hasTrappedEntities;
         this.storedSpell = other.storedSpell;
         this.spellHeat = other.spellHeat;
-        this.heatLastResetDay = other.heatLastResetDay;
+        this.heatDecayBase = other.heatDecayBase;
+        this.heatDecayStart = other.heatDecayStart;
+        this.strainDecayBase = other.strainDecayBase;
+        this.strainDecayStart = other.strainDecayStart;
+        this.stats = other.stats;
+        this.sealed = other.sealed;
+        this.emmActive = other.emmActive;
     }
 
     public CompoundTag serializeNBT() {
@@ -121,7 +156,13 @@ public class PlayerData {
         tag.putBoolean("HasTrappedEntities", hasTrappedEntities);
         tag.putString("StoredSpell", storedSpell);
         tag.putInt("SpellHeat", spellHeat);
-        tag.putInt("HeatLastResetDay", heatLastResetDay);
+        tag.putInt("HeatDecayBase", heatDecayBase);
+        tag.putLong("HeatDecayStart", heatDecayStart);
+        tag.putInt("StrainDecayBase", strainDecayBase);
+        tag.putLong("StrainDecayStart", strainDecayStart);
+        tag.put("Stats", stats.save());
+        tag.putBoolean("Sealed", sealed);
+        tag.putBoolean("EmmActive", emmActive);
         return tag;
     }
 
@@ -143,15 +184,31 @@ public class PlayerData {
         hasTrappedEntities = tag.getBoolean("HasTrappedEntities");
         storedSpell = tag.getString("StoredSpell");
         spellHeat = tag.getInt("SpellHeat");
-        heatLastResetDay = tag.contains("HeatLastResetDay") ? tag.getInt("HeatLastResetDay") : -1;
+        heatDecayBase = tag.getInt("HeatDecayBase");
+        heatDecayStart = tag.getLong("HeatDecayStart");
+        strainDecayBase = tag.getInt("StrainDecayBase");
+        strainDecayStart = tag.getLong("StrainDecayStart");
+        stats = PlayerStatBlock.load(tag.getList("Stats", net.minecraft.nbt.Tag.TAG_COMPOUND));
+        sealed = tag.getBoolean("Sealed");
+        emmActive = tag.getBoolean("EmmActive");
+    }
+
+    private static final Map<Player, PlayerData> ATTACHED =
+            Collections.synchronizedMap(new WeakHashMap<>());
+
+    static void register(Player player, PlayerData data) {
+        ATTACHED.put(player, data);
     }
 
     public static PlayerData get(Player player) {
-        return player.getCapability(ModCapabilities.PLAYER_DATA)
-                .orElseThrow(() -> new IllegalStateException("Player has no HahUeuh player data capability"));
+        PlayerData capability = player.getCapability(ModCapabilities.PLAYER_DATA).orElse(null);
+        if (capability != null) return capability;
+
+        PlayerData attached = ATTACHED.get(player);
+        return attached != null ? attached : new PlayerData();
     }
 
     public static PlayerData getOrDefault(Player player) {
-        return player.getCapability(ModCapabilities.PLAYER_DATA).orElseGet(PlayerData::new);
+        return get(player);
     }
 }

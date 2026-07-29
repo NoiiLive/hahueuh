@@ -37,6 +37,14 @@ public final class ModEntities {
                     .noSave()
                     .build("minya_spike"));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<YinSealEntity>> YIN_SEAL =
+            ENTITY_TYPES.register("yin_seal", () -> EntityType.Builder
+                    .<YinSealEntity>of(YinSealEntity::new, MobCategory.MISC)
+                    .sized(2.0f, 2.0f)
+                    .clientTrackingRange(16)
+                    .updateInterval(2)
+                    .build("yin_seal"));
+
     public static final DeferredHolder<EntityType<?>, EntityType<BlackHoleEntity>> BLACK_HOLE =
             ENTITY_TYPES.register("black_hole", () -> EntityType.Builder
                     .<BlackHoleEntity>of(BlackHoleEntity::new, MobCategory.MISC)

@@ -45,9 +45,19 @@ public final class Spells {
     public static final ResourceLocation MINYA = new ResourceLocation(HahUeuh.MODID, "minya");
     public static final ResourceLocation EL_MINYA = new ResourceLocation(HahUeuh.MODID, "el_minya");
     public static final ResourceLocation UL_MINYA = new ResourceLocation(HahUeuh.MODID, "ul_minya");
+    public static final ResourceLocation MURAK = new ResourceLocation(HahUeuh.MODID, "murak");
+    public static final ResourceLocation AL_KARUM = new ResourceLocation(HahUeuh.MODID, "al_karum");
+    public static final ResourceLocation VITA = new ResourceLocation(HahUeuh.MODID, "vita");
+    public static final ResourceLocation EL_VITA = new ResourceLocation(HahUeuh.MODID, "el_vita");
+    public static final ResourceLocation TELEPORTATION = new ResourceLocation(HahUeuh.MODID, "teleportation");
+    public static final ResourceLocation OL_SHAMAK = new ResourceLocation(HahUeuh.MODID, "ol_shamak");
+    public static final ResourceLocation DOOR_CROSSING = new ResourceLocation(HahUeuh.MODID, "door_crossing");
+    public static final ResourceLocation EMM = new ResourceLocation(HahUeuh.MODID, "emm");
+    public static final ResourceLocation EMT = new ResourceLocation(HahUeuh.MODID, "emt");
 
     private static final int SHAMAK_CLOUD_EXPAND_TICKS = 24;
     private static final double UL_SHAMAK_CAST_RANGE = 20.0;
+    private static final double AL_KARUM_CAST_RANGE = 24.0;
     private static final int MINYA_STAKE_COUNT = 3;
     private static final double MINYA_TARGET_RANGE = 24.0;
     private static final int MINYA_WINDUP_TICKS = 13;
@@ -93,6 +103,14 @@ public final class Spells {
                 Spells::castAlShamak));
 
         SpellRegistry.register(new Spell(
+                OL_SHAMAK,
+                ConfigMagicYin.OL_SHAMAK_TOTAL_MANA::get,
+                ConfigMagicYin.OL_SHAMAK_MANA_PER_TICK::get,
+                ConfigMagicYin.OL_SHAMAK_COOLDOWN_SECONDS::get,
+                player -> MagicSchool.YIN.acquiredBy(PlayerData.get(player)),
+                HahUeuh.OL_SHAMAK::cast));
+
+        SpellRegistry.register(new Spell(
                 MINYA,
                 ConfigMagicYin.MINYA_TOTAL_MANA::get,
                 ConfigMagicYin.MINYA_MANA_PER_TICK::get,
@@ -115,6 +133,93 @@ public final class Spells {
                 ConfigMagicYin.UL_MINYA_COOLDOWN_SECONDS::get,
                 player -> MagicSchool.YIN.acquiredBy(PlayerData.get(player)),
                 Spells::castUlMinya));
+
+        SpellRegistry.register(new Spell(
+                MURAK,
+                ConfigMagicYin.MURAK_TOTAL_MANA::get,
+                ConfigMagicYin.MURAK_MANA_PER_TICK::get,
+                ConfigMagicYin.MURAK_COOLDOWN_SECONDS::get,
+                player -> MagicSchool.YIN.acquiredBy(PlayerData.get(player)),
+                HahUeuh.MURAK::cast));
+
+        SpellRegistry.register(new Spell(
+                AL_KARUM,
+                ConfigMagicYin.AL_KARUM_TOTAL_MANA::get,
+                ConfigMagicYin.AL_KARUM_MANA_PER_TICK::get,
+                ConfigMagicYin.AL_KARUM_COOLDOWN_SECONDS::get,
+                player -> MagicSchool.YIN.acquiredBy(PlayerData.get(player)),
+                Spells::castAlKarum));
+
+        SpellRegistry.register(new Spell(
+                VITA,
+                ConfigMagicYin.VITA_TOTAL_MANA::get,
+                ConfigMagicYin.VITA_MANA_PER_TICK::get,
+                ConfigMagicYin.VITA_COOLDOWN_SECONDS::get,
+                player -> MagicSchool.YIN.acquiredBy(PlayerData.get(player)),
+                HahUeuh.VITA::cast));
+
+        SpellRegistry.register(new Spell(
+                EL_VITA,
+                ConfigMagicYin.EL_VITA_TOTAL_MANA::get,
+                ConfigMagicYin.EL_VITA_MANA_PER_TICK::get,
+                ConfigMagicYin.EL_VITA_COOLDOWN_SECONDS::get,
+                player -> MagicSchool.YIN.acquiredBy(PlayerData.get(player)),
+                HahUeuh.EL_VITA::cast));
+
+        SpellRegistry.register(new Spell(
+                TELEPORTATION,
+                ConfigMagicYin.TELEPORT_TOTAL_MANA::get,
+                ConfigMagicYin.TELEPORT_MANA_PER_TICK::get,
+                ConfigMagicYin.TELEPORT_COOLDOWN_SECONDS::get,
+                player -> MagicSchool.YIN.acquiredBy(PlayerData.get(player)),
+                HahUeuh.TELEPORTATION::cast));
+
+        SpellRegistry.register(new Spell(
+                DOOR_CROSSING,
+                ConfigMagicYin.DOOR_CROSSING_TOTAL_MANA::get,
+                ConfigMagicYin.DOOR_CROSSING_MANA_PER_TICK::get,
+                ConfigMagicYin.DOOR_CROSSING_COOLDOWN_SECONDS::get,
+                player -> MagicSchool.YIN.acquiredBy(PlayerData.get(player)),
+                HahUeuh.DOOR_CROSSING::cast));
+
+        SpellRegistry.register(new Spell(
+                EMM,
+                ConfigMagicYin.EMM_TOTAL_MANA::get,
+                ConfigMagicYin.EMM_MANA_PER_TICK::get,
+                ConfigMagicYin.EMM_COOLDOWN_SECONDS::get,
+                player -> MagicSchool.YIN.acquiredBy(PlayerData.get(player)),
+                HahUeuh.EMM::cast));
+
+        SpellRegistry.register(new Spell(
+                EMT,
+                ConfigMagicYin.EMT_TOTAL_MANA::get,
+                ConfigMagicYin.EMT_MANA_PER_TICK::get,
+                ConfigMagicYin.EMT_COOLDOWN_SECONDS::get,
+                player -> MagicSchool.YIN.acquiredBy(PlayerData.get(player)),
+                HahUeuh.EMT::cast));
+
+    }
+
+    private static void castAlKarum(ServerPlayer caster) {
+        summonBlackHole(caster, AL_KARUM_CAST_RANGE, true);
+    }
+
+    private static void summonBlackHole(ServerPlayer caster, double castRange, boolean empowered) {
+        ServerLevel level = caster.serverLevel();
+        Vec3 eye = caster.getEyePosition();
+        Vec3 end = eye.add(caster.getViewVector(1.0f).scale(castRange));
+        BlockHitResult hit = level.clip(new ClipContext(eye, end,
+                ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, caster));
+        Vec3 spawn = hit.getType() == HitResult.Type.MISS ? end : hit.getLocation();
+
+        BlackHoleEntity hole = new BlackHoleEntity(ModEntities.BLACK_HOLE.get(), level);
+        hole.setPos(spawn.x, spawn.y, spawn.z);
+        hole.setCaster(caster.getUUID());
+        hole.setEmpowered(empowered);
+        level.addFreshEntity(hole);
+
+        level.playSound(null, hole.blockPosition(), ModSounds.BLACKHOLE_SUMMON.get(),
+                SoundSource.PLAYERS, empowered ? 1.9f : 1.6f, empowered ? 0.3f : 0.4f);
     }
 
     private static void castUlMinya(ServerPlayer caster) {
@@ -250,20 +355,7 @@ public final class Spells {
     }
 
     private static void castUlShamak(ServerPlayer caster) {
-        ServerLevel level = caster.serverLevel();
-        Vec3 eye = caster.getEyePosition();
-        Vec3 end = eye.add(caster.getViewVector(1.0f).scale(UL_SHAMAK_CAST_RANGE));
-        BlockHitResult hit = level.clip(new ClipContext(eye, end,
-                ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, caster));
-        Vec3 spawn = hit.getType() == HitResult.Type.MISS ? end : hit.getLocation();
-
-        BlackHoleEntity hole = new BlackHoleEntity(ModEntities.BLACK_HOLE.get(), level);
-        hole.setPos(spawn.x, spawn.y, spawn.z);
-        hole.setCaster(caster.getUUID());
-        level.addFreshEntity(hole);
-
-        level.playSound(null, hole.blockPosition(), ModSounds.BLACKHOLE_SUMMON.get(),
-                SoundSource.PLAYERS, 1.6f, 0.4f);
+        summonBlackHole(caster, UL_SHAMAK_CAST_RANGE, false);
     }
 
     private static void castAlShamak(ServerPlayer caster) {

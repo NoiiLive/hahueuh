@@ -37,12 +37,22 @@ public final class Spells {
     public static final ResourceLocation EL_SHAMAK = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "el_shamak");
     public static final ResourceLocation UL_SHAMAK = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "ul_shamak");
     public static final ResourceLocation AL_SHAMAK = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "al_shamak");
+    public static final ResourceLocation OL_SHAMAK = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "ol_shamak");
     public static final ResourceLocation MINYA = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "minya");
     public static final ResourceLocation EL_MINYA = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "el_minya");
     public static final ResourceLocation UL_MINYA = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "ul_minya");
+    public static final ResourceLocation MURAK = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "murak");
+    public static final ResourceLocation AL_KARUM = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "al_karum");
+    public static final ResourceLocation VITA = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "vita");
+    public static final ResourceLocation EL_VITA = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "el_vita");
+    public static final ResourceLocation TELEPORTATION = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "teleportation");
+    public static final ResourceLocation DOOR_CROSSING = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "door_crossing");
+    public static final ResourceLocation EMM = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "emm");
+    public static final ResourceLocation EMT = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "emt");
 
     private static final int SHAMAK_CLOUD_EXPAND_TICKS = 24;
     private static final double UL_SHAMAK_CAST_RANGE = 20.0;
+    private static final double AL_KARUM_CAST_RANGE = 24.0;
     private static final int MINYA_STAKE_COUNT = 3;
     private static final double MINYA_TARGET_RANGE = 24.0;
     private static final int MINYA_WINDUP_TICKS = 13;
@@ -88,6 +98,14 @@ public final class Spells {
                 Spells::castAlShamak));
 
         SpellRegistry.register(new Spell(
+                OL_SHAMAK,
+                ConfigMagicYin.OL_SHAMAK_TOTAL_MANA,
+                ConfigMagicYin.OL_SHAMAK_MANA_PER_TICK,
+                ConfigMagicYin.OL_SHAMAK_COOLDOWN_SECONDS,
+                net.noiilive.hahueuh.MagicSchool.YIN::acquiredBy,
+                HahUeuh.OL_SHAMAK::cast));
+
+        SpellRegistry.register(new Spell(
                 MINYA,
                 ConfigMagicYin.MINYA_TOTAL_MANA,
                 ConfigMagicYin.MINYA_MANA_PER_TICK,
@@ -110,6 +128,70 @@ public final class Spells {
                 ConfigMagicYin.UL_MINYA_COOLDOWN_SECONDS,
                 net.noiilive.hahueuh.MagicSchool.YIN::acquiredBy,
                 Spells::castUlMinya));
+
+        SpellRegistry.register(new Spell(
+                MURAK,
+                ConfigMagicYin.MURAK_TOTAL_MANA,
+                ConfigMagicYin.MURAK_MANA_PER_TICK,
+                ConfigMagicYin.MURAK_COOLDOWN_SECONDS,
+                net.noiilive.hahueuh.MagicSchool.YIN::acquiredBy,
+                HahUeuh.MURAK::cast));
+
+        SpellRegistry.register(new Spell(
+                AL_KARUM,
+                ConfigMagicYin.AL_KARUM_TOTAL_MANA,
+                ConfigMagicYin.AL_KARUM_MANA_PER_TICK,
+                ConfigMagicYin.AL_KARUM_COOLDOWN_SECONDS,
+                net.noiilive.hahueuh.MagicSchool.YIN::acquiredBy,
+                Spells::castAlKarum));
+
+        SpellRegistry.register(new Spell(
+                VITA,
+                ConfigMagicYin.VITA_TOTAL_MANA,
+                ConfigMagicYin.VITA_MANA_PER_TICK,
+                ConfigMagicYin.VITA_COOLDOWN_SECONDS,
+                net.noiilive.hahueuh.MagicSchool.YIN::acquiredBy,
+                HahUeuh.VITA::cast));
+
+        SpellRegistry.register(new Spell(
+                EL_VITA,
+                ConfigMagicYin.EL_VITA_TOTAL_MANA,
+                ConfigMagicYin.EL_VITA_MANA_PER_TICK,
+                ConfigMagicYin.EL_VITA_COOLDOWN_SECONDS,
+                net.noiilive.hahueuh.MagicSchool.YIN::acquiredBy,
+                HahUeuh.EL_VITA::cast));
+
+        SpellRegistry.register(new Spell(
+                TELEPORTATION,
+                ConfigMagicYin.TELEPORT_TOTAL_MANA,
+                ConfigMagicYin.TELEPORT_MANA_PER_TICK,
+                ConfigMagicYin.TELEPORT_COOLDOWN_SECONDS,
+                net.noiilive.hahueuh.MagicSchool.YIN::acquiredBy,
+                HahUeuh.TELEPORTATION::cast));
+
+        SpellRegistry.register(new Spell(
+                DOOR_CROSSING,
+                ConfigMagicYin.DOOR_CROSSING_TOTAL_MANA,
+                ConfigMagicYin.DOOR_CROSSING_MANA_PER_TICK,
+                ConfigMagicYin.DOOR_CROSSING_COOLDOWN_SECONDS,
+                net.noiilive.hahueuh.MagicSchool.YIN::acquiredBy,
+                HahUeuh.DOOR_CROSSING::cast));
+
+        SpellRegistry.register(new Spell(
+                EMM,
+                ConfigMagicYin.EMM_TOTAL_MANA,
+                ConfigMagicYin.EMM_MANA_PER_TICK,
+                ConfigMagicYin.EMM_COOLDOWN_SECONDS,
+                net.noiilive.hahueuh.MagicSchool.YIN::acquiredBy,
+                HahUeuh.EMM::cast));
+
+        SpellRegistry.register(new Spell(
+                EMT,
+                ConfigMagicYin.EMT_TOTAL_MANA,
+                ConfigMagicYin.EMT_MANA_PER_TICK,
+                ConfigMagicYin.EMT_COOLDOWN_SECONDS,
+                net.noiilive.hahueuh.MagicSchool.YIN::acquiredBy,
+                HahUeuh.EMT::cast));
     }
 
     private static void castUlMinya(ServerPlayer caster) {
@@ -275,9 +357,17 @@ public final class Spells {
     }
 
     private static void castUlShamak(ServerPlayer caster) {
+        summonBlackHole(caster, UL_SHAMAK_CAST_RANGE, false);
+    }
+
+    private static void castAlKarum(ServerPlayer caster) {
+        summonBlackHole(caster, AL_KARUM_CAST_RANGE, true);
+    }
+
+    private static void summonBlackHole(ServerPlayer caster, double castRange, boolean empowered) {
         ServerLevel level = caster.serverLevel();
         Vec3 eye = caster.getEyePosition();
-        Vec3 end = eye.add(caster.getViewVector(1.0f).scale(UL_SHAMAK_CAST_RANGE));
+        Vec3 end = eye.add(caster.getViewVector(1.0f).scale(castRange));
         BlockHitResult hit = level.clip(new ClipContext(eye, end,
                 ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, caster));
         Vec3 spawn = hit.getType() == HitResult.Type.MISS ? end : hit.getLocation();
@@ -285,10 +375,11 @@ public final class Spells {
         BlackHoleEntity hole = new BlackHoleEntity(ModEntities.BLACK_HOLE.get(), level);
         hole.setPos(spawn.x, spawn.y, spawn.z);
         hole.setCaster(caster.getUUID());
+        hole.setEmpowered(empowered);
         level.addFreshEntity(hole);
 
         level.playSound(null, hole.blockPosition(), net.noiilive.hahueuh.ModSounds.BLACKHOLE_SUMMON.get(),
-                SoundSource.PLAYERS, 1.6f, 0.4f);
+                SoundSource.PLAYERS, empowered ? 1.9f : 1.6f, empowered ? 0.3f : 0.4f);
     }
 
     private static void castElShamak(ServerPlayer caster) {

@@ -13,6 +13,7 @@ public final class ModHover {
         UUID uuid = player.getUUID();
         return HahUeuh.LIONS_HEART.isActive(uuid)
                 || HahUeuh.MATERIAL_PHASE.isActive(uuid)
+                || HahUeuh.MURAK.isFlying(uuid)
                 || HahUeuh.SNAPSHOT_MANAGER.isUnseenHandMobility(uuid);
     }
 }

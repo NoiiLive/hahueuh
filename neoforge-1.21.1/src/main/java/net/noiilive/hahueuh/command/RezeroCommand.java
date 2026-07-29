@@ -12,6 +12,11 @@ import net.noiilive.hahueuh.GateDefectiveState;
 import net.noiilive.hahueuh.GateStrain;
 import net.noiilive.hahueuh.MagicSchool;
 import net.noiilive.hahueuh.ModAttachments;
+import net.noiilive.hahueuh.ConfigPlayer;
+import net.noiilive.hahueuh.PlayerStats;
+import net.noiilive.hahueuh.StatBonuses;
+import net.noiilive.hahueuh.network.PlayerStat;
+import net.noiilive.hahueuh.network.StatEntry;
 import net.noiilive.hahueuh.PlayerLifespan;
 import net.noiilive.hahueuh.network.GateDefectiveVariant;
 import net.noiilive.hahueuh.network.GateStatus;
@@ -134,7 +139,11 @@ public class RezeroCommand {
                                         .executes(ctx -> runAllyResponse(ctx, false))))
                         .then(Commands.literal("remove")
                                 .then(Commands.argument("player", GameProfileArgument.gameProfile())
-                                        .executes(RezeroCommand::runAllyRemove))))
+                                        .executes(RezeroCommand::runAllyRemove)))
+                        .then(Commands.literal("attacks")
+                                .executes(RezeroCommand::runAllyAttacksGet)
+                                .then(Commands.argument("value", BoolArgumentType.bool())
+                                        .executes(RezeroCommand::runAllyAttacksSet))))
                 .then(Commands.literal("race")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.argument("player", EntityArgument.player())
@@ -205,6 +214,7 @@ public class RezeroCommand {
                                 .then(Commands.literal("set")
                                         .then(Commands.argument("amount", IntegerArgumentType.integer(1))
                                                 .executes(RezeroCommand::runSetLifespan)))))
+                .then(buildStatsNode())
                 .then(Commands.literal("od")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.argument("player", EntityArgument.player())
@@ -504,6 +514,25 @@ public class RezeroCommand {
         return profiles.size();
     }
 
+    private static int runAllyAttacksGet(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        boolean enabled = HahUeuh.PLAYER_ALLIES.allyAttacksEnabled(player.getUUID());
+        ctx.getSource().sendSuccess(() -> Component.translatable(enabled
+                ? "hahueuh.command.ally_attacks_on" : "hahueuh.command.ally_attacks_off")
+                .withStyle(enabled ? ChatFormatting.YELLOW : ChatFormatting.GREEN), false);
+        return enabled ? 1 : 0;
+    }
+
+    private static int runAllyAttacksSet(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        boolean enabled = BoolArgumentType.getBool(ctx, "value");
+        HahUeuh.PLAYER_ALLIES.setAllyAttacks(player.getUUID(), enabled);
+        ctx.getSource().sendSuccess(() -> Component.translatable(enabled
+                ? "hahueuh.command.ally_attacks_set_on" : "hahueuh.command.ally_attacks_set_off")
+                .withStyle(enabled ? ChatFormatting.YELLOW : ChatFormatting.GREEN), false);
+        return enabled ? 1 : 0;
+    }
+
     private static int runAllyRemove(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         Collection<GameProfile> profiles = GameProfileArgument.getGameProfiles(ctx, "player");
@@ -696,6 +725,92 @@ public class RezeroCommand {
         return amount;
     }
 
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> buildStatsNode() {
+        com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, ?> playerNode =
+                Commands.argument("player", EntityArgument.player());
+
+        for (PlayerStat stat : PlayerStat.ORDERED) {
+            playerNode = playerNode.then(Commands.literal(stat.id)
+                    .then(Commands.literal("get")
+                            .executes(ctx -> runGetStat(ctx, stat)))
+                    .then(Commands.literal("set")
+                            .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                    .executes(ctx -> runSetStatLevel(ctx, stat))))
+                    .then(Commands.literal("proficiency")
+                            .then(Commands.literal("get")
+                                    .executes(ctx -> runGetStatRoll(ctx, stat, true)))
+                            .then(Commands.literal("set")
+                                    .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                                            .executes(ctx -> runSetStatRoll(ctx, stat, true)))))
+                    .then(Commands.literal("capacity")
+                            .then(Commands.literal("get")
+                                    .executes(ctx -> runGetStatRoll(ctx, stat, false)))
+                            .then(Commands.literal("set")
+                                    .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                                            .executes(ctx -> runSetStatRoll(ctx, stat, false))))));
+        }
+
+        return Commands.literal("stats")
+                .requires(source -> source.hasPermission(2))
+                .then(playerNode);
+    }
+
+    private static int runGetStat(CommandContext<CommandSourceStack> ctx, PlayerStat stat)
+            throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        PlayerStats.ensureRolled(target);
+        StatEntry entry = PlayerStats.get(target, stat);
+        int perLevel = ConfigPlayer.STAT_PROGRESS_PER_LEVEL.getAsInt();
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.stat_get",
+                target.getName(), Component.translatable(stat.translationKey),
+                entry.level(), StatBonuses.levelCap(entry), entry.progress(), perLevel,
+                entry.proficiency(), entry.capacity()
+        ).withStyle(ChatFormatting.AQUA), false);
+        return entry.level();
+    }
+
+    private static int runSetStatLevel(CommandContext<CommandSourceStack> ctx, PlayerStat stat)
+            throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        PlayerStats.setLevel(target, stat, amount);
+        StatEntry entry = PlayerStats.get(target, stat);
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.stat_level_set",
+                target.getName(), Component.translatable(stat.translationKey),
+                entry.level(), StatBonuses.levelCap(entry)
+        ).withStyle(ChatFormatting.GREEN), true);
+        return entry.level();
+    }
+
+    private static int runGetStatRoll(CommandContext<CommandSourceStack> ctx, PlayerStat stat, boolean proficiency)
+            throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        PlayerStats.ensureRolled(target);
+        StatEntry entry = PlayerStats.get(target, stat);
+        int value = proficiency ? entry.proficiency() : entry.capacity();
+        ctx.getSource().sendSuccess(() -> Component.translatable(
+                proficiency ? "hahueuh.command.stat_proficiency_get" : "hahueuh.command.stat_capacity_get",
+                target.getName(), Component.translatable(stat.translationKey), value
+        ).withStyle(ChatFormatting.AQUA), false);
+        return value;
+    }
+
+    private static int runSetStatRoll(CommandContext<CommandSourceStack> ctx, PlayerStat stat, boolean proficiency)
+            throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        int value = proficiency
+                ? PlayerStats.setProficiency(target, stat, amount)
+                : PlayerStats.setCapacity(target, stat, amount);
+        StatEntry entry = PlayerStats.get(target, stat);
+        ctx.getSource().sendSuccess(() -> Component.translatable(
+                proficiency ? "hahueuh.command.stat_proficiency_set" : "hahueuh.command.stat_capacity_set",
+                target.getName(), Component.translatable(stat.translationKey), value,
+                entry.level(), StatBonuses.levelCap(entry)
+        ).withStyle(ChatFormatting.GREEN), true);
+        return value;
+    }
+
     private static int runGetLifespan(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
         PlayerLifespan.ensureRolled(target);
@@ -735,6 +850,7 @@ public class RezeroCommand {
         int max = BookOfLifeStats.maxOd(target);
         int clamped = Math.min(amount, max);
         target.setData(ModAttachments.PLAYER_OD_CURRENT.get(), clamped);
+        HahUeuh.CRIPPLED_STATE.checkRecovery(target);
         ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.od_set",
                 target.getName(), clamped, max
         ).withStyle(ChatFormatting.GREEN), true);

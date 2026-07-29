@@ -52,9 +52,18 @@ public final class HahUeuhAbilities {
     public static final ResourceLocation EL_SHAMAK_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "el_shamak");
     public static final ResourceLocation UL_SHAMAK_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "ul_shamak");
     public static final ResourceLocation AL_SHAMAK_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "al_shamak");
+    public static final ResourceLocation OL_SHAMAK_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "ol_shamak");
     public static final ResourceLocation MINYA_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "minya");
     public static final ResourceLocation EL_MINYA_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "el_minya");
     public static final ResourceLocation UL_MINYA_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "ul_minya");
+    public static final ResourceLocation MURAK_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "murak");
+    public static final ResourceLocation AL_KARUM_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "al_karum");
+    public static final ResourceLocation VITA_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "vita");
+    public static final ResourceLocation EL_VITA_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "el_vita");
+    public static final ResourceLocation TELEPORTATION_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "teleportation");
+    public static final ResourceLocation DOOR_CROSSING_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "door_crossing");
+    public static final ResourceLocation EMM_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "emm");
+    public static final ResourceLocation EMT_ABILITY = ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "emt");
 
     @SubscribeEvent
     static void onRegisterAuthorities(RegisterAuthoritiesEvent event) {

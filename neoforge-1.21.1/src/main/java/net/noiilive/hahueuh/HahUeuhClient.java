@@ -49,6 +49,7 @@ public class HahUeuhClient {
         event.registerEntityRenderer(ModEntities.FROZEN_OBJECT_PROJECTILE.get(), ThrownItemRenderer::new);
         event.registerEntityRenderer(ModEntities.WITCH_FACTOR.get(), net.noiilive.hahueuh.client.WitchFactorRenderer::new);
         event.registerEntityRenderer(ModEntities.BLACK_HOLE.get(), net.noiilive.hahueuh.client.BlackHoleRenderer::new);
+        event.registerEntityRenderer(ModEntities.YIN_SEAL.get(), net.noiilive.hahueuh.client.YinSealRenderer::new);
         event.registerEntityRenderer(ModEntities.MINYA_SPIKE.get(), net.noiilive.hahueuh.client.MinyaSpikeRenderer::new);
         event.registerEntityRenderer(ModEntities.MINYA_RING.get(), net.noiilive.hahueuh.client.MinyaRingRenderer::new);
         event.registerBlockEntityRenderer(ModBlocks.POCKET_VOID_BE.get(), net.noiilive.hahueuh.client.PocketVoidRenderer::new);
@@ -58,10 +59,37 @@ public class HahUeuhClient {
     static void onRegisterLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(net.noiilive.hahueuh.client.model.BlackHoleModel.LAYER,
                 net.noiilive.hahueuh.client.model.BlackHoleModel::createBodyLayer);
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.model.YinSealModel.LAYER,
+                net.noiilive.hahueuh.client.model.YinSealModel::createBodyLayer);
         event.registerLayerDefinition(net.noiilive.hahueuh.client.model.MinyaSpikeModel.LAYER,
                 net.noiilive.hahueuh.client.model.MinyaSpikeModel::createBodyLayer);
         event.registerLayerDefinition(net.noiilive.hahueuh.client.model.MinyaRingModel.LAYER,
                 net.noiilive.hahueuh.client.model.MinyaRingModel::createBodyLayer);
+
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.EmmSwirlLayer.DEFAULT_LAYER,
+                () -> net.minecraft.client.model.geom.builders.LayerDefinition.create(
+                        net.minecraft.client.model.PlayerModel.createMesh(
+                                new net.minecraft.client.model.geom.builders.CubeDeformation(0.25f), false),
+                        64, 64));
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.EmmSwirlLayer.SLIM_LAYER,
+                () -> net.minecraft.client.model.geom.builders.LayerDefinition.create(
+                        net.minecraft.client.model.PlayerModel.createMesh(
+                                new net.minecraft.client.model.geom.builders.CubeDeformation(0.25f), true),
+                        64, 64));
+    }
+
+    @SubscribeEvent
+    static void onAddLayers(EntityRenderersEvent.AddLayers event) {
+        addEmmSwirlLayer(event, net.minecraft.client.resources.PlayerSkin.Model.WIDE, false);
+        addEmmSwirlLayer(event, net.minecraft.client.resources.PlayerSkin.Model.SLIM, true);
+    }
+
+    private static void addEmmSwirlLayer(EntityRenderersEvent.AddLayers event,
+                                         net.minecraft.client.resources.PlayerSkin.Model skin, boolean slim) {
+        if (!(event.getSkin(skin) instanceof net.minecraft.client.renderer.entity.player.PlayerRenderer renderer)) {
+            return;
+        }
+        renderer.addLayer(new net.noiilive.hahueuh.client.EmmSwirlLayer(renderer, event.getEntityModels(), slim));
     }
 
     @SubscribeEvent
@@ -87,6 +115,7 @@ public class HahUeuhClient {
     static void onClientLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
         DeathFadeState.reset();
         net.noiilive.hahueuh.network.DomainRenderState.clear();
+        net.noiilive.hahueuh.network.EmtRenderState.clear();
         net.noiilive.hahueuh.network.RemoteUnseenHands.clear();
         net.noiilive.hahueuh.network.ClientLionsHeartState.clear();
         net.noiilive.hahueuh.network.ClientLittleKingState.clear();
@@ -96,6 +125,8 @@ public class HahUeuhClient {
         net.noiilive.hahueuh.api.AbilityCooldowns.reset();
         AbilitySlots.reset();
         AbilityClient.resetChargeManaState();
+        net.noiilive.hahueuh.network.ClientMurakState.clear();
+        net.noiilive.hahueuh.client.MurakClient.reset();
     }
 
     private static void renderDeathFade(GuiGraphics graphics, DeltaTracker deltaTracker) {

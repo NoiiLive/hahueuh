@@ -243,6 +243,14 @@ public final class HahUeuhClientAbilities {
                 .onActivate(ctx -> net.noiilive.hahueuh.client.AlShamakClient.activate())
                 .build());
 
+        event.register(Ability.builder(HahUeuhAbilities.OL_SHAMAK_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.ol_shamak")
+                .shortLabel(() -> "OLS")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(
+                        new net.noiilive.hahueuh.network.CastSpellPayload(net.noiilive.hahueuh.magic.Spells.OL_SHAMAK)))
+                .build());
+
         event.register(Ability.builder(HahUeuhAbilities.MINYA_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
                 .translationKey("hahueuh.ability.minya")
                 .shortLabel(() -> "MIN")
@@ -264,6 +272,67 @@ public final class HahUeuhClientAbilities {
                 .shortLabel(() -> "ULM")
                 .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
                 .onActivate(ctx -> net.noiilive.hahueuh.client.UlMinyaClient.activate())
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.MURAK_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.murak")
+                .shortLabel(() -> "MUR")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(net.noiilive.hahueuh.network.MurakActivatePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.AL_KARUM_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.al_karum")
+                .shortLabel(() -> "ALK")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(
+                        new net.noiilive.hahueuh.network.CastSpellPayload(net.noiilive.hahueuh.magic.Spells.AL_KARUM)))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.VITA_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.vita")
+                .shortLabel(() -> "VIT")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(net.noiilive.hahueuh.network.VitaActivatePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.EL_VITA_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.el_vita")
+                .shortLabel(() -> "ELV")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(net.noiilive.hahueuh.network.ElVitaActivatePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.TELEPORTATION_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.teleportation")
+                .shortLabel(() -> "TPT")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> net.minecraft.client.Minecraft.getInstance()
+                        .setScreen(new net.noiilive.hahueuh.client.gui.TeleportScreen()))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.DOOR_CROSSING_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.door_crossing")
+                .shortLabel(() -> "DRC")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(
+                        net.noiilive.hahueuh.network.DoorCrossingActivatePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.EMM_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.emm")
+                .shortLabel(() -> "EMM")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(
+                        net.noiilive.hahueuh.network.EmmActivatePayload.INSTANCE))
+                .build());
+
+        event.register(Ability.builder(HahUeuhAbilities.EMT_ABILITY, HahUeuhAbilities.YIN_AUTHORITY)
+                .translationKey("hahueuh.ability.emt")
+                .shortLabel(() -> "EMT")
+                .availableWhen(net.noiilive.hahueuh.client.ClientMagicState::hasYin)
+                .onActivate(ctx -> PacketDistributor.sendToServer(
+                        net.noiilive.hahueuh.network.EmtActivatePayload.INSTANCE))
                 .build());
     }
 }

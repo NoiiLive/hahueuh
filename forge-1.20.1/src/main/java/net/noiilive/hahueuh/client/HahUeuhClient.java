@@ -63,6 +63,9 @@ public final class HahUeuhClient {
         net.noiilive.hahueuh.network.ClientVisionOfDangerHighlightState.clear();
         net.noiilive.hahueuh.network.ClientVisionOfLifeGlowState.clear();
         net.noiilive.hahueuh.network.ClientFootprintState.clear();
+        net.noiilive.hahueuh.network.ClientMurakState.clear();
+        net.noiilive.hahueuh.network.EmtRenderState.clear();
+        net.noiilive.hahueuh.client.MurakClient.reset();
     }
 
     private static void renderFade(GuiGraphics graphics) {

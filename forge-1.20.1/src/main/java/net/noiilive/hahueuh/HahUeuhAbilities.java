@@ -87,6 +87,24 @@ public final class HahUeuhAbilities {
             new ResourceLocation(HahUeuh.MODID, "el_minya");
     public static final ResourceLocation UL_MINYA_ABILITY =
             new ResourceLocation(HahUeuh.MODID, "ul_minya");
+    public static final ResourceLocation MURAK_ABILITY =
+            new ResourceLocation(HahUeuh.MODID, "murak");
+    public static final ResourceLocation AL_KARUM_ABILITY =
+            new ResourceLocation(HahUeuh.MODID, "al_karum");
+    public static final ResourceLocation VITA_ABILITY =
+            new ResourceLocation(HahUeuh.MODID, "vita");
+    public static final ResourceLocation EL_VITA_ABILITY =
+            new ResourceLocation(HahUeuh.MODID, "el_vita");
+    public static final ResourceLocation TELEPORTATION_ABILITY =
+            new ResourceLocation(HahUeuh.MODID, "teleportation");
+    public static final ResourceLocation OL_SHAMAK_ABILITY =
+            new ResourceLocation(HahUeuh.MODID, "ol_shamak");
+    public static final ResourceLocation DOOR_CROSSING_ABILITY =
+            new ResourceLocation(HahUeuh.MODID, "door_crossing");
+    public static final ResourceLocation EMM_ABILITY =
+            new ResourceLocation(HahUeuh.MODID, "emm");
+    public static final ResourceLocation EMT_ABILITY =
+            new ResourceLocation(HahUeuh.MODID, "emt");
     public static final ResourceLocation YIN_AUTHORITY = MagicSchool.YIN.authorityId;
 
     @SubscribeEvent

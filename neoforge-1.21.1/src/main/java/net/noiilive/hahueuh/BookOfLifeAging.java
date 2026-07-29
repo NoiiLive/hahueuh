@@ -23,6 +23,7 @@ public final class BookOfLifeAging {
             }
             GateDefectiveState.ensureRolled(player);
             GateStrain.ensureRolled(player);
+            PlayerStats.ensureRolled(player);
             processAgeUp(player);
         }
     }

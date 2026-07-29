@@ -25,5 +25,11 @@ public final class ModEffects {
     public static final DeferredHolder<MobEffect, MobEffect> LEASHED = MOB_EFFECTS.register("leashed",
             () -> new LeashedEffect(MobEffectCategory.HARMFUL, 0x6A3FA0));
 
+    public static final DeferredHolder<MobEffect, MobEffect> REDUCED_GRAVITY = MOB_EFFECTS.register("reduced_gravity",
+            () -> new ReducedGravityEffect(MobEffectCategory.NEUTRAL, 0x9FD8FF));
+
+    public static final DeferredHolder<MobEffect, MobEffect> INCREASED_GRAVITY = MOB_EFFECTS.register("increased_gravity",
+            () -> new IncreasedGravityEffect(MobEffectCategory.HARMFUL, 0x6B4A2A));
+
     private ModEffects() {}
 }

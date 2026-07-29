@@ -35,6 +35,8 @@ public final class AllyTrackerScreen extends Screen {
     private static final int RING_FALLBACK_RADIUS = 90;
     private static final int SELF_EDGE_MARGIN = 16;
     private static final int MARKER_FRAME = 16;
+    private static final int ARROW_LENGTH = 4;
+    private static final int ARROW_GAP = 3;
     private static final int MARKER_HIT_RADIUS = 9;
     private static final float SELF_MARKER_SCALE = 1.5f;
     private static final int SELF_HIT_RADIUS = Math.round(MARKER_HIT_RADIUS * SELF_MARKER_SCALE);
@@ -236,10 +238,17 @@ public final class AllyTrackerScreen extends Screen {
             boolean hovered = !panning && withinDot(mouseX, mouseY, pos[0], pos[1], MARKER_HIT_RADIUS);
             boolean selected = ally.uuid().equals(selectedAlly);
             drawMarker(graphics, pos[0], pos[1], ally.type().ordinal(), selected, alpha, !ally.online(), 1f);
+            if (ally.sameDimension() && ally.hasData()) {
+                drawFacingArrow(graphics, pos[0], pos[1], ally.yRot(), alpha, 1f, ally.type().dotColor);
+            }
             if (hovered) hoveredAlly = ally;
         }
 
         drawMarker(graphics, self[0], self[1], -1, selfSelected || selfHovered, selfFadeAlpha(), false, SELF_MARKER_SCALE);
+        if (minecraft != null && minecraft.player != null) {
+            drawFacingArrow(graphics, self[0], self[1], minecraft.player.getYRot(),
+                    selfFadeAlpha(), SELF_MARKER_SCALE, 0xFFFFFFFF);
+        }
 
         if (selfSelected) {
             renderSelfInfoBox(graphics, uiAlpha, mouseX, mouseY);
@@ -284,6 +293,23 @@ public final class AllyTrackerScreen extends Screen {
     private static void endFadedBlit() {
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         RenderSystem.disableBlend();
+    }
+
+    private void drawFacingArrow(GuiGraphics graphics, int x, int y, float yRot,
+                                 float alpha, float scale, int color) {
+        if (alpha <= 0f) return;
+        int tip = Math.round(MARKER_FRAME * scale) / 2 + ARROW_GAP;
+        int argb = withAlpha(color, alpha);
+
+        var pose = graphics.pose();
+        pose.pushPose();
+        pose.translate(x + 0.5f, y + 0.5f, 0.0f);
+        pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(180.0f + yRot));
+        for (int row = 0; row < ARROW_LENGTH; row++) {
+            int half = row + 1;
+            graphics.fill(-half, -tip + row, half, -tip + row + 1, argb);
+        }
+        pose.popPose();
     }
 
     private void drawMarker(GuiGraphics graphics, int x, int y, int typeOrdinal, boolean selected, float alpha, boolean darkTint, float scale) {

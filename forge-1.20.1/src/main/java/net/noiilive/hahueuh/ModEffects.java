@@ -22,6 +22,12 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> CRYSTALLIZED = MOB_EFFECTS.register("crystallized",
             () -> new CrystallizedEffect(MobEffectCategory.HARMFUL, 0x9B5FD0));
 
+    public static final RegistryObject<MobEffect> REDUCED_GRAVITY = MOB_EFFECTS.register("reduced_gravity",
+            () -> new ReducedGravityEffect(MobEffectCategory.NEUTRAL, 0x9FD8FF));
+
+    public static final RegistryObject<MobEffect> INCREASED_GRAVITY = MOB_EFFECTS.register("increased_gravity",
+            () -> new IncreasedGravityEffect(MobEffectCategory.HARMFUL, 0x6B4A2A));
+
     public static final RegistryObject<MobEffect> LEASHED = MOB_EFFECTS.register("leashed",
             () -> new LeashedEffect(MobEffectCategory.HARMFUL, 0x6A3FA0));
 

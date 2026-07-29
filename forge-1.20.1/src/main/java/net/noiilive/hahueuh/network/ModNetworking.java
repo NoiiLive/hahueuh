@@ -346,6 +346,66 @@ public final class ModNetworking {
                 UlMinyaActivatePacket::encode,
                 UlMinyaActivatePacket::new,
                 UlMinyaActivatePacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                MurakActivatePacket.class,
+                MurakActivatePacket::encode,
+                MurakActivatePacket::new,
+                MurakActivatePacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                MurakFlightTogglePacket.class,
+                MurakFlightTogglePacket::encode,
+                MurakFlightTogglePacket::new,
+                MurakFlightTogglePacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                MurakStatePacket.class,
+                MurakStatePacket::encode,
+                MurakStatePacket::new,
+                MurakStatePacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                VitaActivatePacket.class,
+                VitaActivatePacket::encode,
+                VitaActivatePacket::new,
+                VitaActivatePacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                ElVitaActivatePacket.class,
+                ElVitaActivatePacket::encode,
+                ElVitaActivatePacket::new,
+                ElVitaActivatePacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                TeleportCastPacket.class,
+                TeleportCastPacket::encode,
+                TeleportCastPacket::new,
+                TeleportCastPacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                DoorCrossingActivatePacket.class,
+                DoorCrossingActivatePacket::encode,
+                DoorCrossingActivatePacket::new,
+                DoorCrossingActivatePacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                EmmActivatePacket.class,
+                EmmActivatePacket::encode,
+                EmmActivatePacket::new,
+                EmmActivatePacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                EmtActivatePacket.class,
+                EmtActivatePacket::encode,
+                EmtActivatePacket::new,
+                EmtActivatePacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                EmtStatePacket.class,
+                EmtStatePacket::encode,
+                EmtStatePacket::new,
+                EmtStatePacket::handle);
     }
 
     public static void sendToAll(Object packet) {

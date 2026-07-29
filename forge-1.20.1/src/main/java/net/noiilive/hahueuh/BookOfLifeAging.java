@@ -22,6 +22,7 @@ public final class BookOfLifeAging {
             PlayerLifespan.ensureRolled(player);
             GateDefectiveState.ensureRolled(player);
             GateStrain.ensureRolled(player);
+            PlayerStats.ensureRolled(player);
             processAgeUp(player);
         }
     }

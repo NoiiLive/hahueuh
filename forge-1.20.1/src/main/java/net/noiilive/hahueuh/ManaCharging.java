@@ -51,6 +51,13 @@ public final class ManaCharging {
 
             if (defectiveVariantOf(player) == GateDefectiveVariant.NO_ABSORPTION) continue;
             if (!charging.contains(player.getUUID())) continue;
+            if (HahUeuh.EMT.suppresses(player)) {
+                if (secondTick) {
+                    player.displayClientMessage(Component.translatable("hahueuh.message.emt_silenced")
+                            .withStyle(ChatFormatting.DARK_GRAY), true);
+                }
+                continue;
+            }
             chargeManaTick(player);
         }
     }
@@ -82,7 +89,8 @@ public final class ManaCharging {
         int room = overchargeCap - current;
         if (room <= 0) return;
 
-        double perSecond = max * ConfigMagic.MANA_CHARGE_PERCENT_PER_SECOND.get() / 100.0;
+        double perSecond = max * ConfigMagic.MANA_CHARGE_PERCENT_PER_SECOND.get() / 100.0
+                * StatBonuses.manaChargeMultiplier(data);
         double perTick = Math.max(perSecond, 1.0) / TICKS_PER_SECOND;
         double accumulated = chargeAccumulator.merge(player.getUUID(), perTick, Double::sum);
 
@@ -100,6 +108,7 @@ public final class ManaCharging {
 
         data.setManaCurrent(current + drawn);
         PlayerDataEvents.sync(player);
+        HahUeuh.STAT_EFFECTS.awardManaCharged(player, drawn);
 
         applyMiasmaExposure(player, chunk);
     }

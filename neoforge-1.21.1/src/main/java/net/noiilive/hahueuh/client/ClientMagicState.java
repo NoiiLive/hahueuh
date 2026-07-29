@@ -27,6 +27,16 @@ public final class ClientMagicState {
         return player != null && !player.getData(net.noiilive.hahueuh.ModAttachments.PLAYER_STORED_SPELL.get()).isEmpty();
     }
 
+    public static boolean sealed() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        return player != null && player.getData(net.noiilive.hahueuh.ModAttachments.PLAYER_SEALED.get());
+    }
+
+    public static boolean emmActive() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        return player != null && player.getData(net.noiilive.hahueuh.ModAttachments.PLAYER_EMM_ACTIVE.get());
+    }
+
     public static boolean hasTrappedEntities() {
         LocalPlayer player = Minecraft.getInstance().player;
         return player != null && player.getData(net.noiilive.hahueuh.ModAttachments.PLAYER_HAS_TRAPPED_ENTITIES.get());

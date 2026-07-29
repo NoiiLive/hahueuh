@@ -1,12 +1,22 @@
 package net.noiilive.hahueuh;
 
+import net.noiilive.hahueuh.mixin.CompositeEntryAccessor;
+import net.noiilive.hahueuh.mixin.LootItemAccessor;
+import net.noiilive.hahueuh.mixin.LootPoolAccessor;
+import net.noiilive.hahueuh.mixin.LootPoolEntryContainerAccessor;
+import net.noiilive.hahueuh.mixin.LootPoolSingletonAccessor;
+import net.noiilive.hahueuh.mixin.LootTableAccessor;
+import net.noiilive.hahueuh.mixin.NumberProviderAccessors;
+import net.noiilive.hahueuh.mixin.RandomChanceConditionAccessor;
+import net.noiilive.hahueuh.mixin.RandomChanceLootingConditionAccessor;
+import net.noiilive.hahueuh.mixin.SetItemCountFunctionAccessor;
+import net.noiilive.hahueuh.mixin.UniformGeneratorAccessor;
 import net.noiilive.hahueuh.network.BoundVisionAbility;
 import net.noiilive.hahueuh.network.GreedVariant;
 import net.noiilive.hahueuh.network.VisionInfoQueryPacket;
 import net.noiilive.hahueuh.network.VisionInfoResultPacket;
 import net.noiilive.hahueuh.snapshot.PlayerAuthorityManager;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -23,7 +33,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.storage.loot.LootPool;
@@ -46,7 +55,6 @@ import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.noiilive.hahueuh.network.ModNetworking;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -293,52 +301,6 @@ public final class VisionOfInformation {
         return count;
     }
 
-    private static final Field POOLS_FIELD = uncheckedField(LootTable.class, "pools");
-    private static final Field RANDOM_CHANCE_FIELD =
-            uncheckedField(LootItemRandomChanceCondition.class, "probability");
-    private static final Field LOOTING_CHANCE_FIELD =
-            uncheckedField(LootItemRandomChanceWithLootingCondition.class, "percent");
-
-    private static final Field CONSTANT_VALUE_FIELD = uncheckedField(ConstantValue.class, "value");
-    private static final Field UNIFORM_MIN_FIELD = uncheckedField(UniformGenerator.class, "min");
-    private static final Field UNIFORM_MAX_FIELD = uncheckedField(UniformGenerator.class, "max");
-
-    private static NumberProvider readProviderField(Field field, Object owner) {
-        if (field == null) return null;
-        try {
-            return (NumberProvider) field.get(owner);
-        } catch (IllegalAccessException e) {
-            return null;
-        }
-    }
-
-    private static float readFloatField(Field field, Object owner, float fallback) {
-        if (field == null) return fallback;
-        try {
-            return field.getFloat(owner);
-        } catch (IllegalAccessException e) {
-            return fallback;
-        }
-    }
-    private static final Field ENTRIES_FIELD = uncheckedField(LootPool.class, "entries");
-    private static final Field POOL_CONDITIONS_FIELD = uncheckedField(LootPool.class, "conditions");
-    private static final Field CHILDREN_FIELD = uncheckedField(CompositeEntryBase.class, "children");
-    private static final Field ENTRY_CONDITIONS_FIELD = uncheckedField(LootPoolEntryContainer.class, "conditions");
-    private static final Field WEIGHT_FIELD = uncheckedField(LootPoolSingletonContainer.class, "weight");
-    private static final Field FUNCTIONS_FIELD = uncheckedField(LootPoolSingletonContainer.class, "functions");
-    private static final Field ITEM_FIELD = uncheckedField(LootItem.class, "item");
-    private static final Field SET_COUNT_VALUE_FIELD = uncheckedField(SetItemCountFunction.class, "value");
-    private static final Field SET_COUNT_ADD_FIELD = uncheckedField(SetItemCountFunction.class, "add");
-
-    private static Field uncheckedField(Class<?> owner, String name) {
-        try {
-            Field f = owner.getDeclaredField(name);
-            f.setAccessible(true);
-            return f;
-        } catch (NoSuchFieldException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
 
     private List<VisionInfoResultPacket.Drop> analyzeDrops(ResourceLocation lootKey) {
         List<VisionInfoResultPacket.Drop> drops = new ArrayList<>();
@@ -346,34 +308,28 @@ public final class VisionOfInformation {
             LootTable table = server.getLootData().getLootTable(lootKey);
             if (table == LootTable.EMPTY) return drops;
 
-            @SuppressWarnings("unchecked")
-            List<LootPool> pools = (List<LootPool>) POOLS_FIELD.get(table);
-
-            for (LootPool pool : pools) {
-                float poolChance = conditionChanceMultiplier(POOL_CONDITIONS_FIELD, pool);
-
-                @SuppressWarnings("unchecked")
-                List<LootPoolEntryContainer> entries = (List<LootPoolEntryContainer>) ENTRIES_FIELD.get(pool);
+            for (LootPool pool : ((LootTableAccessor) table).hahueuh$getPools()) {
+                float poolChance = conditionChanceMultiplier(((LootPoolAccessor) pool).hahueuh$getConditions());
 
                 List<LootPoolSingletonContainer> leaves = new ArrayList<>();
-                for (LootPoolEntryContainer entry : entries) {
+                for (LootPoolEntryContainer entry : ((LootPoolAccessor) pool).hahueuh$getEntries()) {
                     flattenEntries(entry, leaves);
                 }
 
                 int totalWeight = 0;
-                for (LootPoolSingletonContainer s : leaves) totalWeight += WEIGHT_FIELD.getInt(s);
+                for (LootPoolSingletonContainer s : leaves) {
+                    totalWeight += ((LootPoolSingletonAccessor) s).hahueuh$getWeight();
+                }
                 if (totalWeight <= 0) continue;
 
                 for (LootPoolSingletonContainer entry : leaves) {
                     if (!(entry instanceof LootItem item)) continue;
-                    int weight = WEIGHT_FIELD.getInt(item);
+                    int weight = ((LootPoolSingletonAccessor) item).hahueuh$getWeight();
                     float chance = poolChance * ((float) weight / totalWeight)
-                            * conditionChanceMultiplier(ENTRY_CONDITIONS_FIELD, item);
+                            * conditionChanceMultiplier(((LootPoolEntryContainerAccessor) item).hahueuh$getConditions());
 
-                    @SuppressWarnings("unchecked")
-                    Holder<Item> holder = (Holder<Item>) ITEM_FIELD.get(item);
-                    ResourceLocation itemId = holder.unwrapKey()
-                            .map(k -> k.location()).orElse(BuiltInRegistries.ITEM.getKey(holder.value()));
+                    ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(
+                            ((LootItemAccessor) item).hahueuh$getItem());
                     int[] countRange = countRange(item);
                     drops.add(new VisionInfoResultPacket.Drop(itemId.toString(), chance, countRange[0], countRange[1]));
                 }
@@ -384,40 +340,34 @@ public final class VisionOfInformation {
         return drops;
     }
 
-    private void flattenEntries(LootPoolEntryContainer entry, List<LootPoolSingletonContainer> out) throws IllegalAccessException {
+    private void flattenEntries(LootPoolEntryContainer entry, List<LootPoolSingletonContainer> out) {
         if (entry instanceof LootPoolSingletonContainer singleton) {
             out.add(singleton);
         } else if (entry instanceof CompositeEntryBase composite) {
-            @SuppressWarnings("unchecked")
-            List<LootPoolEntryContainer> children = (List<LootPoolEntryContainer>) CHILDREN_FIELD.get(composite);
-            for (LootPoolEntryContainer child : children) {
+            for (LootPoolEntryContainer child : ((CompositeEntryAccessor) composite).hahueuh$getChildren()) {
                 flattenEntries(child, out);
             }
         }
     }
 
-    private float conditionChanceMultiplier(Field conditionsField, Object owner) throws IllegalAccessException {
-        @SuppressWarnings("unchecked")
-        List<LootItemCondition> conditions = (List<LootItemCondition>) conditionsField.get(owner);
+    private float conditionChanceMultiplier(LootItemCondition[] conditions) {
         float chance = 1.0f;
         for (LootItemCondition condition : conditions) {
             if (condition instanceof LootItemRandomChanceCondition rc) {
-                chance *= readFloatField(RANDOM_CHANCE_FIELD, rc, 1.0f);
+                chance *= ((RandomChanceConditionAccessor) rc).hahueuh$getProbability();
             } else if (condition instanceof LootItemRandomChanceWithLootingCondition rb) {
-                chance *= readFloatField(LOOTING_CHANCE_FIELD, rb, 1.0f);
+                chance *= ((RandomChanceLootingConditionAccessor) rb).hahueuh$getPercent();
             }
         }
         return chance;
     }
 
-    private int[] countRange(LootPoolSingletonContainer entry) throws IllegalAccessException {
+    private int[] countRange(LootPoolSingletonContainer entry) {
         float min = 1, max = 1;
-        @SuppressWarnings("unchecked")
-        List<LootItemFunction> functions = (List<LootItemFunction>) FUNCTIONS_FIELD.get(entry);
-        for (LootItemFunction fn : functions) {
+        for (LootItemFunction fn : ((LootPoolSingletonAccessor) entry).hahueuh$getFunctions()) {
             if (fn instanceof SetItemCountFunction setCount) {
-                NumberProvider value = (NumberProvider) SET_COUNT_VALUE_FIELD.get(setCount);
-                boolean add = SET_COUNT_ADD_FIELD.getBoolean(setCount);
+                NumberProvider value = ((SetItemCountFunctionAccessor) setCount).hahueuh$getValue();
+                boolean add = ((SetItemCountFunctionAccessor) setCount).hahueuh$isAdd();
                 float[] range = providerRange(value);
                 if (range == null) continue;
                 if (add) {
@@ -436,12 +386,12 @@ public final class VisionOfInformation {
 
     private float[] providerRange(NumberProvider provider) {
         if (provider instanceof ConstantValue cv) {
-            float v = readFloatField(CONSTANT_VALUE_FIELD, cv, 0.0f);
+            float v = ((NumberProviderAccessors) (Object) cv).hahueuh$getValue();
             return new float[]{v, v};
         }
         if (provider instanceof UniformGenerator ug) {
-            NumberProvider minProvider = readProviderField(UNIFORM_MIN_FIELD, ug);
-            NumberProvider maxProvider = readProviderField(UNIFORM_MAX_FIELD, ug);
+            NumberProvider minProvider = ((UniformGeneratorAccessor) ug).hahueuh$getMin();
+            NumberProvider maxProvider = ((UniformGeneratorAccessor) ug).hahueuh$getMax();
             if (minProvider == null || maxProvider == null) return null;
             float[] lo = providerRange(minProvider);
             float[] hi = providerRange(maxProvider);

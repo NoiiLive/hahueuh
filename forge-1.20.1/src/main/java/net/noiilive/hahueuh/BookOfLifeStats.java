@@ -15,7 +15,7 @@ public final class BookOfLifeStats {
     }
 
     public static int maxMana(PlayerData data) {
-        return maxOd(data);
+        return (int) Math.round(maxOd(data) * StatBonuses.manaCapacityMultiplier(data));
     }
 
     public static int maxOd(ServerPlayer player) {
@@ -23,13 +23,14 @@ public final class BookOfLifeStats {
     }
 
     public static int maxMana(ServerPlayer player) {
-        return maxOd(player);
+        return maxMana(PlayerData.get(player));
     }
 
     public static void setOdToMax(ServerPlayer player) {
         PlayerData data = PlayerData.get(player);
         data.setOdCurrent(maxOd(data));
         PlayerDataEvents.sync(player);
+        HahUeuh.CRIPPLED_STATE.checkRecovery(player);
     }
 
     public static void clampToMax(ServerPlayer player) {

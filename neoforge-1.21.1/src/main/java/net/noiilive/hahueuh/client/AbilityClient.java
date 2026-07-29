@@ -55,6 +55,7 @@ public final class AbilityClient {
     @SubscribeEvent
     static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
+        if (!mc.isPaused()) AbilityCooldowns.tick();
         LocalPlayer player = mc.player;
         if (player == null) {
             UnseenHandState.setActive(false);

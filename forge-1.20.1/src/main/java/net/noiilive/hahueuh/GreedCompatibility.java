@@ -169,14 +169,7 @@ public final class GreedCompatibility {
     }
 
     private static boolean hasLootTable(net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity be) {
-        try {
-            java.lang.reflect.Field field = net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity.class
-                    .getDeclaredField("lootTable");
-            field.setAccessible(true);
-            return field.get(be) != null;
-        } catch (Exception e) {
-            return false;
-        }
+        return ((net.noiilive.hahueuh.mixin.LootTableHolderAccessor) be).hahueuh$getLootTable() != null;
     }
 
     @SubscribeEvent

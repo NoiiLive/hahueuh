@@ -31,6 +31,9 @@ public record WorldSnapshot(
         Map<UUID, Integer> littleKingCooldownRemaining,
         Map<UUID, Integer> materialPhaseCooldownRemaining,
         Map<UUID, Integer> objectFreezeCooldownRemaining,
+        Map<UUID, Integer> allyTrackerCooldownRemaining,
+        Map<UUID, Integer> baseShiftCooldownRemaining,
+        Map<UUID, Integer> secondShiftCooldownRemaining,
         Map<UUID, Integer> bookOfWisdomCooldownRemaining,
         Set<UUID> bookOfWisdomSummoned,
         Map<UUID, Integer> mentalOverloadCooldownRemaining,
@@ -40,6 +43,7 @@ public record WorldSnapshot(
         Set<UUID> visionOfLifeActive,
         List<FootprintTracker.FootprintEntry> footprints,
         Map<UUID, int[]> lionsHeartActive,
-        Set<UUID> materialPhaseActive
+        Set<UUID> materialPhaseActive,
+        Map<UUID, Integer> fingerGrantCooldownRemaining
 ) {
 }

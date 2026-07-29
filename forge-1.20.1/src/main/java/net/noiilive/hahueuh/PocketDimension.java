@@ -180,7 +180,7 @@ public final class PocketDimension {
         return count;
     }
 
-    private static void teleportTo(Entity entity, ServerLevel destination, Vec3 pos, float yRot, float xRot) {
+    public static void teleportTo(Entity entity, ServerLevel destination, Vec3 pos, float yRot, float xRot) {
         if (entity.level() == destination) {
             if (entity instanceof ServerPlayer player) {
                 player.teleportTo(destination, pos.x, pos.y, pos.z, yRot, xRot);
@@ -191,12 +191,22 @@ public final class PocketDimension {
         }
         entity.changeDimension(destination, new net.minecraftforge.common.util.ITeleporter() {
             @Override
+            public net.minecraft.world.level.portal.PortalInfo getPortalInfo(Entity moved, ServerLevel destWorld,
+                    java.util.function.Function<ServerLevel, net.minecraft.world.level.portal.PortalInfo> defaultInfo) {
+                return new net.minecraft.world.level.portal.PortalInfo(pos, Vec3.ZERO, yRot, xRot);
+            }
+
+            @Override
             public Entity placeEntity(Entity moved, ServerLevel from, ServerLevel to, float yaw,
                                       java.util.function.Function<Boolean, Entity> repositionEntity) {
                 Entity placed = repositionEntity.apply(false);
-                placed.moveTo(pos.x, pos.y, pos.z, yRot, xRot);
                 placed.setDeltaMovement(Vec3.ZERO);
                 return placed;
+            }
+
+            @Override
+            public boolean playTeleportSound(ServerPlayer player, ServerLevel from, ServerLevel to) {
+                return false;
             }
         });
     }
@@ -276,6 +286,16 @@ public final class PocketDimension {
             tearDownIfEmpty(server, cell);
         }
         if (changed) savePersisted();
+
+        if (pocket != null) {
+            Set<Integer> liveCells = new HashSet<>();
+            for (Capture capture : captures.values()) liveCells.add(capture.cell);
+            for (int cell : liveCells) {
+                BlockPos origin = cellOrigin(cell);
+                forceCellChunks(pocket, origin, true);
+                buildRoom(pocket, origin, true);
+            }
+        }
 
         for (UUID casterUuid : affectedCasters) {
             ServerPlayer caster = server.getPlayerList().getPlayer(casterUuid);

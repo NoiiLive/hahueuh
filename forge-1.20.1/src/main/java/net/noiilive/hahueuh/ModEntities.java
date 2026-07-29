@@ -38,6 +38,14 @@ public final class ModEntities {
                     .fireImmune()
                     .build("minya_ring"));
 
+    public static final RegistryObject<EntityType<YinSealEntity>> YIN_SEAL =
+            ENTITY_TYPES.register("yin_seal", () -> EntityType.Builder
+                    .<YinSealEntity>of(YinSealEntity::new, MobCategory.MISC)
+                    .sized(2.0f, 2.0f)
+                    .clientTrackingRange(16)
+                    .updateInterval(2)
+                    .build("yin_seal"));
+
     public static final RegistryObject<EntityType<BlackHoleEntity>> BLACK_HOLE =
             ENTITY_TYPES.register("black_hole", () -> EntityType.Builder
                     .<BlackHoleEntity>of(BlackHoleEntity::new, MobCategory.MISC)

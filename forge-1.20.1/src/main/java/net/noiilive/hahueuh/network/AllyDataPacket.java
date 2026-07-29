@@ -16,7 +16,7 @@ public class AllyDataPacket {
     public record Ally(UUID uuid, String name, int typeOrdinal, boolean online, boolean hasData,
                        float health, float maxHealth, double x, double y, double z,
                        double dx, double dz, boolean sameDimension,
-                       float weight, List<Effect> effects) {
+                       float weight, float yRot, List<Effect> effects) {
         public AllyType type() {
             return AllyType.byOrdinal(typeOrdinal);
         }
@@ -108,8 +108,9 @@ public class AllyDataPacket {
             double dz = buf.readDouble();
             boolean sameDimension = buf.readBoolean();
             float weight = buf.readFloat();
+            float yRot = buf.readFloat();
             list.add(new Ally(uuid, name, typeOrdinal, online, hasData, health, maxHealth, x, y, z,
-                    dx, dz, sameDimension, weight, readEffects(buf)));
+                    dx, dz, sameDimension, weight, yRot, readEffects(buf)));
         }
         this.allies = list;
     }
@@ -139,6 +140,7 @@ public class AllyDataPacket {
             buf.writeDouble(ally.dz());
             buf.writeBoolean(ally.sameDimension());
             buf.writeFloat(ally.weight());
+            buf.writeFloat(ally.yRot());
             writeEffects(buf, ally.effects());
         }
     }

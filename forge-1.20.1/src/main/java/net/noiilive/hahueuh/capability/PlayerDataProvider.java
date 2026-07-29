@@ -27,6 +27,10 @@ public class PlayerDataProvider implements ICapabilitySerializable<CompoundTag> 
         data.deserializeNBT(tag);
     }
 
+    public PlayerData data() {
+        return data;
+    }
+
     public void invalidate() {
         optional.invalidate();
     }

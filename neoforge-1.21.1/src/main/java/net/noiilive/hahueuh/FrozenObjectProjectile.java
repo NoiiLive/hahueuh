@@ -33,6 +33,7 @@ public final class FrozenObjectProjectile extends ThrowableProjectile implements
 
     private final Set<UUID> hitEntities = new HashSet<>();
     private Vec3 spawnPos = Vec3.ZERO;
+    private boolean dropped;
 
     public FrozenObjectProjectile(EntityType<? extends FrozenObjectProjectile> type, Level level) {
         super(type, level);
@@ -81,6 +82,7 @@ public final class FrozenObjectProjectile extends ThrowableProjectile implements
             clearBreakableBlocksAlongPath(level);
             double maxRange = ConfigGreed.GREED_PROJECTILE_DISTANCE.getAsInt();
             if (this.tickCount > MAX_AGE_TICKS || this.position().distanceToSqr(spawnPos) > maxRange * maxRange) {
+                dropCarriedItem(level);
                 this.discard();
                 return;
             }
@@ -112,6 +114,40 @@ public final class FrozenObjectProjectile extends ThrowableProjectile implements
                 level.destroyBlock(blockPos, ModGameRules.rollDrops(level));
             }
         }
+    }
+
+    private void dropCarriedItem(ServerLevel level) {
+        if (dropped) return;
+        dropped = true;
+
+        ItemStack carried = getItem();
+        if (carried.isEmpty()) return;
+
+        net.minecraft.world.entity.item.ItemEntity drop = new net.minecraft.world.entity.item.ItemEntity(
+                level, getX(), getY(), getZ(), carried.copy());
+        drop.setDeltaMovement(Vec3.ZERO);
+        drop.setDefaultPickUpDelay();
+        level.addFreshEntity(drop);
+        setItem(ItemStack.EMPTY);
+    }
+
+    @Override
+    protected void readAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        if (tag.contains("Item")) {
+            setItem(ItemStack.parse(registryAccess(), tag.getCompound("Item")).orElse(ItemStack.EMPTY));
+        }
+        dropped = tag.getBoolean("Dropped");
+    }
+
+    @Override
+    protected void addAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        ItemStack carried = getItem();
+        if (!carried.isEmpty()) {
+            tag.put("Item", carried.save(registryAccess()));
+        }
+        tag.putBoolean("Dropped", dropped);
     }
 
     @Override

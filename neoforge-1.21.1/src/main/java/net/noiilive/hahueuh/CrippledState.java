@@ -43,6 +43,23 @@ public final class CrippledState {
         return player.getData(ModAttachments.PLAYER_OD_DEPLETED.get());
     }
 
+    private static int currentOd(ServerPlayer player) {
+        return player.getData(ModAttachments.PLAYER_OD_CURRENT.get());
+    }
+
+    /**
+     * Un-cripples a player whose Od has been restored above zero by some other means
+     * (commands, lifespan reroll, etc.) without going through a normal death respawn.
+     */
+    public void checkRecovery(ServerPlayer player) {
+        if (!isDepleted(player) || currentOd(player) <= 0) return;
+        clear(player);
+        player.displayClientMessage(Component.translatable("hahueuh.message.od_recovered")
+                .withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        player.level().playSound(null, player.blockPosition(),
+                SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.6f, 1.2f);
+    }
+
     public void afflict(ServerPlayer player) {
         if (isDepleted(player)) return;
 
@@ -111,15 +128,17 @@ public final class CrippledState {
         MinecraftServer server = event.getServer();
         if (server.getTickCount() % REAPPLY_INTERVAL != 0) return;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (!isDepleted(player)) continue;
+            checkRecovery(player);
             if (isDepleted(player)) reapply(player);
         }
     }
 
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && isDepleted(player)) {
-            reapply(player);
-        }
+        if (!(event.getEntity() instanceof ServerPlayer player) || !isDepleted(player)) return;
+        checkRecovery(player);
+        if (isDepleted(player)) reapply(player);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

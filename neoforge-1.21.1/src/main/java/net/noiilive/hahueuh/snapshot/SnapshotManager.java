@@ -161,7 +161,8 @@ public class SnapshotManager {
 
     private static final Set<String> MOD_METADATA_FILES = Set.of(
             "hahueuh_authority.json",
-            "hahueuh_timer_state.txt");
+            "hahueuh_timer_state.txt",
+            "hahueuh_door_crossing.json");
 
     private static final Codec<PalettedContainer<BlockState>> BLOCK_STATE_CODEC = PalettedContainer.codecRW(
             Block.BLOCK_STATE_REGISTRY,
@@ -773,7 +774,13 @@ public class SnapshotManager {
         PlayerSnapshot joinSnapshot = null;
         for (CheckpointSlot slot : new CheckpointSlot[]{rbd, domain}) {
             if (slot.snapshot == null || slot.snapshot.playerData().containsKey(player.getUUID())) continue;
-            if (joinSnapshot == null) joinSnapshot = PlayerSnapshot.capture(player);
+            if (joinSnapshot == null) {
+                net.noiilive.hahueuh.PlayerLifespan.ensureRolled(player);
+                net.noiilive.hahueuh.GateDefectiveState.ensureRolled(player);
+                net.noiilive.hahueuh.GateStrain.ensureRolled(player);
+                net.noiilive.hahueuh.PlayerStats.ensureRolled(player);
+                joinSnapshot = PlayerSnapshot.capture(player);
+            }
             slot.snapshot.playerData().put(player.getUUID(), joinSnapshot);
         }
     }
@@ -2042,6 +2049,7 @@ public class SnapshotManager {
             stepStart = logStepTime("restoreChangedFiles (" + restoredFiles + " files)", stepStart);
 
             HahUeuh.POCKET_DIMENSION.reloadFromDisk();
+            HahUeuh.TELEPORTATION.reloadFromDisk();
 
             for (ServerLevel level : server.getAllLevels()) {
                 resetSavedDataCache(level);
@@ -2068,6 +2076,7 @@ public class SnapshotManager {
             stepStart = logStepTime("restoreEntitiesForLevel (all levels)", stepStart);
 
             HahUeuh.POCKET_DIMENSION.reconcileAfterRollback(server);
+            HahUeuh.DOOR_CROSSING.reconcileAfterRollback();
 
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 if (player.containerMenu != player.inventoryMenu) {
@@ -2077,6 +2086,7 @@ public class SnapshotManager {
                         LOGGER.warn("Failed to close container for {} before rollback restore", player.getGameProfile().getName(), e);
                     }
                 }
+                HahUeuh.SPELL_CASTING.cancelCastSilently(player);
                 PlayerSnapshot ps = snapshot.playerData().get(player.getUUID());
                 if (ps != null) {
                     try {
@@ -2339,24 +2349,25 @@ public class SnapshotManager {
             }
         }
 
+        List<ChunkPos> missingPositions = new ArrayList<>();
         int disk = 0, missing = 0, skippedProto = 0;
         for (List<ChunkPos> chunksInRegion : byRegion.values()) {
             ChunkPos any = chunksInRegion.get(0);
             String fileName = "r." + any.getRegionX() + "." + any.getRegionZ() + ".mca";
             Path ckptFile = checkpointRegionDir.resolve(fileName);
-            if (!Files.exists(ckptFile)) { missing += chunksInRegion.size(); continue; }
+            if (!Files.exists(ckptFile)) { missing += chunksInRegion.size(); missingPositions.addAll(chunksInRegion); continue; }
 
             Files.createDirectories(liveRegionDir);
             try (RegionFile ckptRegion = new RegionFile(ckptInfo, ckptFile, checkpointRegionDir, false);
                  RegionFile liveRegion = new RegionFile(liveInfo, liveRegionDir.resolve(fileName), liveRegionDir, false)) {
                 for (ChunkPos pos : chunksInRegion) {
-                    if (!ckptRegion.hasChunk(pos)) { missing++; continue; }
+                    if (!ckptRegion.hasChunk(pos)) { missing++; missingPositions.add(pos); continue; }
                     CompoundTag nbt;
                     try (DataInputStream in = ckptRegion.getChunkDataInputStream(pos)) {
-                        if (in == null) { missing++; continue; }
+                        if (in == null) { missing++; missingPositions.add(pos); continue; }
                         nbt = NbtIo.read(in);
                     }
-                    if (nbt == null) { missing++; continue; }
+                    if (nbt == null) { missing++; missingPositions.add(pos); continue; }
                     if (!isFullyGeneratedChunk(nbt)) { skippedProto++; continue; }
                     try (DataOutputStream out = liveRegion.getChunkDataOutputStream(pos)) {
                         NbtIo.write(nbt, out);
@@ -2394,6 +2405,17 @@ public class SnapshotManager {
                     }
                 }
             }
+        }
+
+        if (level.dimension().equals(net.noiilive.hahueuh.PocketDimension.POCKET_LEVEL) && !missingPositions.isEmpty()) {
+            int wiped = 0;
+            for (ChunkPos pos : missingPositions) {
+                LevelChunk loaded = loadedByPos.get(pos.toLong());
+                if (loaded == null) continue;
+                clearChunkInMemory(level, loaded);
+                wiped++;
+            }
+            LOGGER.debug("Cleared {} pocket chunks with no checkpoint data", wiped);
         }
 
         LOGGER.debug("Restored chunks in {}: {} on disk, {} in memory, {} left as-is (no checkpoint data), {} skipped (checkpoint not fully generated), {} region files, {} failed",
@@ -2519,6 +2541,36 @@ public class SnapshotManager {
         codec.parse(NbtOps.INSTANCE, stored).result().ifPresentOrElse(
                 value -> chunk.setData(type, value),
                 () -> chunk.removeData(type));
+    }
+
+    private void clearChunkInMemory(ServerLevel level, LevelChunk chunk) {
+        ChunkPos pos = chunk.getPos();
+        var lightEngine = level.getChunkSource().getLightEngine();
+        LevelChunkSection[] sections = chunk.getSections();
+
+        for (int i = 0; i < sections.length; i++) {
+            LevelChunkSection old = sections[i];
+            if (old.hasOnlyAir()) continue;
+            @SuppressWarnings("unchecked")
+            PalettedContainer<Holder<Biome>> biomes = (PalettedContainer<Holder<Biome>>) old.getBiomes();
+            sections[i] = new LevelChunkSection(new PalettedContainer<>(Block.BLOCK_STATE_REGISTRY,
+                    Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES), biomes);
+            lightEngine.updateSectionStatus(SectionPos.of(pos, level.getSectionYFromSectionIndex(i)), true);
+        }
+
+        for (BlockPos bePos : new HashSet<>(chunk.getBlockEntities().keySet())) {
+            level.removeBlockEntity(bePos);
+        }
+
+        Heightmap.primeHeightmaps(chunk, EnumSet.of(
+                Heightmap.Types.MOTION_BLOCKING,
+                Heightmap.Types.WORLD_SURFACE,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                Heightmap.Types.OCEAN_FLOOR));
+
+        chunk.setUnsaved(true);
+        sendToChunkViewers(level, pos, new ClientboundLevelChunkWithLightPacket(
+                chunk, level.getLightEngine(), null, null));
     }
 
     private void applyChunkNbtInMemory(ServerLevel level, LevelChunk chunk, CompoundTag chunkNbt) {

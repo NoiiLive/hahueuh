@@ -69,6 +69,7 @@ public final class AbilityClient {
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        if (!Minecraft.getInstance().isPaused()) AbilityCooldowns.tick();
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null) return;

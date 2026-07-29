@@ -86,4 +86,11 @@ public class ModSounds {
             () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "domain_open")));
     public static final DeferredHolder<SoundEvent, SoundEvent> DOMAIN_CLOSE = SOUND_EVENTS.register("domain_close",
             () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "domain_close")));
+
+    public static final DeferredHolder<SoundEvent, SoundEvent> EMM_ACTIVATE = SOUND_EVENTS.register("emm_activate",
+            () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "emm_activate")));
+    public static final DeferredHolder<SoundEvent, SoundEvent> DOOR_CROSSING_OPEN = SOUND_EVENTS.register("door_crossing_open",
+            () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "door_crossing_open")));
+    public static final DeferredHolder<SoundEvent, SoundEvent> DOOR_CROSSING_EXIT = SOUND_EVENTS.register("door_crossing_exit",
+            () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "door_crossing_exit")));
 }

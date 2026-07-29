@@ -44,6 +44,19 @@ public final class CrippledState {
         return PlayerData.get(player).isOdDepleted();
     }
 
+    private static int currentOd(ServerPlayer player) {
+        return PlayerData.get(player).getOdCurrent();
+    }
+
+    public void checkRecovery(ServerPlayer player) {
+        if (!isDepleted(player) || currentOd(player) <= 0) return;
+        clear(player);
+        player.displayClientMessage(Component.translatable("hahueuh.message.od_recovered")
+                .withStyle(ChatFormatting.LIGHT_PURPLE), false);
+        player.level().playSound(null, player.blockPosition(),
+                SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.6f, 1.2f);
+    }
+
     public void afflict(ServerPlayer player) {
         if (isDepleted(player)) return;
         PlayerData data = PlayerData.get(player);
@@ -51,6 +64,8 @@ public final class CrippledState {
         if (!ConfigMagic.CRIPPLED_ENABLED.get()) {
             data.setOdCurrent(BookOfLifeStats.maxOd(data));
             PlayerDataEvents.sync(player);
+            int lockoutSeconds = ConfigMagic.CRIPPLED_MAGIC_LOCKOUT_MINUTES.get() * 60;
+            HahUeuh.SPELL_CASTING.lockOutAllSpells(player, lockoutSeconds);
             player.displayClientMessage(Component.translatable("hahueuh.message.od_depleted_soft",
                     ConfigMagic.CRIPPLED_MAGIC_LOCKOUT_MINUTES.get()).withStyle(ChatFormatting.DARK_GRAY), false);
             player.level().playSound(null, player.blockPosition(),
@@ -116,6 +131,8 @@ public final class CrippledState {
         MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server == null || server.getTickCount() % REAPPLY_INTERVAL != 0) return;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (!isDepleted(player)) continue;
+            checkRecovery(player);
             if (isDepleted(player)) reapply(player);
         }
     }
@@ -133,9 +150,9 @@ public final class CrippledState {
 
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && isDepleted(player)) {
-            reapply(player);
-        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        checkRecovery(player);
+        if (isDepleted(player)) reapply(player);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

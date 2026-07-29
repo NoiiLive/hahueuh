@@ -104,8 +104,8 @@ public final class ConfigGreed {
 
     public static final ModConfigSpec.IntValue ALLY_TRACKER_COOLDOWN_SECONDS = BUILDER
             .comment("Cooldown (in seconds) between Ally Tracker marks (opening the tracker GUI is always",
-                     "free and never triggers a cooldown). Set to 0 to disable. Default: 15. Range: 0 to 3600.")
-            .defineInRange("allyTrackerCooldownSeconds", 15, 0, 3600);
+                     "free and never triggers a cooldown). Set to 0 to disable. Default: 5. Range: 0 to 3600.")
+            .defineInRange("allyTrackerCooldownSeconds", 5, 0, 3600);
 
     public static final ModConfigSpec.IntValue ALLY_TRACKER_MAX_ALLIES = BUILDER
             .comment("Maximum number of allies a Cor Leonis user may register with Ally Tracker.",
