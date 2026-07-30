@@ -105,6 +105,20 @@ public final class BodilyDisconnect {
         return current + delta;
     }
 
+    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.HIGHEST)
+    public void onChangeTarget(net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent event) {
+        if (event.getNewAboutToBeSetTarget() == null) return;
+        if (MobTargetUtil.isPacified(event.getEntity())) event.setCanceled(true);
+    }
+
+    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.HIGHEST)
+    public void onPacifiedAttack(net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent event) {
+        net.minecraft.world.entity.Entity attacker = event.getSource().getEntity();
+        if (!(attacker instanceof net.minecraft.world.entity.LivingEntity living)) return;
+        if (attacker == event.getEntity()) return;
+        if (living.hasEffect(ModEffects.SENSORY_DEPRIVATION)) event.setCanceled(true);
+    }
+
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
         if (states.isEmpty()) return;

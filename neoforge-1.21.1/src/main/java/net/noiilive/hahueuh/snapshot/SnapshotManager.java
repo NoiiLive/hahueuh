@@ -54,7 +54,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockChangedAckPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
-import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.network.protocol.game.ClientboundLightUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.ResourceKey;
@@ -192,6 +191,7 @@ public class SnapshotManager {
     private int nextCheckpointIntervalTicks;
     private long rollbackAtTick = -1;
     private CheckpointSlot pendingRollbackSlot;
+    private final Map<UUID, PlayerSnapshot> pendingPlayerRestores = new ConcurrentHashMap<>();
     private boolean rollbackInProgress;
     private MinecraftServer server;
     private UUID domainOwnerUuid;
@@ -199,6 +199,8 @@ public class SnapshotManager {
     private Vec3 domainMatrix;
     private ResourceKey<Level> domainDimension;
     private boolean domainCasterDeadHardcore;
+    private int domainSubjectInsanityBase;
+    private int domainInsanityStacks;
     private final Map<UUID, Integer> domainCooldownUntilTick = new HashMap<>();
     private final Map<UUID, UnseenHand> unseenHands = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> slothCooldownUntilTick = new HashMap<>();
@@ -218,6 +220,24 @@ public class SnapshotManager {
 
     private static void ensureGrabSlots(UnseenHand hand, int n) {
         if (hand.grabbed.length != n) hand.grabbed = new UUID[n];
+    }
+
+    private boolean grabsTarget(UUID holder, UUID target) {
+        UnseenHand hand = unseenHands.get(holder);
+        if (hand == null) return false;
+        for (UUID id : hand.grabbed) {
+            if (target.equals(id)) return true;
+        }
+        return false;
+    }
+
+    private boolean wouldGrabBackwards(ServerPlayer owner, Entity candidate) {
+        return grabsTarget(candidate.getUUID(), owner.getUUID());
+    }
+
+    private boolean losesMutualGrab(ServerPlayer owner, Entity held) {
+        return grabsTarget(held.getUUID(), owner.getUUID())
+                && held.getUUID().compareTo(owner.getUUID()) < 0;
     }
     private final PlayerAuthorityManager authorityManager = new PlayerAuthorityManager();
     private final AbilitySlotsManager abilitySlotsManager = new AbilitySlotsManager();
@@ -297,6 +317,7 @@ public class SnapshotManager {
         this.server = null;
         this.rbd.clear();
         this.domain.clear();
+        this.pendingPlayerRestores.clear();
     }
 
     private static final String TIMER_STATE_FILE_NAME = "hahueuh_timer_state.txt";
@@ -358,6 +379,7 @@ public class SnapshotManager {
         Map<UUID, Integer> slothCooldownRemaining = new HashMap<>();
         Map<UUID, Integer> quickActionCooldownRemaining = new HashMap<>();
         Map<UUID, Integer> fingerGrantCooldownRemaining = new HashMap<>();
+        Map<UUID, Map<ResourceLocation, Integer>> spellCooldownRemaining = new HashMap<>();
         Map<UUID, int[]> lionsHeartActive = new HashMap<>();
         Set<UUID> materialPhaseActive = new HashSet<>();
         Set<UUID> baseShiftActive = new HashSet<>();
@@ -407,6 +429,7 @@ public class SnapshotManager {
                     slothCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("Sloth"));
                     quickActionCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("QuickAction"));
                     fingerGrantCooldownRemaining = cooldownsFromNbt(cooldowns.getCompound("FingerGrant"));
+                    spellCooldownRemaining = spellCooldownsFromNbt(cooldowns.getCompound("Spells"));
                     footprints = footprintsFromNbt(root.getList("Footprints", Tag.TAG_COMPOUND));
                     CompoundTag activeStates = root.getCompound("ActiveStates");
                     lionsHeartActive = lionsHeartActiveFromNbt(activeStates.getList("LionsHeart", Tag.TAG_COMPOUND));
@@ -433,7 +456,8 @@ public class SnapshotManager {
                 slothCooldownRemaining, quickActionCooldownRemaining,
                 lionsHeartActive, materialPhaseActive, baseShiftActive, secondShiftActive,
                 visionOfDangerActive, visionOfLifeActive,
-                fingerGrantCooldownRemaining
+                fingerGrantCooldownRemaining,
+                spellCooldownRemaining
         );
     }
 
@@ -471,6 +495,34 @@ public class SnapshotManager {
         for (String key : tag.getAllKeys()) {
             try {
                 result.put(UUID.fromString(key), tag.getInt(key));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return result;
+    }
+
+    private static CompoundTag spellCooldownsToNbt(Map<UUID, Map<ResourceLocation, Integer>> remaining) {
+        CompoundTag tag = new CompoundTag();
+        remaining.forEach((uuid, spellMap) -> {
+            CompoundTag spellTag = new CompoundTag();
+            spellMap.forEach((id, ticks) -> spellTag.putInt(id.toString(), ticks));
+            tag.put(uuid.toString(), spellTag);
+        });
+        return tag;
+    }
+
+    private static Map<UUID, Map<ResourceLocation, Integer>> spellCooldownsFromNbt(CompoundTag tag) {
+        Map<UUID, Map<ResourceLocation, Integer>> result = new HashMap<>();
+        for (String key : tag.getAllKeys()) {
+            try {
+                UUID uuid = UUID.fromString(key);
+                CompoundTag spellTag = tag.getCompound(key);
+                Map<ResourceLocation, Integer> spellMap = new HashMap<>();
+                for (String spellKey : spellTag.getAllKeys()) {
+                    ResourceLocation id = ResourceLocation.tryParse(spellKey);
+                    if (id != null) spellMap.put(id, spellTag.getInt(spellKey));
+                }
+                if (!spellMap.isEmpty()) result.put(uuid, spellMap);
             } catch (IllegalArgumentException ignored) {
             }
         }
@@ -602,6 +654,7 @@ public class SnapshotManager {
             cooldowns.put("Sloth", cooldownsToNbt(snapshot.slothCooldownRemaining()));
             cooldowns.put("QuickAction", cooldownsToNbt(snapshot.quickActionCooldownRemaining()));
             cooldowns.put("FingerGrant", cooldownsToNbt(snapshot.fingerGrantCooldownRemaining()));
+            cooldowns.put("Spells", spellCooldownsToNbt(snapshot.spellCooldownRemaining()));
             root.put("Cooldowns", cooldowns);
             root.put("BookOfWisdomSummoned", uuidSetToNbt(snapshot.bookOfWisdomSummoned()));
             root.put("Footprints", footprintsToNbt(snapshot.footprints()));
@@ -666,6 +719,7 @@ public class SnapshotManager {
                 if (isDomainActive()) deactivateDomain("rbd rollback");
             } else {
                 domainCasterDeadHardcore = false;
+                bumpSubjectInsanity();
             }
             PacketDistributor.sendToAllPlayers(new DeathFadePayload(false));
             if (!rolledBack) announceRollbackFailure();
@@ -771,6 +825,21 @@ public class SnapshotManager {
             PacketDistributor.sendToPlayer(player, new AbilityCooldownPayload(HahUeuhAbilities.DOMAIN_VICTIM_ABILITY, cooldownTicksLeft));
             PacketDistributor.sendToPlayer(player, new AbilityCooldownPayload(HahUeuhAbilities.DOMAIN_AGGRESSOR_ABILITY, cooldownTicksLeft));
         }
+        PlayerSnapshot deferred = pendingPlayerRestores.remove(player.getUUID());
+        if (deferred != null) {
+            try {
+                deferred.restore(player, server);
+                LOGGER.info("Applied deferred rollback restore for {} on login", player.getGameProfile().getName());
+            } catch (Exception e) {
+                LOGGER.error("Failed to apply deferred rollback restore for {}", player.getGameProfile().getName(), e);
+            }
+        }
+
+        if (isAggressorDomain() && player.getUUID().equals(domainSubjectUuid) && domainInsanityStacks > 0) {
+            HahUeuh.INSANITY.applyLevel(player,
+                    Math.max(HahUeuh.INSANITY.level(player), domainSubjectInsanityBase + domainInsanityStacks));
+        }
+
         PlayerSnapshot joinSnapshot = null;
         for (CheckpointSlot slot : new CheckpointSlot[]{rbd, domain}) {
             if (slot.snapshot == null || slot.snapshot.playerData().containsKey(player.getUUID())) continue;
@@ -1276,7 +1345,7 @@ public class SnapshotManager {
             for (int i = 0; i < count; i++) {
                 if (hand.grabbed[i] == null) continue;
                 Entity e = level.getEntity(hand.grabbed[i]);
-                if (e == null || !e.isAlive() || isRidingOn(owner, e)) hand.grabbed[i] = null;
+                if (e == null || !e.isAlive() || isRidingOn(owner, e) || losesMutualGrab(owner, e)) hand.grabbed[i] = null;
                 else claimed.add(hand.grabbed[i]);
             }
 
@@ -1284,7 +1353,7 @@ public class SnapshotManager {
                 if (hand.grabbed[i] != null) continue;
                 List<Entity> cands = level.getEntities(owner, new AABB(tips[i], tips[i]).inflate(0.6),
                         e -> e.isAlive() && e != owner && !e.isSpectator() && !isRidingOn(owner, e)
-                                && !claimed.contains(e.getUUID()));
+                                && !claimed.contains(e.getUUID()) && !wouldGrabBackwards(owner, e));
                 cands.sort(java.util.Comparator.comparingInt(SnapshotManager::handsNeeded));
                 for (Entity cand : cands) {
                     int need = handsNeeded(cand);
@@ -1506,11 +1575,12 @@ public class SnapshotManager {
     private UUID dragGrab(ServerPlayer owner, ServerLevel level, Vec3 tip, UUID currentGrab, AABB reach,
                           java.util.function.Predicate<Entity> extra, Set<UUID> exclude) {
         Entity grabbed = currentGrab == null ? null : level.getEntity(currentGrab);
-        if (grabbed == null || !grabbed.isAlive() || isRidingOn(owner, grabbed)) {
+        if (grabbed == null || !grabbed.isAlive() || isRidingOn(owner, grabbed) || losesMutualGrab(owner, grabbed)) {
             grabbed = null;
             for (Entity e : level.getEntities(owner, reach,
                     e -> e.isAlive() && e != owner && !e.isSpectator() && !isRidingOn(owner, e)
-                            && !exclude.contains(e.getUUID()) && extra.test(e))) {
+                            && !exclude.contains(e.getUUID()) && !wouldGrabBackwards(owner, e)
+                            && extra.test(e))) {
                 grabbed = e;
                 break;
             }
@@ -1522,13 +1592,11 @@ public class SnapshotManager {
     }
 
     private static void holdGrabbed(Entity e, Vec3 target) {
+        e.setDeltaMovement(target.subtract(e.position()));
+        e.hasImpulse = true;
+        e.hurtMarked = true;
         if (e instanceof ServerPlayer sp) {
-            sp.connection.teleport(target.x, target.y, target.z, 0f, 0f,
-                    java.util.Set.of(RelativeMovement.X_ROT, RelativeMovement.Y_ROT));
-        } else {
-            e.setDeltaMovement(target.subtract(e.position()));
-            e.hasImpulse = true;
-            e.hurtMarked = true;
+            sp.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(sp));
         }
     }
 
@@ -1629,6 +1697,8 @@ public class SnapshotManager {
         domainMatrix = null;
         domainDimension = null;
         domainCasterDeadHardcore = false;
+        domainSubjectInsanityBase = 0;
+        domainInsanityStacks = 0;
     }
 
     private double domainSphereRadius() {
@@ -1682,6 +1752,7 @@ public class SnapshotManager {
         if (server == null) return;
 
         if (isDomainOwner(player.getUUID())) {
+            if (rollbackAtTick >= 0) return;
             deactivateDomain("owner toggled off");
             player.displayClientMessage(Component.translatable("hahueuh.message.domain_closed").withStyle(ChatFormatting.AQUA), true);
             return;
@@ -1709,6 +1780,12 @@ public class SnapshotManager {
 
         LivingEntity target = null;
         if (aggressor) {
+            double maxHealth = ConfigDomain.DOMAIN_AGGRESSOR_MAX_HEALTH.get();
+            if (!player.isCreative() && player.getHealth() > maxHealth) {
+                player.displayClientMessage(Component.translatable("hahueuh.message.domain_aggressor_too_healthy",
+                        String.format("%.1f", maxHealth)).withStyle(ChatFormatting.RED), true);
+                return;
+            }
             target = raycastTargetEntity(player, domainSphereRadius());
             if (target == null) target = nearestEntityWithin(player, 5.0);
             if (target == null) {
@@ -1721,6 +1798,8 @@ public class SnapshotManager {
 
         domainOwnerUuid = player.getUUID();
         domainSubjectUuid = subject.getUUID();
+        domainSubjectInsanityBase = HahUeuh.INSANITY.level(subject);
+        domainInsanityStacks = 0;
         domainMatrix = subject.position();
         domainDimension = player.level().dimension();
         createSnapshot(domain, "domain:" + player.getGameProfile().getName());
@@ -1805,6 +1884,7 @@ public class SnapshotManager {
 
     private void tickDomainEnforcement() {
         if (!isDomainActive()) return;
+        if (rollbackAtTick >= 0) return;
         ServerPlayer owner = server.getPlayerList().getPlayer(domainOwnerUuid);
         if (owner == null) { deactivateDomain("owner offline"); return; }
         if (domainCasterDeadHardcore) return;
@@ -1821,6 +1901,15 @@ public class SnapshotManager {
                 scheduleRollback(domain);
             }
         }
+    }
+
+    private void bumpSubjectInsanity() {
+        if (!isAggressorDomain()) return;
+        domainInsanityStacks++;
+        LivingEntity subject = findDomainSubjectEntity();
+        if (subject == null) return;
+        HahUeuh.INSANITY.applyLevel(subject,
+                Math.max(HahUeuh.INSANITY.level(subject), domainSubjectInsanityBase + domainInsanityStacks));
     }
 
     private LivingEntity findDomainSubjectEntity() {
@@ -1957,7 +2046,8 @@ public class SnapshotManager {
                     HahUeuh.SECOND_SHIFT.captureActive(),
                     HahUeuh.VISION_OF_DANGER.captureActive(),
                     HahUeuh.VISION_OF_LIFE.captureActive(),
-                    HahUeuh.FINGER_GRANT.captureCooldownRemaining()
+                    HahUeuh.FINGER_GRANT.captureCooldownRemaining(),
+                    HahUeuh.SPELL_CASTING.captureCooldownRemaining()
             );
             saveSnapshotMetadataToDisk(checkpointDir, slot.snapshot);
 
@@ -2100,6 +2190,13 @@ public class SnapshotManager {
             }
             stepStart = logStepTime("restore online players", stepStart);
 
+            snapshot.playerData().forEach((uuid, ps) -> {
+                if (server.getPlayerList().getPlayer(uuid) == null) pendingPlayerRestores.put(uuid, ps);
+            });
+            if (!pendingPlayerRestores.isEmpty()) {
+                LOGGER.info("Deferred player restore queued for {} offline player(s)", pendingPlayerRestores.size());
+            }
+
             if (!pendingWitchScentBump.isEmpty()) {
                 for (Map.Entry<UUID, Integer> entry : pendingWitchScentBump.entrySet()) {
                     ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
@@ -2149,6 +2246,7 @@ public class SnapshotManager {
             HahUeuh.LITTLE_KING.refreshAllOnRollback();
             HahUeuh.ALLY_TRACKER.refreshAllOnRollback();
             HahUeuh.FINGER_GRANT.refreshAllOnRollback();
+            HahUeuh.OL_SHAMAK.reconcileAfterRollback(server);
             restoreCooldowns(domainCooldownUntilTick, snapshot.domainCooldownRemaining(),
                     HahUeuhAbilities.DOMAIN_VICTIM_ABILITY, HahUeuhAbilities.DOMAIN_AGGRESSOR_ABILITY);
             HahUeuh.LIONS_HEART.restoreCooldownRemaining(snapshot.lionsHeartCooldownRemaining());
@@ -2169,6 +2267,7 @@ public class SnapshotManager {
             restoreCooldowns(quickCooldownUntilTick, snapshot.quickActionCooldownRemaining(),
                     HahUeuhAbilities.QUICK_ACTION_COOLDOWN_KEY);
             HahUeuh.FINGER_GRANT.restoreCooldownRemaining(snapshot.fingerGrantCooldownRemaining());
+            HahUeuh.SPELL_CASTING.restoreCooldownRemaining(snapshot.spellCooldownRemaining());
             logStepTime("reload authorities + compatibility", stepStart);
 
             ServerLevel overworld = server.overworld();

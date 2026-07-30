@@ -280,6 +280,7 @@ public final class SecondShift {
 
     @SubscribeEvent
     public void onSharedEffectApplicable(MobEffectEvent.Applicable event) {
+        if (net.noiilive.hahueuh.snapshot.PlayerSnapshot.isRestoringEffects()) return;
         if (redistributing) return;
         MobEffectInstance instance = event.getEffectInstance();
         if (instance == null) return;

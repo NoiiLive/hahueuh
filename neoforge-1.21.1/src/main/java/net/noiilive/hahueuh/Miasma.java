@@ -1,17 +1,12 @@
 package net.noiilive.hahueuh;
 
-import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 
 import java.util.UUID;
 
 public final class Miasma {
-    private static final int EFFECT_DURATION_TICKS = 40;
 
     private Miasma() {}
 
@@ -46,18 +41,4 @@ public final class Miasma {
                 || HahUeuh.SNAPSHOT_MANAGER.hasSustainedUnseenHand(id);
     }
 
-    public static void applySickness(LivingEntity entity, int severity) {
-        int range = Math.max(1, ConfigMagic.MIASMA_CAP.getAsInt() - effectThreshold());
-
-        addEffect(entity, MobEffects.CONFUSION, 0);
-        addEffect(entity, MobEffects.WEAKNESS, severity / 20);
-        addEffect(entity, MobEffects.HUNGER, severity / 20);
-        if (severity >= range * 0.6) addEffect(entity, MobEffects.POISON, 0);
-        if (severity >= range * 0.9) addEffect(entity, MobEffects.WITHER, 0);
-    }
-
-    private static void addEffect(LivingEntity entity, Holder<MobEffect> effect, int amplifier) {
-        entity.forceAddEffect(new MobEffectInstance(effect, EFFECT_DURATION_TICKS,
-                Math.max(0, amplifier), false, false, true), null);
-    }
 }

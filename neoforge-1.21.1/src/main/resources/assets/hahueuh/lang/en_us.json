@@ -121,6 +121,7 @@
   "hahueuh.stat.reflexes": "Reflexes",
   "hahueuh.stat.magic": "Magic",
   "hahueuh.stat.combat": "Combat",
+  "hahueuh.message.stat_level_up": "%1$s reached level %2$s.",
   "hahueuh.gui.book_of_life.field_reputation": "Reputation: %s",
 
   "hahueuh.race.human": "Human",
@@ -226,6 +227,8 @@
   "effect.hahueuh.increased_gravity": "Increased Gravity",
   "effect.hahueuh.leashed": "Leashed",
   "effect.hahueuh.bodily_disconnect": "Bodily Disconnect",
+  "hahueuh.message.insanity_rising": "Your mind frays... Insanity %s.",
+  "effect.hahueuh.insanity": "Insanity",
 
   "hahueuh.variant.invisible_providence": "Invisible Providence",
   "hahueuh.variant.unseen_hands": "Unseen Hands",
@@ -255,6 +258,7 @@
   "hahueuh.message.domain_cooldown": "Your mind needs a break. CD: %ss",
   "hahueuh.message.domain_interference": "Another Domain is already active, the space will not yield.",
   "hahueuh.message.domain_no_target": "Nothing nearby to bind your domain to.",
+  "hahueuh.message.domain_aggressor_too_healthy": "You are not close enough to death. Aggressor Domain needs %s health or less.",
   "hahueuh.message.domain_cast_on_target": "Domain cast on %s, their death rewinds time.",
   "hahueuh.message.domain_bound_target": "A Domain binds you, your death will rewind time.",
   "hahueuh.message.domain_deployed": "Domain deployed. Matrix anchored.",
@@ -268,6 +272,7 @@
   "hahueuh.message.lions_heart_strain": "Your heart begins to strain...",
   "hahueuh.message.lions_heart_deactivated": "Lion's Heart falls silent.",
   "hahueuh.message.lions_heart_burnout": "Your heart could not bear the strain any longer.",
+  "hahueuh.message.lions_heart_frozen_gate": "Your gate is frozen in time; no magic flows.",
   "hahueuh.message.little_king_cooldown": "Your heart is not ready to give again. CD: %ss",
   "hahueuh.message.little_king_no_target": "No valid vessel in reach for your heart.",
   "hahueuh.message.little_king_no_heart_here": "There's no heart of yours implanted in what you're looking at.",
@@ -531,5 +536,6 @@
   "hahueuh.command.chunk_miasma_get": "Chunk (%s, %s) miasma: %s/%s",
   "hahueuh.command.chunk_miasma_set": "Chunk (%s, %s) miasma set to %s",
 
-  "hahueuh.tooltip.miasma_contaminated": "Contaminated by Miasma"
+  "hahueuh.tooltip.miasma_contaminated": "Contaminated by Miasma",
+  "hahueuh.command.mana_set": "%s's Mana set to %s/%s"
 }

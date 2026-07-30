@@ -49,7 +49,10 @@ public final class PlayerDataEvents {
         try {
             PlayerData from = PlayerData.getOrDefault(original);
             event.getEntity().getCapability(ModCapabilities.PLAYER_DATA)
-                    .ifPresent(to -> to.copyFrom(from));
+                    .ifPresent(to -> {
+                        to.copyFrom(from);
+                        if (event.isWasDeath()) to.setManaCurrent(0);
+                    });
         } finally {
             original.invalidateCaps();
         }

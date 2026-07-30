@@ -2,6 +2,7 @@ package net.noiilive.hahueuh.snapshot;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.noiilive.hahueuh.FootprintTracker;
 
@@ -44,6 +45,7 @@ public record WorldSnapshot(
         List<FootprintTracker.FootprintEntry> footprints,
         Map<UUID, int[]> lionsHeartActive,
         Set<UUID> materialPhaseActive,
-        Map<UUID, Integer> fingerGrantCooldownRemaining
+        Map<UUID, Integer> fingerGrantCooldownRemaining,
+        Map<UUID, Map<ResourceLocation, Integer>> spellCooldownRemaining
 ) {
 }

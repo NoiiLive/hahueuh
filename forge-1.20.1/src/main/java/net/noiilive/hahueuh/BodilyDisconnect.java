@@ -105,6 +105,20 @@ public final class BodilyDisconnect {
         return current + delta;
     }
 
+    @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
+    public void onChangeTarget(net.minecraftforge.event.entity.living.LivingChangeTargetEvent event) {
+        if (event.getNewTarget() == null) return;
+        if (MobTargetUtil.isPacified(event.getEntity())) event.setCanceled(true);
+    }
+
+    @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
+    public void onPacifiedAttack(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
+        net.minecraft.world.entity.Entity attacker = event.getSource().getEntity();
+        if (!(attacker instanceof net.minecraft.world.entity.LivingEntity living)) return;
+        if (attacker == event.getEntity()) return;
+        if (living.hasEffect(ModEffects.SENSORY_DEPRIVATION.get())) event.setCanceled(true);
+    }
+
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;

@@ -47,6 +47,20 @@ public final class ManaCharging {
 
             if (defectiveVariantOf(player) == GateDefectiveVariant.NO_ABSORPTION) continue;
             if (!charging.contains(player.getUUID())) continue;
+            if (player.getData(ModAttachments.PLAYER_GATE_STATUS.get()) == GateStatus.DESTROYED) {
+                if (secondTick) {
+                    player.displayClientMessage(Component.translatable("hahueuh.message.spell_gate_destroyed")
+                            .withStyle(ChatFormatting.DARK_GRAY), true);
+                }
+                continue;
+            }
+            if (HahUeuh.LIONS_HEART.isActive(player.getUUID())) {
+                if (secondTick) {
+                    player.displayClientMessage(Component.translatable("hahueuh.message.lions_heart_frozen_gate")
+                            .withStyle(ChatFormatting.DARK_GRAY), true);
+                }
+                continue;
+            }
             if (HahUeuh.EMT.suppresses(player)) {
                 if (secondTick) {
                     player.displayClientMessage(Component.translatable("hahueuh.message.emt_silenced")
@@ -114,7 +128,7 @@ public final class ManaCharging {
         int threshold = Miasma.effectThreshold();
         int miasma = ChunkMiasmaData.get(chunk);
         if (miasma >= threshold) {
-            Miasma.applySickness(player, miasma - threshold);
+            HahUeuh.INSANITY.addDrawExposure(player, miasma - threshold);
         }
     }
 

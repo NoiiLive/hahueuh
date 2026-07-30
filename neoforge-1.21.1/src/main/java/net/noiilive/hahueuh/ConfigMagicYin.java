@@ -499,7 +499,7 @@ public final class ConfigMagicYin {
             .defineInRange("doorCrossingEntranceSeconds", 15, 0, 600);
 
     public static final ModConfigSpec.IntValue DOOR_CROSSING_STRAY_DOOR_RADIUS = BUILDER
-            .comment("Door Crossing: radius (blocks) around the casting point in which other doors may end up",
+            .comment("Door Crossing: radius (blocks) around the door you cast on in which other doors may end up",
                      "secretly wired to your room. Only doors in already-loaded chunks are considered.",
                      "Default: 100. Range: 0 to 256.")
             .defineInRange("doorCrossingStrayDoorRadius", 100, 0, 256);

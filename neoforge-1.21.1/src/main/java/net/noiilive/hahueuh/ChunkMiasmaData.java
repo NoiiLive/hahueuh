@@ -35,8 +35,11 @@ public final class ChunkMiasmaData {
         if (data == null || data.uninitialized()) return 0.0;
         long now = chunk.getLevel().getGameTime();
         long elapsed = now - data.lastTick();
-        double amount = elapsed <= 0 ? data.amount() : data.amount() - elapsed * decayPerTick();
-        return Math.max(0.0, amount);
+        if (elapsed < 0L) {
+            store(chunk, data.amount());
+            return Math.max(0.0, data.amount());
+        }
+        return Math.max(0.0, data.amount() - elapsed * decayPerTick());
     }
 
     private static void store(LevelChunk chunk, double amount) {

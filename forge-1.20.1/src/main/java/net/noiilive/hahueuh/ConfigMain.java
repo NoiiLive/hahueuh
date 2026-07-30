@@ -122,6 +122,14 @@ public final class ConfigMain {
                      "passive sin-mobs docile as before. Default: 30. Range: 0 to 600.")
             .defineInRange("mobSinRetaliationSeconds", 30, 0, 600);
 
+    public static final ForgeConfigSpec.DoubleValue DRAGON_SWORD_STRONG_FOE_HEALTH_RATIO = BUILDER
+            .comment("Dragon Sword Reid: how many times your own max health an attacker's max health must reach",
+                     "before it counts as a worthy opponent, letting you unsheath. Bosses (anything in the",
+                     "hahueuh:bosses, c:bosses or forge:bosses entity type tags, plus the Ender Dragon and",
+                     "Wither) always count regardless of this. Set to 0 to disable the health rule entirely.",
+                     "Default: 5. Range: 0 to 100.")
+            .defineInRange("dragonSwordStrongFoeHealthRatio", 5.0, 0.0, 100.0);
+
     public static final ForgeConfigSpec.DoubleValue SAGE_CANDIDATE_CHANCE = BUILDER
             .comment("Percent chance a player is rolled as a Sage Candidate the first time they're ever seen",
                      "(same idempotent, once-per-player timing as the starting compatibility roll — see",

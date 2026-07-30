@@ -12,7 +12,7 @@ public final class SensoryDeprivationEffect extends MobEffect {
 
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
-        if (entity instanceof Mob mob && mob.getTarget() != null) {
+        if (entity instanceof Mob mob && !mob.level().isClientSide) {
             MobTargetUtil.clearTarget(mob);
         }
     }

@@ -17,7 +17,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import java.util.List;
 
 public final class MiasmaContamination {
-    private static final int EATEN_SEVERITY = 20;
     private static final String TAG = "HahueuhMiasmaContaminated";
 
     public static boolean isContaminated(ItemStack stack) {
@@ -68,7 +67,7 @@ public final class MiasmaContamination {
     public void onFinishUsingItem(LivingEntityUseItemEvent.Finish event) {
         if (event.getEntity().level().isClientSide) return;
         if (isContaminated(event.getItem())) {
-            Miasma.applySickness(event.getEntity(), EATEN_SEVERITY);
+            HahUeuh.INSANITY.addContaminatedMeal(event.getEntity());
         }
     }
 

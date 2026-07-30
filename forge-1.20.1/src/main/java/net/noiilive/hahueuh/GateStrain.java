@@ -31,6 +31,7 @@ public final class GateStrain {
 
     public static void addStrain(ServerPlayer player, int delta) {
         if (delta > 0 && player.isCreative()) return;
+        if (HahUeuh.LIONS_HEART.isActive(player.getUUID())) return;
         setStrain(player, PlayerData.get(player).getGateStrain() + delta);
         if (delta > 0) {
             PlayerData data = PlayerData.get(player);
@@ -52,8 +53,15 @@ public final class GateStrain {
                 continue;
             }
 
+            long now = ResourceDecay.gameTime(player);
+            if (now < data.getStrainDecayStart() || HahUeuh.LIONS_HEART.isActive(player.getUUID())) {
+                data.setStrainDecayBase(current);
+                data.setStrainDecayStart(now);
+                continue;
+            }
+
             int decayed = ResourceDecay.valueNow(data.getStrainDecayBase(), data.getStrainDecayStart(),
-                    ResourceDecay.gameTime(player), windowSeconds, current);
+                    now, windowSeconds, current);
             if (decayed < current) {
                 data.setGateStrain(decayed);
                 net.noiilive.hahueuh.capability.PlayerDataEvents.sync(player);

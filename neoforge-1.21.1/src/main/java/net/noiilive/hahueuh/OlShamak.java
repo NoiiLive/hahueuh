@@ -79,6 +79,16 @@ public final class OlShamak {
     }
 
     @SubscribeEvent
+    public void onEnderTeleport(net.neoforged.neoforge.event.entity.EntityTeleportEvent.EnderEntity event) {
+        if (isSealed(event.getEntity())) event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    public void onChorusFruitTeleport(net.neoforged.neoforge.event.entity.EntityTeleportEvent.ChorusFruit event) {
+        if (isSealed(event.getEntity())) event.setCanceled(true);
+    }
+
+    @SubscribeEvent
     public void onLeftClickBlock(net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock event) {
         if (isSealed(event.getEntity())) event.setCanceled(true);
     }
@@ -156,11 +166,39 @@ public final class OlShamak {
 
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player
-                && player.getData(ModAttachments.PLAYER_SEALED.get())
-                && !isSealed(player)) {
-            player.setData(ModAttachments.PLAYER_SEALED.get(), false);
-            player.setNoGravity(false);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            applySealedState(player, isSealed(player));
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            applySealedState(player, isSealed(player));
+        }
+    }
+
+    @SubscribeEvent
+    public void onSealedDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        LivingEntity dying = event.getEntity();
+        if (!isSealed(dying)) return;
+        releaseSealed(dying, false);
+    }
+
+    public void reconcileAfterRollback(MinecraftServer server) {
+        sealedToSeal.clear();
+        for (ServerLevel level : server.getAllLevels()) {
+            for (YinSealEntity seal : level.getEntities(ModEntities.YIN_SEAL.get(), e -> e.isAlive())) {
+                UUID sealedUuid = seal.sealedUuid();
+                if (sealedUuid != null) sealedToSeal.put(sealedUuid, seal.getUUID());
+            }
+        }
+        for (ServerLevel level : server.getAllLevels()) {
+            for (Entity entity : level.getAllEntities()) {
+                if (entity instanceof LivingEntity living) {
+                    applySealedState(living, sealedToSeal.containsKey(living.getUUID()));
+                }
+            }
         }
     }
 

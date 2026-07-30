@@ -39,8 +39,11 @@ public final class ChunkManaData {
         if (data == null || data.uninitialized()) return cap;
         long now = chunk.getLevel().getGameTime();
         long elapsed = now - data.lastTick();
-        double amount = elapsed <= 0 ? data.amount() : data.amount() + elapsed * ratePerTick();
-        return Math.min(cap, Math.max(0, amount));
+        if (elapsed < 0L) {
+            store(chunk, data.amount());
+            return Math.min(cap, Math.max(0, data.amount()));
+        }
+        return Math.min(cap, Math.max(0, data.amount() + elapsed * ratePerTick()));
     }
 
     private static void store(LevelChunk chunk, double amount) {

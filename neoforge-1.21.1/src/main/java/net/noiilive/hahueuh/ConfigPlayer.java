@@ -219,6 +219,48 @@ public final class ConfigPlayer {
                      "Default: 3.0. Range: 0 to 1000.")
             .defineInRange("statXpPer100ManaCharged", 3.0, 0.0, 1000.0);
 
+    public static final ModConfigSpec.IntValue INSANITY_MAX_LEVEL = BUILDER
+            .comment("Insanity: highest tier the effect can reach. Higher tiers act more often, hit harder,",
+                     "and start costing you control of your own body. Default: 5. Range: 1 to 10.")
+            .defineInRange("insanityMaxLevel", 5, 1, 10);
+
+    public static final ModConfigSpec.IntValue INSANITY_DURATION_SECONDS = BUILDER
+            .comment("Insanity: how long the effect lasts, refreshed every time it is raised.",
+                     "Default: 300. Range: 10 to 86400.")
+            .defineInRange("insanityDurationSeconds", 300, 10, 86400);
+
+    public static final ModConfigSpec.IntValue INSANITY_EPISODE_BASE_SECONDS = BUILDER
+            .comment("Insanity: rough spacing (seconds) between episodes at tier 1. Each tier shortens the gap,",
+                     "so higher tiers afflict you far more often. Default: 30. Range: 1 to 600.")
+            .defineInRange("insanityEpisodeBaseSeconds", 30, 1, 600);
+
+    public static final ModConfigSpec.IntValue INSANITY_DAMAGE_TIER = BUILDER
+            .comment("Insanity: the tier at which episodes start drawing blood. Damage scales with how far",
+                     "past this tier you are, and like poison it can never drop you below half a heart.",
+                     "Default: 3. Range: 1 to 10.")
+            .defineInRange("insanityDamageTier", 3, 1, 10);
+
+    public static final ModConfigSpec.IntValue INSANITY_CONTROL_LOSS_TIER = BUILDER
+            .comment("Insanity: the tier at which episodes can wrest control of your body away from you",
+                     "(the Bodily Disconnect flailing, without the blackout). Default: 4. Range: 1 to 10.")
+            .defineInRange("insanityControlLossTier", 4, 1, 10);
+
+    public static final ModConfigSpec.IntValue INSANITY_CONTROL_LOSS_CHANCE = BUILDER
+            .comment("Insanity: percent chance an episode at or past insanityControlLossTier takes control.",
+                     "Default: 35. Range: 0 to 100.")
+            .defineInRange("insanityControlLossChance", 35, 0, 100);
+
+    public static final ModConfigSpec.DoubleValue INSANITY_MIASMA_DRAW_PER_TIER = BUILDER
+            .comment("Insanity: how much miasma you must draw out of chunks to gain one tier. Drawing from",
+                     "clean chunks costs you nothing; this only counts miasma above the sickness threshold.",
+                     "Default: 400. Range: 1 to 1000000.")
+            .defineInRange("insanityMiasmaDrawPerTier", 400.0, 1.0, 1_000_000.0);
+
+    public static final ModConfigSpec.DoubleValue INSANITY_FOOD_MEALS_PER_TIER = BUILDER
+            .comment("Insanity: how many contaminated meals it takes to gain one tier. Default: 2.",
+                     "Range: 1 to 1000.")
+            .defineInRange("insanityFoodMealsPerTier", 2.0, 1.0, 1000.0);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     private ConfigPlayer() {}

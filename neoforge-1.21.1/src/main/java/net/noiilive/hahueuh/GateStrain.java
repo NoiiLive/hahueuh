@@ -28,6 +28,7 @@ public final class GateStrain {
 
     public static void addStrain(ServerPlayer player, int delta) {
         if (delta > 0 && player.isCreative()) return;
+        if (HahUeuh.LIONS_HEART.isActive(player.getUUID())) return;
         int current = player.getData(ModAttachments.PLAYER_GATE_STRAIN.get());
         setStrain(player, current + delta);
         if (delta > 0) {
@@ -42,6 +43,11 @@ public final class GateStrain {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             int current = player.getData(ModAttachments.PLAYER_GATE_STRAIN.get());
             if (current <= 0) continue;
+            if (HahUeuh.LIONS_HEART.isActive(player.getUUID())) {
+                ResourceDecay.restart(player, ModAttachments.PLAYER_STRAIN_DECAY_BASE.get(),
+                        ModAttachments.PLAYER_STRAIN_DECAY_START.get(), current);
+                continue;
+            }
             int decayed = ResourceDecay.valueNow(player, ModAttachments.PLAYER_STRAIN_DECAY_BASE.get(),
                     ModAttachments.PLAYER_STRAIN_DECAY_START.get(), windowSeconds, current);
             if (decayed < current) {

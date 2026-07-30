@@ -121,6 +121,7 @@
   "hahueuh.stat.reflexes": "反应",
   "hahueuh.stat.magic": "魔法",
   "hahueuh.stat.combat": "战斗",
+  "hahueuh.message.stat_level_up": "%1$s 提升至 %2$s 级。",
   "hahueuh.gui.book_of_life.field_reputation": "声望：%s",
 
   "hahueuh.race.human": "人类",
@@ -226,6 +227,8 @@
   "effect.hahueuh.increased_gravity": "重力增强",
   "effect.hahueuh.leashed": "束缚",
   "effect.hahueuh.bodily_disconnect": "意识剥离",
+  "hahueuh.message.insanity_rising": "你的神智正在崩解…疯狂 %s。",
+  "effect.hahueuh.insanity": "疯狂",
 
   "hahueuh.variant.invisible_providence": "不可视的神意",
   "hahueuh.variant.unseen_hands": "不可视之手",
@@ -255,6 +258,7 @@
   "hahueuh.message.domain_cooldown": "你需要休息一下。CD：%s秒",
   "hahueuh.message.domain_interference": "已有其他领域展开，空间不会让步。",
   "hahueuh.message.domain_no_target": "附近没有可绑定领域的目标。",
+  "hahueuh.message.domain_aggressor_too_healthy": "你还没有接近死亡。侵略者领域需要生命值 %s 或更低。",
   "hahueuh.message.domain_cast_on_target": "领域施放在 %s 身上，其死亡将回溯时间。",
   "hahueuh.message.domain_bound_target": "领域锁定了你，你的死亡将回溯时间。",
   "hahueuh.message.domain_deployed": "领域已展开。结界已构筑。",
@@ -268,6 +272,7 @@
   "hahueuh.message.lions_heart_strain": "你的心脏开始产生负担……",
   "hahueuh.message.lions_heart_deactivated": "狮子之心沉寂了。",
   "hahueuh.message.lions_heart_burnout": "你的心脏再也无法承受负担。",
+  "hahueuh.message.lions_heart_frozen_gate": "你的魔法之门被冻结在时间中，魔力无法流动。",
   "hahueuh.message.little_king_cooldown": "你的心脏尚未准备好再次给予。CD：%s秒",
   "hahueuh.message.little_king_no_target": "可及之处没有适合承载你心脏的容器。",
   "hahueuh.message.little_king_no_heart_here": "你目光所及之处，并没有你植入的心脏。",
@@ -530,5 +535,7 @@
   "hahueuh.command.chunk_miasma_get": "区块 (%s, %s) 的瘴气：%s/%s",
   "hahueuh.command.chunk_miasma_set": "区块 (%s, %s) 的瘴气已设为 %s",
 
-  "hahueuh.tooltip.miasma_contaminated": "受瘴气污染"
+  "hahueuh.tooltip.miasma_contaminated": "受瘴气污染",
+  "hahueuh.message.rollback_failed": "死亡回归失败——世界未能恢复。请检查服务器日志。",
+  "hahueuh.command.mana_set": "%s 的魔力已设为 %s/%s"
 }

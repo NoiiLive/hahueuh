@@ -60,15 +60,13 @@ public final class DoorCrossing {
     private final Map<UUID, Room> rooms = new HashMap<>();
     private final Map<DoorKey, Link> links = new ConcurrentHashMap<>();
     private final Map<UUID, Visit> visitors = new ConcurrentHashMap<>();
+    private final java.util.Set<UUID> steppedClear = ConcurrentHashMap.newKeySet();
     private Path persistFilePath;
     private long tickCounter;
 
     public void tryCast(ServerPlayer caster) {
-        if (canExit(caster)) {
-            if (exitNow(caster)) {
-                net.noiilive.hahueuh.magic.SpellRegistry.get(net.noiilive.hahueuh.magic.Spells.DOOR_CROSSING)
-                        .ifPresent(spell -> HahUeuh.SPELL_CASTING.startCooldown(caster, spell));
-            }
+        if (caster.level().dimension() == PocketDimension.POCKET_LEVEL) {
+            if (rooms.containsKey(caster.getUUID())) ejectLookedAtOccupant(caster);
             return;
         }
         net.noiilive.hahueuh.magic.SpellRegistry.get(net.noiilive.hahueuh.magic.Spells.DOOR_CROSSING)
@@ -76,39 +74,13 @@ public final class DoorCrossing {
     }
 
     public void cast(ServerPlayer caster) {
-        if (canExit(caster)) {
-            exitNow(caster);
-            return;
-        }
+        if (caster.level().dimension() == PocketDimension.POCKET_LEVEL) return;
         BlockPos door = lookedAtDoor(caster);
         if (door == null) {
             actionBar(caster, "hahueuh.message.door_crossing_no_door", ChatFormatting.RED);
             return;
         }
         armEntrance(caster, door);
-    }
-
-    private boolean canExit(ServerPlayer caster) {
-        if (caster.level().dimension() != PocketDimension.POCKET_LEVEL) return false;
-        return visitors.containsKey(caster.getUUID()) || rooms.containsKey(caster.getUUID());
-    }
-
-    private boolean exitNow(ServerPlayer caster) {
-        BlockPos exitDoor = lookedAtDoor(caster);
-        if (exitDoor == null) {
-            if (rooms.containsKey(caster.getUUID()) && ejectLookedAtOccupant(caster)) return true;
-            actionBar(caster, "hahueuh.message.door_crossing_no_door", ChatFormatting.RED);
-            return false;
-        }
-        if (visitors.containsKey(caster.getUUID())) {
-            expelVisitor(caster);
-            return true;
-        }
-        Room room = rooms.get(caster.getUUID());
-        if (room == null) return false;
-        rememberEntryDoor(room, exitDoor, caster.getYRot());
-        leave(caster, room);
-        return true;
     }
 
     private static void rememberEntryDoor(Room room, BlockPos door, float lookYRot) {
@@ -173,7 +145,8 @@ public final class DoorCrossing {
 
         linkDoor(caster.level().dimension(), door, caster.getUUID(),
                 tickCounter + ConfigMagicYin.DOOR_CROSSING_ENTRANCE_SECONDS.get() * 20L);
-        int strays = linkStrayDoors(caster);
+        room.strayCentre = door.immutable();
+        int strays = linkStrayDoors(caster.serverLevel(), caster.getUUID(), door);
 
         pocket.playSound(null, BlockPos.containing(doorwayPosition(origin)), SoundEvents.ENDERMAN_TELEPORT,
                 SoundSource.PLAYERS, 0.6f, 0.5f);
@@ -189,6 +162,7 @@ public final class DoorCrossing {
 
     private void enter(ServerPlayer player, Room room, boolean asOwner) {
         MinecraftServer server = player.getServer();
+        steppedClear.remove(player.getUUID());
         ServerLevel pocket = server == null ? null : server.getLevel(PocketDimension.POCKET_LEVEL);
         if (pocket == null) return;
 
@@ -251,7 +225,27 @@ public final class DoorCrossing {
 
     private void checkWalkThroughs(MinecraftServer server) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (player.level().dimension() == PocketDimension.POCKET_LEVEL) continue;
+            if (player.level().dimension() == PocketDimension.POCKET_LEVEL) {
+                UUID id = player.getUUID();
+                long doorPos = standingInDoor(player);
+                if (doorPos == Long.MIN_VALUE) {
+                    steppedClear.add(id);
+                    continue;
+                }
+                if (!steppedClear.contains(id)) continue;
+                steppedClear.remove(id);
+                if (visitors.containsKey(id)) {
+                    expelVisitor(player);
+                    continue;
+                }
+                Room room = rooms.get(id);
+                if (room != null && room.occupied) {
+                    rememberEntryDoor(room, BlockPos.of(doorPos), player.getYRot());
+                    leave(player, room);
+                }
+                continue;
+            }
+            if (HahUeuh.LIONS_HEART.isFrozen(player)) continue;
 
             Link link = links.get(new DoorKey(player.level().dimension().location().toString(),
                     standingInDoor(player)));
@@ -261,10 +255,11 @@ public final class DoorCrossing {
             if (room == null) continue;
 
             boolean owner = link.ownerUuid().equals(player.getUUID());
-            if (!owner && !room.occupied) continue;
+            boolean armed = link.expiresAtTick() >= 0;
+            if (!owner && !armed && !room.occupied) continue;
 
-            links.entrySet().removeIf(entry -> owner && entry.getValue() == link);
             enter(player, room, owner);
+            if (!owner && !armed) rerollStrayDoors(link.ownerUuid(), server);
         }
     }
 
@@ -357,13 +352,22 @@ public final class DoorCrossing {
         links.put(new DoorKey(dim.location().toString(), door.asLong()), new Link(owner, expiresAtTick));
     }
 
-    private int linkStrayDoors(ServerPlayer caster) {
+    private void rerollStrayDoors(UUID owner, MinecraftServer server) {
+        Room room = rooms.get(owner);
+        if (room == null || room.strayCentre == null || server == null) return;
+        ServerLevel level = server.getLevel(room.returnDim);
+        if (level == null) return;
+        links.entrySet().removeIf(entry -> entry.getValue().ownerUuid().equals(owner)
+                && entry.getValue().expiresAtTick() < 0);
+        linkStrayDoors(level, owner, room.strayCentre);
+    }
+
+    private int linkStrayDoors(ServerLevel level, UUID owner, BlockPos castDoor) {
         int radius = ConfigMagicYin.DOOR_CROSSING_STRAY_DOOR_RADIUS.get();
         int chance = ConfigMagicYin.DOOR_CROSSING_STRAY_DOOR_CHANCE.get();
         if (radius <= 0 || chance <= 0) return 0;
 
-        ServerLevel level = caster.serverLevel();
-        BlockPos centre = caster.blockPosition();
+        BlockPos centre = castDoor;
         int linked = 0;
 
         int minChunkX = (centre.getX() - radius) >> 4;
@@ -393,13 +397,14 @@ public final class DoorCrossing {
                                 int x = SectionPos.sectionToBlockCoord(cx) + lx;
                                 int y = baseY + ly;
                                 int z = SectionPos.sectionToBlockCoord(cz) + lz;
+                                if (x == castDoor.getX() && y == castDoor.getY() && z == castDoor.getZ()) continue;
                                 int dx = x - centre.getX();
                                 int dy = y - centre.getY();
                                 int dz = z - centre.getZ();
                                 if (dx * dx + dy * dy + dz * dz > radiusSqr) continue;
                                 if (level.getRandom().nextInt(100) >= chance) continue;
 
-                                linkDoor(level.dimension(), new BlockPos(x, y, z), caster.getUUID(), -1L);
+                                linkDoor(level.dimension(), new BlockPos(x, y, z), owner, -1L);
                                 linked++;
                             }
                         }
@@ -424,7 +429,6 @@ public final class DoorCrossing {
             if (link.expiresAtTick() >= 0 && tickCounter >= link.expiresAtTick()) it.remove();
         }
 
-        if (links.isEmpty()) return;
         checkWalkThroughs(event.getServer());
     }
 
@@ -433,6 +437,7 @@ public final class DoorCrossing {
         this.persistFilePath = event.getServer().getWorldPath(LevelResource.ROOT).resolve(PERSIST_FILE_NAME);
         links.clear();
         visitors.clear();
+        steppedClear.clear();
         loadPersisted();
     }
 
@@ -640,6 +645,7 @@ public final class DoorCrossing {
         boolean hasEntry;
         Vec3 entryPos;
         float entryYRot;
+        BlockPos strayCentre;
 
         Room(int cell) {
             this.cell = cell;

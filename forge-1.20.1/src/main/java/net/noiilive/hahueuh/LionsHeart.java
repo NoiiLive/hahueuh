@@ -53,7 +53,10 @@ public final class LionsHeart {
 
     private record ActivationState(int startTick, int durationTicks) {}
     private record PersistedActivation(int durationTicks, int elapsedTicks) {}
+    private record FrozenBody(int food, float saturation, float exhaustion, int air, int fire, int frozen) {}
 
+    private final Map<UUID, FrozenBody> frozenBodies = new ConcurrentHashMap<>();
+    private final Map<UUID, java.util.List<net.minecraft.world.effect.MobEffectInstance>> frozenEffects = new ConcurrentHashMap<>();
     private final Map<UUID, ActivationState> activations = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> cooldownUntilTick = new ConcurrentHashMap<>();
     private final Set<UUID> burnoutInProgress = ConcurrentHashMap.newKeySet();
@@ -64,6 +67,10 @@ public final class LionsHeart {
 
     public boolean isActive(UUID uuid) {
         return activations.containsKey(uuid);
+    }
+
+    public boolean isFrozen(Entity entity) {
+        return entity != null && activations.containsKey(entity.getUUID());
     }
 
     public boolean isActiveOrPersisted(UUID uuid) {
@@ -98,6 +105,8 @@ public final class LionsHeart {
             activations.remove(uuid);
             burnoutInProgress.remove(uuid);
             dangerAnchorTick.remove(uuid);
+            frozenBodies.remove(uuid);
+            frozenEffects.remove(uuid);
             ServerPlayer player = server.getPlayerList().getPlayer(uuid);
             if (player != null) ModNetworking.sendToPlayer(player, new LionsHeartStatePacket(false));
         }
@@ -108,6 +117,7 @@ public final class LionsHeart {
             burnoutInProgress.remove(uuid);
             dangerAnchorTick.remove(uuid);
             ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+            if (player != null && !frozenBodies.containsKey(uuid)) freezeBody(player);
             if (player != null) ModNetworking.sendToPlayer(player, new LionsHeartStatePacket(true));
         });
     }
@@ -138,9 +148,35 @@ public final class LionsHeart {
         activate(player);
     }
 
+    private void freezeBody(ServerPlayer player) {
+        net.minecraft.world.food.FoodData food = player.getFoodData();
+        frozenBodies.put(player.getUUID(), new FrozenBody(food.getFoodLevel(), food.getSaturationLevel(),
+                food.getExhaustionLevel(), player.getAirSupply(),
+                player.getRemainingFireTicks(), player.getTicksFrozen()));
+    }
+
+    private void freezeEffects(LivingEntity entity) {
+        java.util.List<net.minecraft.world.effect.MobEffectInstance> saved = new ArrayList<>();
+        for (net.minecraft.world.effect.MobEffectInstance instance : entity.getActiveEffects()) {
+            saved.add(new net.minecraft.world.effect.MobEffectInstance(instance));
+        }
+        frozenEffects.remove(entity.getUUID());
+        if (!saved.isEmpty()) frozenEffects.put(entity.getUUID(), saved);
+        entity.removeAllEffects();
+    }
+
+    private void thawEffects(LivingEntity entity) {
+        java.util.List<net.minecraft.world.effect.MobEffectInstance> saved = frozenEffects.remove(entity.getUUID());
+        if (saved == null) return;
+        for (net.minecraft.world.effect.MobEffectInstance instance : saved) {
+            entity.addEffect(new net.minecraft.world.effect.MobEffectInstance(instance));
+        }
+    }
+
     private void activate(ServerPlayer player) {
         activations.put(player.getUUID(), new ActivationState(server.getTickCount(), rollDurationTicks()));
-        player.removeAllEffects();
+        freezeBody(player);
+        freezeEffects(player);
         ModNetworking.sendToPlayer(player, new LionsHeartStatePacket(true));
         player.level().playSound(null, player, ModSounds.LIONSHEART_ACTIVATE.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
         player.displayClientMessage(Component.translatable("hahueuh.message.lions_heart_activated")
@@ -151,6 +187,8 @@ public final class LionsHeart {
         UUID uuid = player.getUUID();
         activations.remove(uuid);
         dangerAnchorTick.remove(uuid);
+        frozenBodies.remove(uuid);
+        thawEffects(player);
         ModNetworking.sendToPlayer(player, new LionsHeartStatePacket(false));
         player.level().playSound(null, player, ModSounds.LIONSHEART_DEACTIVATE.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
 
@@ -169,6 +207,7 @@ public final class LionsHeart {
     public void activateMob(Mob mob) {
         if (server == null) return;
         activations.put(mob.getUUID(), new ActivationState(server.getTickCount(), rollDurationTicks()));
+        freezeEffects(mob);
         mob.level().playSound(null, mob, ModSounds.LIONSHEART_ACTIVATE.get(), SoundSource.HOSTILE, 1.0f, 1.0f);
     }
 
@@ -176,6 +215,7 @@ public final class LionsHeart {
         UUID uuid = mob.getUUID();
         activations.remove(uuid);
         dangerAnchorTick.remove(uuid);
+        thawEffects(mob);
         mob.level().playSound(null, mob, ModSounds.LIONSHEART_DEACTIVATE.get(), SoundSource.HOSTILE, 1.0f, 1.0f);
 
         int cooldownSeconds = ConfigGreed.LIONS_HEART_COOLDOWN_SECONDS.get();
@@ -234,6 +274,8 @@ public final class LionsHeart {
         cooldownUntilTick.clear();
         burnoutInProgress.clear();
         dangerAnchorTick.clear();
+        frozenBodies.clear();
+        frozenEffects.clear();
         this.server = null;
     }
 
@@ -244,6 +286,8 @@ public final class LionsHeart {
         ActivationState state = activations.remove(uuid);
         dangerAnchorTick.remove(uuid);
         burnoutInProgress.remove(uuid);
+        frozenBodies.remove(uuid);
+        thawEffects(player);
         if (state == null) return;
 
         int elapsed = server.getTickCount() - state.startTick();
@@ -259,6 +303,8 @@ public final class LionsHeart {
         savePersisted();
 
         activations.put(uuid, new ActivationState(server.getTickCount() - persisted.elapsedTicks(), persisted.durationTicks()));
+        freezeBody(player);
+        freezeEffects(player);
         ModNetworking.sendToPlayer(player, new LionsHeartStatePacket(true));
     }
 
@@ -324,13 +370,18 @@ public final class LionsHeart {
     }
 
     private void tickActive(ServerPlayer player, ActivationState state) {
-        player.getFoodData().setFoodLevel(20);
-        player.getFoodData().setSaturation(20f);
-        player.setAirSupply(player.getMaxAirSupply());
-        player.clearFire();
-        player.setTicksFrozen(0);
-
         UUID uuid = player.getUUID();
+
+        FrozenBody body = frozenBodies.get(uuid);
+        if (body != null) {
+            net.minecraft.world.food.FoodData food = player.getFoodData();
+            food.setFoodLevel(body.food());
+            food.setSaturation(body.saturation());
+            food.setExhaustion(body.exhaustion());
+            player.setAirSupply(body.air());
+            player.setRemainingFireTicks(body.fire());
+            player.setTicksFrozen(body.frozen());
+        }
 
         if (HahUeuh.LITTLE_KING.isIndefinite(player)) {
             dangerAnchorTick.remove(uuid);
@@ -377,6 +428,8 @@ public final class LionsHeart {
         activations.remove(uuid);
         burnoutInProgress.remove(uuid);
         dangerAnchorTick.remove(uuid);
+        frozenBodies.remove(uuid);
+        frozenEffects.remove(uuid);
 
         if (entity instanceof ServerPlayer player) {
             ModNetworking.sendToPlayer(player, new LionsHeartStatePacket(false));
@@ -418,7 +471,13 @@ public final class LionsHeart {
     }
 
     @SubscribeEvent
+    public void onHeal(net.minecraftforge.event.entity.living.LivingHealEvent event) {
+        if (isActive(event.getEntity().getUUID())) event.setCanceled(true);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onEffectApplicable(MobEffectEvent.Applicable event) {
+        if (net.noiilive.hahueuh.snapshot.PlayerSnapshot.isRestoringEffects()) return;
         if (isActive(event.getEntity().getUUID())) {
             event.setResult(net.minecraftforge.eventbus.api.Event.Result.DENY);
         }

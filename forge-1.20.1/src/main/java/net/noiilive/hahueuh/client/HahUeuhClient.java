@@ -51,6 +51,7 @@ public final class HahUeuhClient {
         DeathFadeState.reset();
         AbilitySlots.reset();
         AbilityCooldowns.reset();
+        net.noiilive.hahueuh.network.ClientConfigValues.clear();
         AbilityClient.resetChargeManaState();
         net.noiilive.hahueuh.network.DomainRenderState.clear();
         net.noiilive.hahueuh.network.ClientPlayerData.clear();

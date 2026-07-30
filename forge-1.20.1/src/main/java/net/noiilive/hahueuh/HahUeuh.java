@@ -23,6 +23,8 @@ public class HahUeuh {
     public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     public static final SnapshotManager SNAPSHOT_MANAGER = new SnapshotManager();
+    public static final Insanity INSANITY = new Insanity();
+    public static final ConfigSync CONFIG_SYNC = new ConfigSync();
     public static final ManaCharging MANA_CHARGING = new ManaCharging();
     public static final CrippledState CRIPPLED_STATE = new CrippledState();
     public static final net.noiilive.hahueuh.magic.SpellCasting SPELL_CASTING = new net.noiilive.hahueuh.magic.SpellCasting();
@@ -129,24 +131,27 @@ public class HahUeuh {
         MinecraftForge.EVENT_BUS.register(MOB_WITCH_FACTOR);
         MinecraftForge.EVENT_BUS.register(PLAYER_ALLIES);
         MinecraftForge.EVENT_BUS.register(FINGER_GRANT);
+        MinecraftForge.EVENT_BUS.register(CONFIG_SYNC);
+        MinecraftForge.EVENT_BUS.register(INSANITY);
         MinecraftForge.EVENT_BUS.addListener(RezeroCommand::register);
+        modEventBus.addListener((net.minecraftforge.fml.event.config.ModConfigEvent.Reloading e) -> ConfigSync.broadcast());
 
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ConfigMain.SPEC,
-                "hahueuh/server/authority_main.toml");
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ConfigReturnByDeath.SPEC,
-                "hahueuh/server/return_by_death.toml");
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ConfigDomain.SPEC,
-                "hahueuh/server/domain.toml");
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ConfigMagic.SPEC,
-                "hahueuh/server/magic_main.toml");
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ConfigPlayer.SPEC,
-                "hahueuh/server/player_main.toml");
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ConfigMagicYin.SPEC,
-                "hahueuh/server/magic_yin.toml");
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ConfigSloth.SPEC,
-                "hahueuh/server/sloth.toml");
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, ConfigGreed.SPEC,
-                "hahueuh/server/greed.toml");
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ConfigMain.SPEC,
+                "hahueuh/authority_main.toml");
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ConfigReturnByDeath.SPEC,
+                "hahueuh/return_by_death.toml");
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ConfigDomain.SPEC,
+                "hahueuh/domain.toml");
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ConfigMagic.SPEC,
+                "hahueuh/magic_main.toml");
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ConfigPlayer.SPEC,
+                "hahueuh/player_main.toml");
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ConfigMagicYin.SPEC,
+                "hahueuh/magic_yin.toml");
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ConfigSloth.SPEC,
+                "hahueuh/sloth.toml");
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ConfigGreed.SPEC,
+                "hahueuh/greed.toml");
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {

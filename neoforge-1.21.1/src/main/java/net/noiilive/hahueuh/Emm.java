@@ -147,6 +147,7 @@ public final class Emm {
 
     @SubscribeEvent
     public void onEffectApplicable(MobEffectEvent.Applicable event) {
+        if (net.noiilive.hahueuh.snapshot.PlayerSnapshot.isRestoringEffects()) return;
         if (!isActive(event.getEntity())) return;
         if (event.getEffectInstance().getEffect().value().getCategory() == MobEffectCategory.HARMFUL) {
             event.setResult(MobEffectEvent.Applicable.Result.DO_NOT_APPLY);

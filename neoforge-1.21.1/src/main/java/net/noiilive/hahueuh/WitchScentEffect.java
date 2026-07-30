@@ -28,6 +28,7 @@ public final class WitchScentEffect extends MobEffect {
             AABB box = player.getBoundingBox().inflate(radius);
             List<Mob> mobs = player.level().getEntitiesOfClass(Mob.class, box,
                     m -> m instanceof Enemy && !(m instanceof NeutralMob) && m.isAlive()
+                            && !MobTargetUtil.isPacified(m)
                             && (m.getTarget() == null || !m.getTarget().isAlive()));
             for (Mob mob : mobs) {
                 if (mob.getSensing().hasLineOfSight(player)) {
@@ -36,6 +37,10 @@ public final class WitchScentEffect extends MobEffect {
             }
         }
         return true;
+    }
+
+    @Override
+    public void fillEffectCures(java.util.Set<net.neoforged.neoforge.common.EffectCure> cures, net.minecraft.world.effect.MobEffectInstance effectInstance) {
     }
 
     @Override

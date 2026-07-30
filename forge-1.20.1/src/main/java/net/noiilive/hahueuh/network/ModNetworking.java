@@ -406,6 +406,12 @@ public final class ModNetworking {
                 EmtStatePacket::encode,
                 EmtStatePacket::new,
                 EmtStatePacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                ConfigSyncPacket.class,
+                ConfigSyncPacket::encode,
+                ConfigSyncPacket::new,
+                ConfigSyncPacket::handle);
     }
 
     public static void sendToAll(Object packet) {

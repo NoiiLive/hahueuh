@@ -140,6 +140,7 @@ public final class Teleportation {
         double radiusSqr = radius * radius;
 
         for (ServerPlayer player : new ArrayList<>(server.getPlayerList().getPlayers())) {
+            if (HahUeuh.LIONS_HEART.isFrozen(player)) continue;
             Long blockedUntil = reentryBlock.get(player.getUUID());
             if (blockedUntil != null) {
                 if (now < blockedUntil) continue;

@@ -18,6 +18,13 @@ public final class ConfigDomain {
                      "Set to 0 to disable. Default: 10. Range: 0 to 3600.")
             .defineInRange("domainCooldownSeconds", 10, 0, 3600);
 
+    public static final ForgeConfigSpec.DoubleValue DOMAIN_AGGRESSOR_MAX_HEALTH = BUILDER
+            .comment("Aggressor Domain: the most health (in half-hearts) you may have and still open one.",
+                     "Al only reaches for it on the brink of death, so by default you must be at 2 hearts",
+                     "or less. Creative players ignore this. Victim Domain is unaffected.",
+                     "Default: 4. Range: 1 to 1024.")
+            .defineInRange("domainAggressorMaxHealth", 4.0, 1.0, 1024.0);
+
     public static final ForgeConfigSpec SPEC = BUILDER.build();
 
     private ConfigDomain() {}

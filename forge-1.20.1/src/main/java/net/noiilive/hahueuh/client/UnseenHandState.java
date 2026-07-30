@@ -1,6 +1,5 @@
 package net.noiilive.hahueuh.client;
 
-import net.noiilive.hahueuh.ConfigSloth;
 import net.noiilive.hahueuh.network.ClientSlothState;
 import net.noiilive.hahueuh.network.HandMode;
 
@@ -45,6 +44,6 @@ public final class UnseenHandState {
     public static void setSpeedBoost(float value) { speedBoost = value; }
 
     private static double configCeiling() {
-        return ConfigSloth.SLOTH_MAX_DISTANCE.get() * ClientSlothState.slothVariant().reachMultiplier;
+        return net.noiilive.hahueuh.network.ClientConfigValues.slothMaxDistance() * ClientSlothState.slothVariant().reachMultiplier;
     }
 }

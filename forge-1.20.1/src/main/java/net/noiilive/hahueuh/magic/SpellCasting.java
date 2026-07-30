@@ -43,6 +43,7 @@ public class SpellCasting {
     private static final int TICKS_PER_SECOND = 20;
     private static final UUID CASTING_SLOW_ID = UUID.fromString("6c1b3a4d-2e5f-4a7b-9c8d-0e1f2a3b4c5d");
 
+    private MinecraftServer server;
     private final Map<UUID, ActiveCast> activeCasts = new HashMap<>();
     private final Map<UUID, Map<ResourceLocation, Long>> cooldownEnd = new HashMap<>();
     private final Map<UUID, Integer> pendingBanishTarget = new HashMap<>();
@@ -64,6 +65,10 @@ public class SpellCasting {
         }
         if (HahUeuh.OL_SHAMAK.isSealed(player)) {
             actionBar(player, "hahueuh.message.ol_shamak_silenced", ChatFormatting.RED);
+            return;
+        }
+        if (HahUeuh.LIONS_HEART.isActive(id)) {
+            actionBar(player, "hahueuh.message.lions_heart_frozen_gate", ChatFormatting.RED);
             return;
         }
         if (!spell.id().equals(Spells.EMM) && HahUeuh.EMM.isActive(player)) {
@@ -146,6 +151,7 @@ public class SpellCasting {
         PlayerDataEvents.sync(player);
         if (od > 0 && newOd == 0) {
             HahUeuh.CRIPPLED_STATE.afflict(player);
+            HahUeuh.INSANITY.raiseToMax(player);
         }
     }
 
@@ -172,6 +178,7 @@ public class SpellCasting {
         if (event.phase != TickEvent.Phase.END) return;
         MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
+        this.server = server;
         if (!activeCasts.isEmpty()) tickCasts(server);
         if (!clouds.isEmpty()) tickClouds();
         if (server.getTickCount() % TICKS_PER_SECOND == 0) {
@@ -188,6 +195,18 @@ public class SpellCasting {
             if (data.getGateStrain() > 0) GateStrain.setStrain(player, 0);
             if (data.getSpellHeat() > 0) SpellHeat.clear(player);
         }
+    }
+
+    @SubscribeEvent
+    public void onServerStopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+        activeCasts.clear();
+        cooldownEnd.clear();
+        clouds.clear();
+        pendingBanishTarget.clear();
+        pendingUlMinyaTarget.clear();
+        pendingCooldownOverrideSeconds.clear();
+        pendingTotalManaOverride.clear();
+        this.server = null;
     }
 
     @SubscribeEvent
@@ -263,7 +282,13 @@ public class SpellCasting {
         Map<ResourceLocation, Long> map = cooldownEnd.get(player.getUUID());
         if (map == null) return false;
         Long end = map.get(spell.cooldownId());
-        return end != null && worldTime(player) < end;
+        if (end == null) return false;
+        long now = worldTime(player);
+        if (end - now > (long) spell.cooldownSeconds() * TICKS_PER_SECOND) {
+            map.remove(spell.cooldownId());
+            return false;
+        }
+        return now < end;
     }
 
     public void startCooldown(ServerPlayer player, Spell spell) {
@@ -290,6 +315,39 @@ public class SpellCasting {
         cooldownEnd.computeIfAbsent(player.getUUID(), k -> new HashMap<>())
                 .put(cooldownId, worldTime(player) + ticks);
         ModNetworking.sendToPlayer(player, new AbilityCooldownPacket(cooldownId, ticks));
+    }
+
+    public Map<UUID, Map<ResourceLocation, Integer>> captureCooldownRemaining() {
+        Map<UUID, Map<ResourceLocation, Integer>> result = new HashMap<>();
+        if (server == null) return result;
+        long tick = server.overworld().getGameTime();
+        cooldownEnd.forEach((uuid, spellMap) -> {
+            Map<ResourceLocation, Integer> remaining = new HashMap<>();
+            spellMap.forEach((id, until) -> {
+                int left = (int) (until - tick);
+                if (left > 0) remaining.put(id, left);
+            });
+            if (!remaining.isEmpty()) result.put(uuid, remaining);
+        });
+        return result;
+    }
+
+    public void restoreCooldownRemaining(Map<UUID, Map<ResourceLocation, Integer>> remainingByUuid) {
+        cooldownEnd.clear();
+        if (server == null) return;
+        long tick = server.overworld().getGameTime();
+        remainingByUuid.forEach((uuid, spellMap) -> {
+            Map<ResourceLocation, Long> map = new HashMap<>();
+            spellMap.forEach((id, remaining) -> map.put(id, tick + remaining));
+            if (!map.isEmpty()) cooldownEnd.put(uuid, map);
+        });
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            Map<ResourceLocation, Integer> spellMap = remainingByUuid.get(player.getUUID());
+            for (Spell spell : SpellRegistry.all()) {
+                int remaining = spellMap == null ? 0 : spellMap.getOrDefault(spell.cooldownId(), 0);
+                ModNetworking.sendToPlayer(player, new AbilityCooldownPacket(spell.cooldownId(), remaining));
+            }
+        }
     }
 
     public void spawnExpandingCloud(ServerLevel level, Vec3 center, ParticleOptions particle,

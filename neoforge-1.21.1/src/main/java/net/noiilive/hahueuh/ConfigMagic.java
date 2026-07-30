@@ -24,9 +24,8 @@ public final class ConfigMagic {
             .defineInRange("gateEfficiencyMax", 10, 1, 1000);
 
     public static final ModConfigSpec.DoubleValue MANA_CHARGE_PERCENT_PER_SECOND = BUILDER
-            .comment("Percent of max Mana gained per second while charging — either by holding the",
-                     "charge-mana key (default Left Alt), or passively (no key needed) for a No Release",
-                     "Defective Gate. Default: 10. Range: 0.01 to 1000.")
+            .comment("Percent of max Mana gained per second while holding the charge-mana key (default",
+                     "Left Alt). Default: 10. Range: 0.01 to 1000.")
             .defineInRange("manaChargePercentPerSecond", 10.0, 0.01, 1000.0);
 
     public static final ModConfigSpec.IntValue GATE_STRAIN_DAMAGED = BUILDER

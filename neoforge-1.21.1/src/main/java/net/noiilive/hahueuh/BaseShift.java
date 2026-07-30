@@ -162,6 +162,7 @@ public final class BaseShift {
 
     @SubscribeEvent
     public void onAllyEffectApplicable(MobEffectEvent.Applicable event) {
+        if (net.noiilive.hahueuh.snapshot.PlayerSnapshot.isRestoringEffects()) return;
         MobEffectInstance instance = event.getEffectInstance();
         if (instance == null || isBeneficial(instance)) return;
         LivingEntity ally = event.getEntity();

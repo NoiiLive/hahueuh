@@ -28,6 +28,9 @@ public final class ModEffects {
     public static final RegistryObject<MobEffect> INCREASED_GRAVITY = MOB_EFFECTS.register("increased_gravity",
             () -> new IncreasedGravityEffect(MobEffectCategory.HARMFUL, 0x6B4A2A));
 
+    public static final RegistryObject<MobEffect> INSANITY = MOB_EFFECTS.register("insanity",
+            () -> new InsanityEffect(MobEffectCategory.HARMFUL, 0x6E2C8F));
+
     public static final RegistryObject<MobEffect> LEASHED = MOB_EFFECTS.register("leashed",
             () -> new LeashedEffect(MobEffectCategory.HARMFUL, 0x6A3FA0));
 

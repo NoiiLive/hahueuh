@@ -75,6 +75,7 @@ public final class PocketDimension {
         int slot = 0;
         for (Entity target : targets) {
             if (target == null || captures.containsKey(target.getUUID())) continue;
+            if (HahUeuh.LIONS_HEART.isFrozen(target)) continue;
             Vec3 dest = groupSlotPosition(origin, slot++);
             boolean indefinite = !(target instanceof ServerPlayer);
             if (banishInto(target, pocket, cell, dest, casterUuid, indefinite, playerSeconds)) {

@@ -197,6 +197,7 @@ public final class StatEffects {
 
     private void award(ServerPlayer player, PlayerStat stat, double amount) {
         if (amount <= 0.0 || player.isCreative()) return;
+        if (HahUeuh.LIONS_HEART.isActive(player.getUUID())) return;
         StatEntry entry = StatBonuses.entry(PlayerData.get(player), stat);
         if (entry.rolled() && StatBonuses.atCap(entry)) return;
 

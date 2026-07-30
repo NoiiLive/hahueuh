@@ -3,6 +3,7 @@ package net.noiilive.hahueuh.snapshot;
 import net.noiilive.hahueuh.FootprintTracker;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 
 import java.nio.file.Path;
@@ -46,6 +47,7 @@ public record WorldSnapshot(
         Set<UUID> secondShiftActive,
         Set<UUID> visionOfDangerActive,
         Set<UUID> visionOfLifeActive,
-        Map<UUID, Integer> fingerGrantCooldownRemaining
+        Map<UUID, Integer> fingerGrantCooldownRemaining,
+        Map<UUID, Map<ResourceLocation, Integer>> spellCooldownRemaining
 ) {
 }

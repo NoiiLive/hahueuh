@@ -18,7 +18,6 @@ import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
 
 public final class MiasmaContamination {
-    private static final int EATEN_SEVERITY = 20;
 
     public static boolean isContaminated(ItemStack stack) {
         return Boolean.TRUE.equals(stack.get(ModDataComponents.MIASMA_CONTAMINATED.get()));
@@ -65,7 +64,7 @@ public final class MiasmaContamination {
     public void onFinishUsingItem(LivingEntityUseItemEvent.Finish event) {
         if (event.getEntity().level().isClientSide) return;
         if (isContaminated(event.getItem())) {
-            Miasma.applySickness(event.getEntity(), EATEN_SEVERITY);
+            HahUeuh.INSANITY.addContaminatedMeal(event.getEntity());
         }
     }
 

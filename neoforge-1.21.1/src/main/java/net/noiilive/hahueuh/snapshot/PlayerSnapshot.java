@@ -41,6 +41,13 @@ import java.util.Set;
 import java.util.UUID;
 
 public class PlayerSnapshot {
+
+    private static boolean restoringEffects;
+
+    public static boolean isRestoringEffects() {
+        return restoringEffects;
+    }
+
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private final double x, y, z;
@@ -60,6 +67,10 @@ public class PlayerSnapshot {
     private final int selectedSlot;
     private final CompoundTag abilitiesTag;
     private final CompoundTag attachmentsTag;
+    private final int fireTicks;
+    private final int frozenTicks;
+    private final int airSupply;
+    private final float fallDistance;
 
     private PlayerSnapshot(double x, double y, double z, float yRot, float xRot,
                            ResourceKey<Level> dimension, float health, int foodLevel,
@@ -67,7 +78,8 @@ public class PlayerSnapshot {
                            ListTag enderChestTag, int experienceLevel, float experienceProgress,
                            int totalExperience, List<CompoundTag> activeEffects,
                            GameType gameType, int selectedSlot, CompoundTag abilitiesTag,
-                           CompoundTag attachmentsTag) {
+                           CompoundTag attachmentsTag, int fireTicks, int frozenTicks,
+                           int airSupply, float fallDistance) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -88,6 +100,10 @@ public class PlayerSnapshot {
         this.selectedSlot = selectedSlot;
         this.abilitiesTag = abilitiesTag;
         this.attachmentsTag = attachmentsTag;
+        this.fireTicks = fireTicks;
+        this.frozenTicks = frozenTicks;
+        this.airSupply = airSupply;
+        this.fallDistance = fallDistance;
     }
 
     public static PlayerSnapshot capture(ServerPlayer player) {
@@ -127,7 +143,11 @@ public class PlayerSnapshot {
                 player.gameMode.getGameModeForPlayer(),
                 player.getInventory().selected,
                 abilitiesTag,
-                attachmentsTag
+                attachmentsTag,
+                player.getRemainingFireTicks(),
+                player.getTicksFrozen(),
+                player.getAirSupply(),
+                player.fallDistance
         );
     }
 
@@ -155,6 +175,10 @@ public class PlayerSnapshot {
         tag.putInt("SelectedSlot", selectedSlot);
         tag.put("Abilities", abilitiesTag);
         tag.put("Attachments", attachmentsTag);
+        tag.putInt("FireTicks", fireTicks);
+        tag.putInt("FrozenTicks", frozenTicks);
+        tag.putInt("AirSupply", airSupply);
+        tag.putFloat("FallDistance", fallDistance);
         return tag;
     }
 
@@ -184,7 +208,11 @@ public class PlayerSnapshot {
                 GameType.byName(tag.getString("GameType")),
                 tag.getInt("SelectedSlot"),
                 tag.getCompound("Abilities"),
-                tag.getCompound("Attachments")
+                tag.getCompound("Attachments"),
+                tag.getInt("FireTicks"),
+                tag.getInt("FrozenTicks"),
+                tag.contains("AirSupply") ? tag.getInt("AirSupply") : 300,
+                tag.getFloat("FallDistance")
         );
     }
 
@@ -219,15 +247,20 @@ public class PlayerSnapshot {
 
         MobEffectInstance keptWitchScent = player.getEffect(ModEffects.WITCH_SCENT);
 
-        player.removeAllEffects();
-        for (CompoundTag effectTag : activeEffects) {
-            MobEffectInstance effect = MobEffectInstance.load(effectTag);
-            if (effect != null) {
-                player.addEffect(effect);
+        restoringEffects = true;
+        try {
+            player.removeAllEffects();
+            for (CompoundTag effectTag : activeEffects) {
+                MobEffectInstance effect = MobEffectInstance.load(effectTag);
+                if (effect != null) {
+                    player.addEffect(effect);
+                }
             }
-        }
-        if (keptWitchScent != null) {
-            player.addEffect(keptWitchScent);
+            if (keptWitchScent != null) {
+                player.addEffect(keptWitchScent);
+            }
+        } finally {
+            restoringEffects = false;
         }
 
         player.setGameMode(gameType);
@@ -238,10 +271,10 @@ public class PlayerSnapshot {
 
         resyncAdvancements(player, server);
 
-        player.clearFire();
-        player.setRemainingFireTicks(0);
-        player.fallDistance = 0;
-        player.setAirSupply(player.getMaxAirSupply());
+        player.setRemainingFireTicks(fireTicks);
+        player.setTicksFrozen(frozenTicks);
+        player.fallDistance = fallDistance;
+        player.setAirSupply(airSupply);
 
         player.inventoryMenu.broadcastChanges();
         player.connection.send(new ClientboundSetExperiencePacket(

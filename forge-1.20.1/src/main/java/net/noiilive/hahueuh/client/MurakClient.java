@@ -9,7 +9,6 @@ import net.minecraftforge.client.event.MovementInputUpdateEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.noiilive.hahueuh.ConfigMagicYin;
 import net.noiilive.hahueuh.network.ClientMurakState;
 import net.noiilive.hahueuh.network.ModNetworking;
 import net.noiilive.hahueuh.network.MurakFlightTogglePacket;
@@ -66,7 +65,7 @@ public final class MurakClient {
     }
 
     private static int rollGustDelay(LocalPlayer player) {
-        int average = Math.max(1, ConfigMagicYin.MURAK_GUST_INTERVAL_SECONDS.get() * 20);
+        int average = Math.max(1, net.noiilive.hahueuh.network.ClientConfigValues.murakGustIntervalSeconds() * 20);
         int jitter = Math.max(1, average / 2);
         return average - jitter / 2 + player.getRandom().nextInt(jitter + 1);
     }
@@ -92,10 +91,10 @@ public final class MurakClient {
         input.jumping = false;
         input.shiftKeyDown = false;
 
-        double impulse = ConfigMagicYin.MURAK_FLIGHT_IMPULSE.get();
-        double drag = ConfigMagicYin.MURAK_FLIGHT_DRAG.get();
-        double gustStrength = ConfigMagicYin.MURAK_GUST_STRENGTH.get();
-        double maxSpeed = ConfigMagicYin.MURAK_FLIGHT_MAX_SPEED.get();
+        double impulse = net.noiilive.hahueuh.network.ClientConfigValues.murakFlightImpulse();
+        double drag = net.noiilive.hahueuh.network.ClientConfigValues.murakFlightDrag();
+        double gustStrength = net.noiilive.hahueuh.network.ClientConfigValues.murakGustStrength();
+        double maxSpeed = net.noiilive.hahueuh.network.ClientConfigValues.murakFlightMaxSpeed();
 
         Vec3 look = player.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0.0, look.z);

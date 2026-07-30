@@ -49,7 +49,7 @@ public final class ManaOdBarHud {
     public static void render(GuiGraphics graphics) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (player == null || mc.options.hideGui) return;
+        if (player == null || mc.options.hideGui || AbilitySlots.hudHidden()) return;
 
         PlayerData data = ClientPlayerData.of(player);
 
@@ -63,7 +63,7 @@ public final class ManaOdBarHud {
             int odCurrent = data.getOdCurrent();
             int manaCurrent = data.getManaCurrent();
 
-            float odFraction = fraction(odCurrent, max);
+            float odFraction = fraction(odCurrent, BookOfLifeStats.maxOd(data));
             float manaFraction = fraction(Math.min(manaCurrent, max), max);
             float overchargeFraction = fraction(Math.max(0, manaCurrent - max), max);
 

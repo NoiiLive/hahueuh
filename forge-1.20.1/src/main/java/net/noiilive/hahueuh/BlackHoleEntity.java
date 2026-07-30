@@ -124,7 +124,8 @@ public final class BlackHoleEntity extends Entity {
     private void explode(ServerLevel server, Vec3 centre) {
         double pullR = pullRadius();
         AABB box = new AABB(centre, centre).inflate(pullR);
-        for (Entity e : server.getEntities(this, box, e -> e != this && e.isAlive())) {
+        for (Entity e : server.getEntities(this, box,
+                e -> e != this && e.isAlive() && !HahUeuh.LIONS_HEART.isFrozen(e))) {
             Vec3 out = e.position().subtract(centre);
             double dist = out.length();
             if (dist > pullR) continue;
@@ -155,7 +156,8 @@ public final class BlackHoleEntity extends Entity {
         double pullR = pullRadius();
         double ehR = eventHorizonRadius();
         AABB box = new AABB(centre, centre).inflate(pullR);
-        for (Entity e : server.getEntities(this, box, e -> e != this && e.isAlive())) {
+        for (Entity e : server.getEntities(this, box,
+                e -> e != this && e.isAlive() && !HahUeuh.LIONS_HEART.isFrozen(e))) {
             Vec3 toCentre = centre.subtract(e.position());
             double dist = toCentre.length();
             if (dist > pullR || dist < 0.05) continue;

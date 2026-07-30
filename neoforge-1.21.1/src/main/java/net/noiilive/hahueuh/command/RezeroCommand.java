@@ -225,6 +225,12 @@ public class RezeroCommand {
                                                 .executes(RezeroCommand::runSetOd)))
                                 .then(Commands.literal("max")
                                         .executes(RezeroCommand::runMaxOd))))
+                .then(Commands.literal("mana")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.literal("set")
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                .executes(RezeroCommand::runSetMana)))))
                 .then(Commands.literal("chunkmana")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.literal("get")
@@ -855,6 +861,18 @@ public class RezeroCommand {
                 target.getName(), clamped, max
         ).withStyle(ChatFormatting.GREEN), true);
         return clamped;
+    }
+
+    private static int runSetMana(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        target.setData(ModAttachments.PLAYER_MANA_CURRENT.get(), amount);
+        BookOfLifeStats.clampToMax(target);
+        int current = target.getData(ModAttachments.PLAYER_MANA_CURRENT.get());
+        ctx.getSource().sendSuccess(() -> Component.translatable("hahueuh.command.mana_set",
+                target.getName(), current, BookOfLifeStats.maxMana(target)
+        ).withStyle(ChatFormatting.GREEN), true);
+        return current;
     }
 
     private static int runMaxOd(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

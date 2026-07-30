@@ -1,17 +1,25 @@
 package net.noiilive.hahueuh;
 
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
-import net.minecraft.world.entity.monster.warden.Warden;
 
 public final class MobTargetUtil {
     private MobTargetUtil() {}
 
+    public static boolean isPacified(LivingEntity entity) {
+        return entity.hasEffect(ModEffects.BODILY_DISCONNECT)
+                || entity.hasEffect(ModEffects.SENSORY_DEPRIVATION);
+    }
+
     public static void clearTarget(Mob mob) {
-        if (mob instanceof Warden warden) {
-            warden.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
-        } else {
-            mob.setTarget(null);
-        }
+        mob.setTarget(null);
+        mob.setLastHurtByMob(null);
+
+        var brain = mob.getBrain();
+        brain.eraseMemory(MemoryModuleType.ATTACK_TARGET);
+        brain.eraseMemory(MemoryModuleType.ANGRY_AT);
+        brain.eraseMemory(MemoryModuleType.HURT_BY);
+        brain.eraseMemory(MemoryModuleType.HURT_BY_ENTITY);
     }
 }

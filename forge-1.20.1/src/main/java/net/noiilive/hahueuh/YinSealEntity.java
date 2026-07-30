@@ -88,7 +88,7 @@ public final class YinSealEntity extends Entity {
         float scale = (float) (target.getBbHeight() * SEAL_SCALE);
         this.entityData.set(DATA_SCALE, Math.max(1.0f, scale));
         this.entityData.set(DATA_UNBREAKABLE, OlShamak.hasWitchFactor(target));
-        setPos(target.getX(), target.getY(), target.getZ());
+        setPos(target.getX(), centredY(target), target.getZ());
     }
 
     public UUID sealedUuid() {
@@ -110,6 +110,16 @@ public final class YinSealEntity extends Entity {
     @Override
     public boolean isPickable() {
         return true;
+    }
+
+    @Override
+    public boolean canBeCollidedWith() {
+        return true;
+    }
+
+    @Override
+    public boolean isPushable() {
+        return false;
     }
 
     @Override
@@ -137,6 +147,10 @@ public final class YinSealEntity extends Entity {
         if (!(source.getEntity() instanceof LivingEntity attacker)) return false;
         ItemStack held = attacker.getMainHandItem();
         return !held.isEmpty() && held.is(ModItems.DRAGON_SWORD_REID.get());
+    }
+
+    private double centredY(LivingEntity sealed) {
+        return sealed.getY() + sealed.getBbHeight() * 0.5 - getBbHeight() * 0.5;
     }
 
     private double centreY() {
@@ -179,7 +193,7 @@ public final class YinSealEntity extends Entity {
         }
         if (form <= rise + expand) entityData.set(DATA_FORM_TICKS, form + 1);
 
-        setPos(sealed.getX(), sealed.getY(), sealed.getZ());
+        setPos(sealed.getX(), centredY(sealed), sealed.getZ());
         holdStill(sealed);
 
         if (form < rise + expand) return;

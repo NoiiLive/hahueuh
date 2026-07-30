@@ -12,6 +12,7 @@ public final class SpellHeat {
 
     public static void addHeat(ServerPlayer player, int heat) {
         if (heat <= 0 || player.isCreative()) return;
+        if (HahUeuh.LIONS_HEART.isActive(player.getUUID())) return;
 
         int maxHeat = BookOfLifeStats.maxMana(player);
         if (maxHeat <= 0) return;
@@ -40,6 +41,11 @@ public final class SpellHeat {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             int current = player.getData(ModAttachments.PLAYER_SPELL_HEAT.get());
             if (current <= 0) continue;
+            if (HahUeuh.LIONS_HEART.isActive(player.getUUID())) {
+                ResourceDecay.restart(player, ModAttachments.PLAYER_HEAT_DECAY_BASE.get(),
+                        ModAttachments.PLAYER_HEAT_DECAY_START.get(), current);
+                continue;
+            }
             int decayed = ResourceDecay.valueNow(player, ModAttachments.PLAYER_HEAT_DECAY_BASE.get(),
                     ModAttachments.PLAYER_HEAT_DECAY_START.get(), windowSeconds, current);
             if (decayed < current) player.setData(ModAttachments.PLAYER_SPELL_HEAT.get(), decayed);

@@ -23,8 +23,13 @@ public final class ResourceDecay {
         }
 
         long windowTicks = (long) Math.max(1, windowSeconds) * TICKS_PER_SECOND;
-        long elapsed = gameTime(player) - player.getData(startType);
-        if (elapsed <= 0) return fallback;
+        long now = gameTime(player);
+        long elapsed = now - player.getData(startType);
+        if (elapsed < 0) {
+            player.setData(startType, now);
+            return fallback;
+        }
+        if (elapsed == 0) return fallback;
         if (elapsed >= windowTicks) return 0;
 
         double remaining = 1.0 - (double) elapsed / windowTicks;

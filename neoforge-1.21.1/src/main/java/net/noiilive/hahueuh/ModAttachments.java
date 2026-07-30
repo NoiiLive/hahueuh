@@ -107,7 +107,6 @@ public final class ModAttachments {
                     () -> AttachmentType.builder(() -> 0)
                             .serialize(Codec.INT)
                             .sync(ByteBufCodecs.VAR_INT)
-                            .copyOnDeath()
                             .build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Integer>> PLAYER_OD_CURRENT =

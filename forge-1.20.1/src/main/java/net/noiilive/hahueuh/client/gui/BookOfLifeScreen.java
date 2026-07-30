@@ -8,8 +8,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.noiilive.hahueuh.BookOfLifeStats;
-import net.noiilive.hahueuh.ConfigMagic;
-import net.noiilive.hahueuh.ConfigPlayer;
 import net.noiilive.hahueuh.HahUeuh;
 import net.noiilive.hahueuh.StatBonuses;
 import net.noiilive.hahueuh.capability.PlayerData;
@@ -116,8 +114,8 @@ public final class BookOfLifeScreen extends BookPageScreen {
         int efficiency = data.getGateEfficiency() < 0 ? 0 : StatBonuses.effectiveGateEfficiency(data);
         int strain = data.getGateStrain();
 
-        int damagedThreshold = ConfigMagic.GATE_STRAIN_DAMAGED.get();
-        int destroyedThreshold = ConfigMagic.GATE_STRAIN_DESTROYED.get();
+        int damagedThreshold = net.noiilive.hahueuh.network.ClientConfigValues.gateStrainDamaged();
+        int destroyedThreshold = net.noiilive.hahueuh.network.ClientConfigValues.gateStrainDestroyed();
         ChatFormatting strainColor = strain >= destroyedThreshold ? ChatFormatting.DARK_RED
                 : strain >= damagedThreshold ? ChatFormatting.RED
                 : strain >= damagedThreshold / 2 ? ChatFormatting.YELLOW
@@ -181,7 +179,7 @@ public final class BookOfLifeScreen extends BookPageScreen {
 
     private List<Component> buildStatTooltip(LocalPlayer player, PlayerStat stat) {
         StatEntry entry = ClientPlayerData.of(player).getStats().get(stat);
-        int perLevel = Math.max(1, ConfigPlayer.STAT_PROGRESS_PER_LEVEL.get());
+        int perLevel = Math.max(1, net.noiilive.hahueuh.network.ClientConfigValues.statProgressPerLevel());
         int cap = StatBonuses.levelCap(entry);
         boolean maxed = StatBonuses.atCap(entry);
 
@@ -206,7 +204,7 @@ public final class BookOfLifeScreen extends BookPageScreen {
 
         PlayerStatBlock stats = player != null
                 ? ClientPlayerData.of(player).getStats() : PlayerStatBlock.UNROLLED;
-        int perLevel = Math.max(1, ConfigPlayer.STAT_PROGRESS_PER_LEVEL.get());
+        int perLevel = Math.max(1, net.noiilive.hahueuh.network.ClientConfigValues.statProgressPerLevel());
 
         for (PlayerStat stat : PlayerStat.ORDERED) {
             int row = stat.ordinal();

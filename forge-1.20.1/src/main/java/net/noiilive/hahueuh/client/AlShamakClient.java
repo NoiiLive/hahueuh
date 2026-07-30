@@ -10,7 +10,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.noiilive.hahueuh.ConfigMagicYin;
 import net.noiilive.hahueuh.capability.PlayerData;
 import net.noiilive.hahueuh.client.gui.SpellStorageScreen;
 import net.noiilive.hahueuh.network.AlShamakActivatePacket;
@@ -31,13 +30,13 @@ public final class AlShamakClient {
                 ModNetworking.CHANNEL.sendToServer(new AlShamakActivatePacket(AlShamakActivatePacket.DISCARD, -1));
                 return;
             }
-            Entity releaseTarget = raycastEntity(player, ConfigMagicYin.UL_MINYA_RANGE.get());
+            Entity releaseTarget = raycastEntity(player, net.noiilive.hahueuh.network.ClientConfigValues.ulMinyaRange());
             int releaseTargetId = releaseTarget != null ? releaseTarget.getId() : -1;
             ModNetworking.CHANNEL.sendToServer(new AlShamakActivatePacket(AlShamakActivatePacket.RELEASE, releaseTargetId));
             return;
         }
 
-        Entity target = raycastEntity(player, ConfigMagicYin.AL_SHAMAK_RANGE.get());
+        Entity target = raycastEntity(player, net.noiilive.hahueuh.network.ClientConfigValues.alShamakRange());
         if (target != null) {
             ModNetworking.CHANNEL.sendToServer(new AlShamakActivatePacket(AlShamakActivatePacket.BANISH, target.getId()));
         } else {

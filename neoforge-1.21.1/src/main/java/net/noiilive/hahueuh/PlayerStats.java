@@ -8,6 +8,14 @@ import net.noiilive.hahueuh.network.StatEntry;
 public final class PlayerStats {
     private PlayerStats() {}
 
+    private static void announceLevelUp(ServerPlayer player, PlayerStat stat, int level) {
+        player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                        "hahueuh.message.stat_level_up",
+                        net.minecraft.network.chat.Component.translatable(stat.translationKey),
+                        level)
+                .withStyle(net.minecraft.ChatFormatting.AQUA), true);
+    }
+
     public static PlayerStatBlock of(ServerPlayer player) {
         return player.getData(ModAttachments.PLAYER_STATS.get());
     }
@@ -64,7 +72,10 @@ public final class PlayerStats {
         if (level == entry.level() && progress == entry.progress()) return;
         player.setData(ModAttachments.PLAYER_STATS.get(),
                 block.with(stat, entry.withLevelAndProgress(level, progress)));
-        if (level != entry.level()) StatEffects.refresh(player);
+        if (level != entry.level()) {
+            StatEffects.refresh(player);
+            announceLevelUp(player, stat, level);
+        }
     }
 
     public static void addProgress(ServerPlayer player, PlayerStat stat, double amount) {

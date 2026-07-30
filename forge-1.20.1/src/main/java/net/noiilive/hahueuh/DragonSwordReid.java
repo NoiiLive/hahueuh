@@ -24,6 +24,17 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class DragonSwordReid {
     private static final double MAX_UNSHEATH_DISTANCE = 32.0;
+
+    private static final net.minecraft.tags.TagKey<net.minecraft.world.entity.EntityType<?>> BOSSES_HAHUEUH =
+            net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ENTITY_TYPE,
+                    new net.minecraft.resources.ResourceLocation(HahUeuh.MODID, "bosses"));
+    private static final net.minecraft.tags.TagKey<net.minecraft.world.entity.EntityType<?>> BOSSES_C =
+            net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ENTITY_TYPE,
+                    new net.minecraft.resources.ResourceLocation("c", "bosses"));
+    private static final net.minecraft.tags.TagKey<net.minecraft.world.entity.EntityType<?>> BOSSES_FORGE =
+            net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ENTITY_TYPE,
+                    new net.minecraft.resources.ResourceLocation("forge", "bosses"));
+
     private static final int TICK_INTERVAL = 10;
     private final Map<UUID, UUID> unlockedAgainst = new ConcurrentHashMap<>();
 
@@ -34,7 +45,7 @@ public final class DragonSwordReid {
 
         Entity attacker = event.getSource().getEntity();
         if (victim instanceof ServerPlayer holder && attacker != null && attacker != victim
-                && !heldDragonSword(holder).isEmpty() && isWorthyOpponent(attacker)) {
+                && !heldDragonSword(holder).isEmpty() && isWorthyOpponent(attacker, holder)) {
             grantUnlock(holder, attacker.getUUID());
         }
 
@@ -100,6 +111,28 @@ public final class DragonSwordReid {
             return MobWitchFactorData.get(mob).getAuthority() != WitchFactorAuthority.NONE;
         }
         return false;
+    }
+
+    public static boolean isWorthyOpponent(Entity entity, LivingEntity holder) {
+        return isWorthyOpponent(entity) || isBoss(entity) || overwhelmsHolder(entity, holder);
+    }
+
+    public static boolean isBoss(Entity entity) {
+        if (entity instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon
+                || entity instanceof net.minecraft.world.entity.boss.wither.WitherBoss) {
+            return true;
+        }
+        net.minecraft.world.entity.EntityType<?> type = entity.getType();
+        return type.is(BOSSES_HAHUEUH) || type.is(BOSSES_C) || type.is(BOSSES_FORGE);
+    }
+
+    private static boolean overwhelmsHolder(Entity entity, LivingEntity holder) {
+        if (holder == null || !(entity instanceof LivingEntity living)) return false;
+        double ratio = ConfigMain.DRAGON_SWORD_STRONG_FOE_HEALTH_RATIO.get();
+        if (ratio <= 0.0) return false;
+        float mine = holder.getMaxHealth();
+        if (mine <= 0f) return false;
+        return living.getMaxHealth() >= mine * ratio;
     }
 
     private static ItemStack heldDragonSword(Player player) {

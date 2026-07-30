@@ -95,6 +95,7 @@ public class HahUeuh {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     public static final SnapshotManager SNAPSHOT_MANAGER = new SnapshotManager();
+    public static final Insanity INSANITY = new Insanity();
     public static final SlothCompatibility SLOTH_COMPAT = new SlothCompatibility();
     public static final GreedCompatibility GREED_COMPAT = new GreedCompatibility();
     public static final LionsHeart LIONS_HEART = new LionsHeart();
@@ -153,6 +154,7 @@ public class HahUeuh {
         ModMenus.MENUS.register(modEventBus);
 
         NeoForge.EVENT_BUS.register(SNAPSHOT_MANAGER);
+        NeoForge.EVENT_BUS.register(INSANITY);
         NeoForge.EVENT_BUS.register(MOB_WITCH_FACTOR);
         NeoForge.EVENT_BUS.register(MOB_ABILITY_AI);
         NeoForge.EVENT_BUS.register(DRAGON_SWORD_REID);
