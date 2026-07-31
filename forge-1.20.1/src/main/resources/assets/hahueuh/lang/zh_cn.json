@@ -514,6 +514,7 @@
   "hahueuh.message.ol_shamak_failed": "封印无法成形。",
   "hahueuh.message.ol_shamak_sealed": "你将其封入其中。",
   "hahueuh.message.ol_shamak_sealed_unbreakable": "你将其封入其中——此球不会破碎。",
+  "hahueuh.message.ol_shamak_immune": "凝固的躯体挣脱了封印。",
   "hahueuh.message.ol_shamak_released": "你让封印散去。",
   "hahueuh.message.ol_shamak_silenced": "已被封印。什么都不会回应你。",
   "hahueuh.gui.teleport.title": "传送",

@@ -515,6 +515,7 @@
   "hahueuh.message.ol_shamak_failed": "The seal refuses to form.",
   "hahueuh.message.ol_shamak_sealed": "You seal them away.",
   "hahueuh.message.ol_shamak_sealed_unbreakable": "You seal them away — the orb will not break.",
+  "hahueuh.message.ol_shamak_immune": "Their frozen body slips the seal.",
   "hahueuh.message.ol_shamak_released": "You let the seal fall apart.",
   "hahueuh.message.ol_shamak_silenced": "Sealed away. Nothing answers you.",
   "hahueuh.gui.teleport.title": "Teleportation",

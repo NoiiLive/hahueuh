@@ -335,6 +335,7 @@
   "hahueuh.message.ol_shamak_failed": "Печать отказывается складываться.",
   "hahueuh.message.ol_shamak_sealed": "Вы запечатали их.",
   "hahueuh.message.ol_shamak_sealed_unbreakable": "Вы запечатали их — сферу не разбить.",
+  "hahueuh.message.ol_shamak_immune": "Застывшее тело ускользает от печати.",
   "hahueuh.message.ol_shamak_released": "Вы позволяете печати распасться.",
   "hahueuh.message.ol_shamak_silenced": "Вы запечатаны. Ничто вам не отвечает.",
   "hahueuh.gui.teleport.title": "Телепортация",

@@ -54,14 +54,46 @@ public final class GuiltywhipClient {
         GuiltywhipPhysics.crack(state, player, sweep, HandTracker.resolve(player, 1.0f));
     }
 
+    public static void applyRemoteGrapple(UUID owner, int targetId, Vec3 blockPoint) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        Player player = mc.level.getPlayerByUUID(owner);
+        GuiltywhipPhysics.State state = STATES.get(owner);
+        if (player == null || state == null) return;
+        net.minecraft.world.entity.Entity target =
+                targetId >= 0 ? mc.level.getEntity(targetId) : null;
+        GuiltywhipPhysics.grapple(state, player, HandTracker.resolve(player, 1.0f),
+                target, blockPoint);
+    }
+
     @SubscribeEvent
     public static void onClickInput(net.minecraftforge.client.event.InputEvent.InteractionKeyMappingTriggered event) {
-        if (!event.isAttack()) return;
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
         if (player == null || !holding(player)) return;
         GuiltywhipPhysics.State state = STATES.get(player.getUUID());
-        if (state == null || !GuiltywhipPhysics.canCrack(state)) return;
+        if (state == null) return;
+
+        if (event.isUseItem()) {
+            event.setSwingHand(false);
+            event.setCanceled(true);
+            if (!GuiltywhipPhysics.canGrapple(state)) return;
+            net.minecraft.world.entity.Entity target = GuiltywhipPhysics.findGrabTarget(player);
+            Vec3 blockPoint = target == null ? GuiltywhipPhysics.findGrapplePoint(player) : null;
+            GuiltywhipPhysics.grapple(state, player, HandTracker.resolve(player, 1.0f),
+                    target, blockPoint);
+            net.noiilive.hahueuh.network.ModNetworking.CHANNEL.sendToServer(
+                    new net.noiilive.hahueuh.network.GuiltywhipGrapplePacket(
+                            target == null ? -1 : target.getId(),
+                            blockPoint != null,
+                            blockPoint == null ? 0.0 : blockPoint.x,
+                            blockPoint == null ? 0.0 : blockPoint.y,
+                            blockPoint == null ? 0.0 : blockPoint.z));
+            return;
+        }
+
+        if (!event.isAttack()) return;
+        if (!GuiltywhipPhysics.canCrack(state)) return;
         boolean sweep = !player.isShiftKeyDown();
         GuiltywhipPhysics.crack(state, player, sweep, HandTracker.resolve(player, 1.0f));
         net.noiilive.hahueuh.network.ModNetworking.CHANNEL.sendToServer(

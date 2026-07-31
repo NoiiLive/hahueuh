@@ -335,6 +335,7 @@
   "hahueuh.message.ol_shamak_failed": "Le sceau refuse de se former.",
   "hahueuh.message.ol_shamak_sealed": "Vous les scellez.",
   "hahueuh.message.ol_shamak_sealed_unbreakable": "Vous les scellez — le globe ne cédera pas.",
+  "hahueuh.message.ol_shamak_immune": "Son corps figé échappe au sceau.",
   "hahueuh.message.ol_shamak_released": "Vous laissez le sceau se défaire.",
   "hahueuh.message.ol_shamak_silenced": "Scellé. Rien ne vous répond.",
   "hahueuh.gui.teleport.title": "Téléportation",

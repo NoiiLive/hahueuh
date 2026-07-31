@@ -335,6 +335,7 @@
   "hahueuh.message.ol_shamak_failed": "El sello se niega a formarse.",
   "hahueuh.message.ol_shamak_sealed": "Los sellas.",
   "hahueuh.message.ol_shamak_sealed_unbreakable": "Los sellas: el orbe no se romperá.",
+  "hahueuh.message.ol_shamak_immune": "Su cuerpo congelado escapa al sello.",
   "hahueuh.message.ol_shamak_released": "Dejas que el sello se deshaga.",
   "hahueuh.message.ol_shamak_silenced": "Estás sellado. Nada te responde.",
   "hahueuh.gui.teleport.title": "Teletransporte",

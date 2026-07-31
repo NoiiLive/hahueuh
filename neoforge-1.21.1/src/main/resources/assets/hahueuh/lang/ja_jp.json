@@ -335,6 +335,7 @@
   "hahueuh.message.ol_shamak_failed": "封印が形を成さない。",
   "hahueuh.message.ol_shamak_sealed": "封じ込めた。",
   "hahueuh.message.ol_shamak_sealed_unbreakable": "封じ込めた。この球は壊れない。",
+  "hahueuh.message.ol_shamak_immune": "凍てついた肉体は封印を受けつけない。",
   "hahueuh.message.ol_shamak_released": "封印を解いた。",
   "hahueuh.message.ol_shamak_silenced": "封じられている。何も応じない。",
   "hahueuh.gui.teleport.title": "テレポーテーション",

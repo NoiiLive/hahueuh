@@ -438,6 +438,18 @@ public final class ModNetworking {
                 GuiltywhipCrackSyncPacket::handle);
 
         CHANNEL.registerMessage(packetId++,
+                GuiltywhipGrapplePacket.class,
+                GuiltywhipGrapplePacket::encode,
+                GuiltywhipGrapplePacket::new,
+                GuiltywhipGrapplePacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                GuiltywhipGrappleSyncPacket.class,
+                GuiltywhipGrappleSyncPacket::encode,
+                GuiltywhipGrappleSyncPacket::new,
+                GuiltywhipGrappleSyncPacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
                 MorningstarHeadPacket.class,
                 MorningstarHeadPacket::encode,
                 MorningstarHeadPacket::new,

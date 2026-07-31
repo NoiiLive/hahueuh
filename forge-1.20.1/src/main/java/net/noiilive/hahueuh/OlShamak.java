@@ -46,6 +46,10 @@ public final class OlShamak {
             actionBar(caster, "hahueuh.message.ol_shamak_released", ChatFormatting.GRAY);
             return;
         }
+        if (HahUeuh.LIONS_HEART.isFrozen(target)) {
+            actionBar(caster, "hahueuh.message.ol_shamak_immune", ChatFormatting.RED);
+            return;
+        }
         seal(caster, target);
     }
 

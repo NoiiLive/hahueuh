@@ -314,10 +314,29 @@ public class HahUeuh {
                     }
                 });
 
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.GuiltywhipGrapplePayload.TYPE,
+                net.noiilive.hahueuh.network.GuiltywhipGrapplePayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        GUILTYWHIP.handleGrapple(sp, payload.targetId(), payload.hasBlock()
+                                ? new net.minecraft.world.phys.Vec3(payload.x(), payload.y(), payload.z())
+                                : null);
+                    }
+                });
+
         registrar.playToClient(
                 net.noiilive.hahueuh.network.GuiltywhipCrackSyncPayload.TYPE,
                 net.noiilive.hahueuh.network.GuiltywhipCrackSyncPayload.STREAM_CODEC,
                 (payload, context) -> net.noiilive.hahueuh.client.GuiltywhipClient.applyRemoteCrack(payload.owner(), payload.sweep()));
+
+        registrar.playToClient(
+                net.noiilive.hahueuh.network.GuiltywhipGrappleSyncPayload.TYPE,
+                net.noiilive.hahueuh.network.GuiltywhipGrappleSyncPayload.STREAM_CODEC,
+                (payload, context) -> net.noiilive.hahueuh.client.GuiltywhipClient.applyRemoteGrapple(
+                        payload.owner(), payload.targetId(), payload.hasBlock()
+                                ? new net.minecraft.world.phys.Vec3(payload.x(), payload.y(), payload.z())
+                                : null));
 
         registrar.playToClient(
                 net.noiilive.hahueuh.network.MorningstarHeadPayload.TYPE,
