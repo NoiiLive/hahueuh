@@ -37,6 +37,12 @@ public final class HahUeuhClientSetup {
 
     @SubscribeEvent
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.model.ChainLinkModel.LAYER,
+                net.noiilive.hahueuh.client.model.ChainLinkModel::createBodyLayer);
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.model.MorningstarHeadModel.LAYER,
+                net.noiilive.hahueuh.client.model.MorningstarHeadModel::createBodyLayer);
+        event.registerLayerDefinition(net.noiilive.hahueuh.client.model.WhipSegmentModel.LAYER,
+                net.noiilive.hahueuh.client.model.WhipSegmentModel::createBodyLayer);
         event.registerLayerDefinition(net.noiilive.hahueuh.client.model.UnseenHandModel.LAYER,
                 net.noiilive.hahueuh.client.model.UnseenHandModel::createBodyLayer);
         event.registerLayerDefinition(net.noiilive.hahueuh.client.model.UnseenTendrilModel.LAYER,
@@ -75,6 +81,7 @@ public final class HahUeuhClientSetup {
             return;
         }
         renderer.addLayer(new net.noiilive.hahueuh.client.EmmSwirlLayer(renderer, event.getEntityModels(), slim));
+        renderer.addLayer(new net.noiilive.hahueuh.client.HandTracker.Layer(renderer));
     }
 
     @SubscribeEvent

@@ -577,8 +577,8 @@ public final class ConfigMagicYin {
     public static final ForgeConfigSpec.IntValue DOOR_CROSSING_ROOM_SIZE = BUILDER
             .comment("Door Crossing: interior width and depth (blocks) of your private room. Rooms are laid out",
                      "on a spaced grid inside the pocket dimension and never touch each other, however large",
-                     "you make them. Default: 100. Range: 8 to 512.")
-            .defineInRange("doorCrossingRoomSize", 100, 8, 512);
+                     "you make them. Default: 75. Range: 8 to 512.")
+            .defineInRange("doorCrossingRoomSize", 75, 8, 512);
 
     public static final ForgeConfigSpec.IntValue DOOR_CROSSING_ROOM_HEIGHT = BUILDER
             .comment("Door Crossing: interior height (blocks) of your private room. Default: 32. Range: 4 to 256.")

@@ -233,6 +233,7 @@ public final class DoorCrossing {
                     continue;
                 }
                 if (!steppedClear.contains(id)) continue;
+                if (!player.isShiftKeyDown()) continue;
                 steppedClear.remove(id);
                 if (visitors.containsKey(id)) {
                     expelVisitor(player);
@@ -464,8 +465,13 @@ public final class DoorCrossing {
         return new BlockPos(cell * stride, FLOOR_Y, ROOM_Z_BAND);
     }
 
+    private static int doorOffset() {
+        return ConfigMagicYin.DOOR_CROSSING_ROOM_SIZE.get() / 2;
+    }
+
     private static Vec3 doorwayPosition(BlockPos origin) {
-        return new Vec3(origin.getX() + 1.5, origin.getY() + 1, origin.getZ() + 1.5);
+        int offset = doorOffset();
+        return new Vec3(origin.getX() + offset + 0.5, origin.getY() + 1, origin.getZ() + offset + 0.5);
     }
 
     private static Vec3 entryPosition(ServerLevel pocket, Room room) {
@@ -535,7 +541,7 @@ public final class DoorCrossing {
             }
         }
 
-        BlockPos doorPos = origin.offset(1, 1, 1);
+        BlockPos doorPos = origin.offset(doorOffset(), 1, doorOffset());
         BlockState lower = Blocks.OAK_DOOR.defaultBlockState()
                 .setValue(DoorBlock.FACING, Direction.SOUTH)
                 .setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER);

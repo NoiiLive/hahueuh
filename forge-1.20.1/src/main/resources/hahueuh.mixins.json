@@ -11,6 +11,7 @@
     "CropDropContaminationMixin",
     "ProxiedSoundMixin",
     "LionsHeartArmorBypassMixin",
+    "MaceBreachMixin",
     "ServerEntityPhaseMixin",
     "ServerMovementPhaseMixin",
     "ServerFloatKickMixin",

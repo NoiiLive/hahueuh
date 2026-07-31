@@ -412,6 +412,18 @@ public final class ModNetworking {
                 ConfigSyncPacket::encode,
                 ConfigSyncPacket::new,
                 ConfigSyncPacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                MorningstarSwingPacket.class,
+                MorningstarSwingPacket::encode,
+                MorningstarSwingPacket::new,
+                MorningstarSwingPacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                MorningstarSwingSyncPacket.class,
+                MorningstarSwingSyncPacket::encode,
+                MorningstarSwingSyncPacket::new,
+                MorningstarSwingSyncPacket::handle);
     }
 
     public static void sendToAll(Object packet) {

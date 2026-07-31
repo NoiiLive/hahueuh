@@ -34,6 +34,17 @@ public final class ModItems {
             "sages_box", SagesBoxItem::new,
             new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
 
+    public static final DeferredItem<MorningstarItem> MORNINGSTAR = ITEMS.registerItem(
+            "morningstar",
+            MorningstarItem::new,
+            new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON).durability(500)
+                    .attributes(MorningstarItem.attributes()));
+
+    public static final DeferredItem<GuiltywhipItem> GUILTYWHIP = ITEMS.registerItem(
+            "guiltywhip",
+            GuiltywhipItem::new,
+            new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
+
     public static final DeferredItem<DragonSwordReidItem> DRAGON_SWORD_REID = ITEMS.registerItem(
             "dragon_sword_reid",
             props -> new DragonSwordReidItem(Tiers.NETHERITE, props),

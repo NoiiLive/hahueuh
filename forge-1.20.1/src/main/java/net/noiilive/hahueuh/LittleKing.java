@@ -49,6 +49,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class LittleKing {
     private static final UUID HEART_DEBT_MODIFIER_ID =
             UUID.fromString("6f5c2a1e-9d3b-4f27-8a10-5c7b3e9d1a44");
+    private static final UUID DEBT_PROBE_MODIFIER_ID =
+            UUID.fromString("6f5c2a1e-9d3b-4f27-8a10-5c7b3e9d1a45");
     private static final String HEART_DEBT_MODIFIER_NAME = "hahueuh.little_king_heart_debt";
     private static final String FILE_NAME = "hahueuh_little_king.json";
     private static final double IMPLANT_REACH = 6.0;
@@ -89,7 +91,7 @@ public final class LittleKing {
         int total = totalImplanted(king.getUUID());
         if (total == 0) return false;
         if (activeHeartCount(king) != total) return false;
-        return king.getMaxHealth() <= MIN_MAX_HEALTH + 1.0e-4;
+        return king.getMaxHealth() - 1.0 < MIN_MAX_HEALTH;
     }
 
     public void implant(ServerPlayer king) {
@@ -127,6 +129,15 @@ public final class LittleKing {
             king.displayClientMessage(Component.translatable("hahueuh.message.little_king_no_target")
                     .withStyle(ChatFormatting.RED), true);
             return;
+        }
+
+        if (ConfigGreed.LITTLE_KING_ONE_PIECE_PER_ENTITY.get()) {
+            List<UUID> existing = implants.get(uuid);
+            if (existing != null && existing.contains(target.getUUID())) {
+                king.displayClientMessage(Component.translatable("hahueuh.message.little_king_already_holds")
+                        .withStyle(ChatFormatting.RED), true);
+                return;
+            }
         }
 
         List<UUID> list = implants.computeIfAbsent(uuid, k -> new ArrayList<>());
@@ -335,11 +346,21 @@ public final class LittleKing {
         inst.removeModifier(HEART_DEBT_MODIFIER_ID);
         if (count > 0) {
             inst.addTransientModifier(new AttributeModifier(HEART_DEBT_MODIFIER_ID, HEART_DEBT_MODIFIER_NAME,
-                    -count, AttributeModifier.Operation.ADDITION));
+                    -count / additionScale(inst), AttributeModifier.Operation.ADDITION));
         }
         if (king.getHealth() > king.getMaxHealth()) {
             king.setHealth(king.getMaxHealth());
         }
+    }
+
+    private static double additionScale(AttributeInstance inst) {
+        double before = inst.getValue();
+        inst.addTransientModifier(new AttributeModifier(DEBT_PROBE_MODIFIER_ID, HEART_DEBT_MODIFIER_NAME,
+                -1.0, AttributeModifier.Operation.ADDITION));
+        double after = inst.getValue();
+        inst.removeModifier(DEBT_PROBE_MODIFIER_ID);
+        double scale = before - after;
+        return scale <= 1.0e-6 ? 1.0 : scale;
     }
 
     private void sendHighlight(ServerPlayer king) {

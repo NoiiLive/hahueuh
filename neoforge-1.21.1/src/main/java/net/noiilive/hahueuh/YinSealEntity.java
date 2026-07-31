@@ -11,11 +11,14 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.UUID;
@@ -28,7 +31,7 @@ public final class YinSealEntity extends Entity {
     private static final EntityDataAccessor<Integer> DATA_FORM_TICKS =
             SynchedEntityData.defineId(YinSealEntity.class, EntityDataSerializers.INT);
 
-    private static final double SEAL_SCALE = 1.25;
+    private static final double SEAL_SCALE = 1.3;
     private static final double LIFT_HEIGHT = 3.0;
     private static final int RISE_TICKS = 20;
     private static final int EXPAND_TICKS = 6;
@@ -85,8 +88,9 @@ public final class YinSealEntity extends Entity {
         this.health = ConfigMagicYin.OL_SHAMAK_SEAL_HEALTH.get().floatValue();
         this.ticksRemaining = ConfigMagicYin.OL_SHAMAK_DURATION_SECONDS.get() * 20;
 
-        float scale = (float) (target.getBbHeight() * SEAL_SCALE);
-        this.entityData.set(DATA_SCALE, Math.max(1.0f, scale));
+        float widest = Math.max(target.getBbWidth(), target.getBbHeight());
+        this.entityData.set(DATA_SCALE, Math.max(1.0f, (float) (widest * SEAL_SCALE)));
+        refreshDimensions();
         this.entityData.set(DATA_UNBREAKABLE, OlShamak.hasWitchFactor(target));
         setPos(target.getX(), centredY(target), target.getZ());
     }
@@ -105,6 +109,18 @@ public final class YinSealEntity extends Entity {
 
     public boolean unbreakable() {
         return this.entityData.get(DATA_UNBREAKABLE);
+    }
+
+    @Override
+    public EntityDimensions getDimensions(Pose pose) {
+        float size = scale();
+        return EntityDimensions.scalable(size, size);
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+        super.onSyncedDataUpdated(key);
+        if (DATA_SCALE.equals(key)) refreshDimensions();
     }
 
     @Override
@@ -205,7 +221,7 @@ public final class YinSealEntity extends Entity {
     private void raise(LivingEntity sealed, int rise) {
         double perTick = LIFT_HEIGHT / rise;
         if (perTick <= 0.0) return;
-        if (!level().noCollision(sealed, sealed.getBoundingBox().move(0.0, perTick, 0.0))) return;
+        if (blockedAbove(sealed, perTick)) return;
 
         sealed.teleportTo(sealed.getX(), sealed.getY() + perTick, sealed.getZ());
         if (level() instanceof ServerLevel server) {
@@ -213,6 +229,11 @@ public final class YinSealEntity extends Entity {
                     sealed.getX(), sealed.getY() + sealed.getBbHeight() * 0.5, sealed.getZ(),
                     3, 0.3, 0.4, 0.3, 0.3);
         }
+    }
+
+    private boolean blockedAbove(LivingEntity sealed, double perTick) {
+        AABB box = sealed.getBoundingBox().move(0.0, perTick, 0.0);
+        return level().getBlockCollisions(sealed, box).iterator().hasNext();
     }
 
     private static void holdStill(LivingEntity sealed) {

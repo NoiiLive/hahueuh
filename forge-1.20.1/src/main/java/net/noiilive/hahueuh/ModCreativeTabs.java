@@ -23,6 +23,8 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.BOWEL_HUNTER_WHITE_BLADE.get());
                         output.accept(ModItems.BOWEL_HUNTER_BLACK_BLADE.get());
                         output.accept(ModItems.SPIKED_CLUB.get());
+                        output.accept(ModItems.MORNINGSTAR.get());
+                        output.accept(ModItems.GUILTYWHIP.get());
                         output.accept(ModItems.SAGES_BOX.get());
                         output.accept(SagesBoxItem.withAuthority(WitchFactorAuthority.SLOTH));
                         output.accept(SagesBoxItem.withAuthority(WitchFactorAuthority.GREED));

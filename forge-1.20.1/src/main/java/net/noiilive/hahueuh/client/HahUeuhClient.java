@@ -52,6 +52,8 @@ public final class HahUeuhClient {
         AbilitySlots.reset();
         AbilityCooldowns.reset();
         net.noiilive.hahueuh.network.ClientConfigValues.clear();
+        net.noiilive.hahueuh.client.MorningstarClient.reset();
+        net.noiilive.hahueuh.client.GuiltywhipClient.reset();
         AbilityClient.resetChargeManaState();
         net.noiilive.hahueuh.network.DomainRenderState.clear();
         net.noiilive.hahueuh.network.ClientPlayerData.clear();

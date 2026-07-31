@@ -75,6 +75,12 @@ public final class ConfigGreed {
                      "5 + 19*5 = 100s total). Default: true.")
             .define("littleKingIndefinite", true);
 
+    public static final ForgeConfigSpec.BooleanValue LITTLE_KING_ONE_PIECE_PER_ENTITY = BUILDER
+            .comment("If true, each entity may only ever hold ONE piece of a given king's heart, so every",
+                     "further piece has to go into a different entity. If false, a king may stack as many",
+                     "pieces as they like into a single entity. Default: false.")
+            .define("littleKingOnePiecePerEntity", false);
+
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LITTLE_KING_IMPLANTABLE_ENTITIES = BUILDER
             .comment("Entity types a Little King may implant a heart into. Use full entity type ids, e.g.",
                      "\"minecraft:player\" or \"minecraft:villager\". Default: players and villagers.")

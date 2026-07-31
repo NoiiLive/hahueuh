@@ -49,6 +49,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class LittleKing {
     private static final ResourceLocation HEART_DEBT_MODIFIER_ID =
             ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "little_king_heart_debt");
+    private static final ResourceLocation DEBT_PROBE_MODIFIER_ID =
+            ResourceLocation.fromNamespaceAndPath(HahUeuh.MODID, "little_king_heart_debt_probe");
     private static final String FILE_NAME = "hahueuh_little_king.json";
     private static final double IMPLANT_REACH = 6.0;
     private static final double MIN_MAX_HEALTH = 1.0;
@@ -88,7 +90,7 @@ public final class LittleKing {
         int total = totalImplanted(king.getUUID());
         if (total == 0) return false;
         if (activeHeartCount(king) != total) return false;
-        return king.getMaxHealth() <= MIN_MAX_HEALTH + 1.0e-4;
+        return king.getMaxHealth() - 1.0 < MIN_MAX_HEALTH;
     }
 
     public void implant(ServerPlayer king) {
@@ -126,6 +128,15 @@ public final class LittleKing {
             king.displayClientMessage(Component.translatable("hahueuh.message.little_king_no_target")
                     .withStyle(ChatFormatting.RED), true);
             return;
+        }
+
+        if (ConfigGreed.LITTLE_KING_ONE_PIECE_PER_ENTITY.get()) {
+            List<UUID> existing = implants.get(uuid);
+            if (existing != null && existing.contains(target.getUUID())) {
+                king.displayClientMessage(Component.translatable("hahueuh.message.little_king_already_holds")
+                        .withStyle(ChatFormatting.RED), true);
+                return;
+            }
         }
 
         List<UUID> list = implants.computeIfAbsent(uuid, k -> new ArrayList<>());
@@ -330,15 +341,24 @@ public final class LittleKing {
         AttributeInstance inst = king.getAttribute(Attributes.MAX_HEALTH);
         if (inst == null) return;
         int count = totalImplanted(king.getUUID());
-        if (count <= 0) {
-            inst.removeModifier(HEART_DEBT_MODIFIER_ID);
-        } else {
-            inst.addOrUpdateTransientModifier(
-                    new AttributeModifier(HEART_DEBT_MODIFIER_ID, -count, AttributeModifier.Operation.ADD_VALUE));
+        inst.removeModifier(HEART_DEBT_MODIFIER_ID);
+        if (count > 0) {
+            inst.addTransientModifier(new AttributeModifier(HEART_DEBT_MODIFIER_ID,
+                    -count / additionScale(inst), AttributeModifier.Operation.ADD_VALUE));
         }
         if (king.getHealth() > king.getMaxHealth()) {
             king.setHealth(king.getMaxHealth());
         }
+    }
+
+    private static double additionScale(AttributeInstance inst) {
+        double before = inst.getValue();
+        inst.addTransientModifier(new AttributeModifier(DEBT_PROBE_MODIFIER_ID,
+                -1.0, AttributeModifier.Operation.ADD_VALUE));
+        double after = inst.getValue();
+        inst.removeModifier(DEBT_PROBE_MODIFIER_ID);
+        double scale = before - after;
+        return scale <= 1.0e-6 ? 1.0 : scale;
     }
 
     private void sendHighlight(ServerPlayer king) {

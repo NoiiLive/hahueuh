@@ -39,6 +39,14 @@ public final class ModItems {
             ITEMS.register("bowel_hunter_black_blade", () -> new SwordItem(Tiers.DIAMOND,
                     swordDamage(16.0, Tiers.DIAMOND), swordSpeed(1.2), new Item.Properties().rarity(Rarity.EPIC)));
 
+    public static final RegistryObject<MorningstarItem> MORNINGSTAR =
+            ITEMS.register("morningstar", () -> new MorningstarItem(Tiers.IRON,
+                    new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON).durability(500)));
+
+    public static final RegistryObject<GuiltywhipItem> GUILTYWHIP =
+            ITEMS.register("guiltywhip", () -> new GuiltywhipItem(
+                    new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
+
     public static final RegistryObject<SpikedClubItem> SPIKED_CLUB =
             ITEMS.register("spiked_club", () -> new SpikedClubItem(new Item.Properties().durability(500)));
 

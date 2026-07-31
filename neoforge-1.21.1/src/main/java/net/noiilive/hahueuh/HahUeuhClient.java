@@ -123,6 +123,8 @@ public class HahUeuhClient {
         net.noiilive.hahueuh.network.ClientMaterialPhaseState.clear();
         net.noiilive.hahueuh.network.ClientDualWieldState.clear();
         net.noiilive.hahueuh.api.AbilityCooldowns.reset();
+        net.noiilive.hahueuh.client.MorningstarClient.reset();
+        net.noiilive.hahueuh.client.GuiltywhipClient.reset();
         AbilitySlots.reset();
         AbilityClient.resetChargeManaState();
         net.noiilive.hahueuh.network.ClientMurakState.clear();

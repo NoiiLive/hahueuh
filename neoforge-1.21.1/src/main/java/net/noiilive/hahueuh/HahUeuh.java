@@ -96,6 +96,7 @@ public class HahUeuh {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     public static final SnapshotManager SNAPSHOT_MANAGER = new SnapshotManager();
     public static final Insanity INSANITY = new Insanity();
+    public static final Morningstar MORNINGSTAR = new Morningstar();
     public static final SlothCompatibility SLOTH_COMPAT = new SlothCompatibility();
     public static final GreedCompatibility GREED_COMPAT = new GreedCompatibility();
     public static final LionsHeart LIONS_HEART = new LionsHeart();
@@ -155,6 +156,7 @@ public class HahUeuh {
 
         NeoForge.EVENT_BUS.register(SNAPSHOT_MANAGER);
         NeoForge.EVENT_BUS.register(INSANITY);
+        NeoForge.EVENT_BUS.register(MORNINGSTAR);
         NeoForge.EVENT_BUS.register(MOB_WITCH_FACTOR);
         NeoForge.EVENT_BUS.register(MOB_ABILITY_AI);
         NeoForge.EVENT_BUS.register(DRAGON_SWORD_REID);
@@ -291,6 +293,20 @@ public class HahUeuh {
                         LIONS_HEART.toggle(sp);
                     }
                 });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.MorningstarSwingPayload.TYPE,
+                net.noiilive.hahueuh.network.MorningstarSwingPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        MORNINGSTAR.handleSwing(sp, payload.spin());
+                    }
+                });
+
+        registrar.playToClient(
+                net.noiilive.hahueuh.network.MorningstarSwingSyncPayload.TYPE,
+                net.noiilive.hahueuh.network.MorningstarSwingSyncPayload.STREAM_CODEC,
+                (payload, context) -> net.noiilive.hahueuh.client.MorningstarClient.applyRemoteSwing(payload.owner(), payload.spin()));
 
         registrar.playToClient(
                 LionsHeartStatePayload.TYPE,

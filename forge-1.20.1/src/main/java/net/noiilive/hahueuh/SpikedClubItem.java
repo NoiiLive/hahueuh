@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -20,6 +21,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentCategory;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
@@ -32,6 +36,10 @@ public final class SpikedClubItem extends Item {
     private static final float SMASH_ATTACK_HEAVY_THRESHOLD = 5.0f;
     private static final double SMASH_ATTACK_KNOCKBACK_RADIUS = 3.5;
     private static final float SMASH_ATTACK_KNOCKBACK_POWER = 0.7f;
+
+    private static final float DENSITY_PER_LEVEL_PER_BLOCK = 0.5f;
+    private static final double WIND_BURST_BASE = 0.6;
+    private static final double WIND_BURST_PER_LEVEL = 0.2;
 
     private static final double ATTACK_DAMAGE = 24.0;
     private static final double ATTACK_SPEED = 0.6;
@@ -53,6 +61,12 @@ public final class SpikedClubItem extends Item {
         return 22.0f + fallDistance - 8.0f;
     }
 
+    public static float densityBonus(ItemStack stack, float fallDistance) {
+        int level = ModEnchantments.levelOn(ModEnchantments.DENSITY, stack);
+        if (level <= 0) return 0.0f;
+        return DENSITY_PER_LEVEL_PER_BLOCK * level * fallDistance;
+    }
+
     @Override
     public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
         if (slot != EquipmentSlot.MAINHAND) return super.getAttributeModifiers(slot, stack);
@@ -69,6 +83,13 @@ public final class SpikedClubItem extends Item {
     @Override
     public int getEnchantmentValue() {
         return 15;
+    }
+
+    @Override
+    public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
+        if (enchantment == Enchantments.SWEEPING_EDGE) return false;
+        if (enchantment.category == EnchantmentCategory.WEAPON) return true;
+        return super.canApplyAtEnchantingTable(stack, enchantment);
     }
 
     @Override
@@ -92,9 +113,23 @@ public final class SpikedClubItem extends Item {
                     sound, serverplayer.getSoundSource(), 1.0f, 1.0f);
 
             knockback(serverlevel, serverplayer, target);
+            windBurst(serverlevel, serverplayer, stack);
             serverplayer.resetFallDistance();
         }
         return true;
+    }
+
+    private static void windBurst(ServerLevel level, ServerPlayer player, ItemStack stack) {
+        int level_ = ModEnchantments.levelOn(ModEnchantments.WIND_BURST, stack);
+        if (level_ <= 0) return;
+        double power = WIND_BURST_BASE + WIND_BURST_PER_LEVEL * level_;
+        player.setDeltaMovement(player.getDeltaMovement().add(0.0, power, 0.0));
+        player.hurtMarked = true;
+        player.connection.send(new ClientboundSetEntityMotionPacket(player));
+        level.sendParticles(ParticleTypes.CLOUD,
+                player.getX(), player.getY(), player.getZ(), 16, 0.4, 0.1, 0.4, 0.08);
+        level.playSound(null, player.blockPosition(),
+                SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.0f, 0.6f);
     }
 
     private static void knockback(ServerLevel level, Player player, Entity struck) {

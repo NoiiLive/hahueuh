@@ -24,6 +24,7 @@ public class HahUeuh {
 
     public static final SnapshotManager SNAPSHOT_MANAGER = new SnapshotManager();
     public static final Insanity INSANITY = new Insanity();
+    public static final Morningstar MORNINGSTAR = new Morningstar();
     public static final ConfigSync CONFIG_SYNC = new ConfigSync();
     public static final ManaCharging MANA_CHARGING = new ManaCharging();
     public static final CrippledState CRIPPLED_STATE = new CrippledState();
@@ -79,6 +80,7 @@ public class HahUeuh {
         ModBlocks.BLOCK_ENTITIES.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
+        ModEnchantments.ENCHANTMENTS.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
 
@@ -133,6 +135,7 @@ public class HahUeuh {
         MinecraftForge.EVENT_BUS.register(FINGER_GRANT);
         MinecraftForge.EVENT_BUS.register(CONFIG_SYNC);
         MinecraftForge.EVENT_BUS.register(INSANITY);
+        MinecraftForge.EVENT_BUS.register(MORNINGSTAR);
         MinecraftForge.EVENT_BUS.addListener(RezeroCommand::register);
         modEventBus.addListener((net.minecraftforge.fml.event.config.ModConfigEvent.Reloading e) -> ConfigSync.broadcast());
 

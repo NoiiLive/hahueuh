@@ -13,6 +13,9 @@ public final class SpikedClubHandler {
         if (!(attacker instanceof LivingEntity living)) return;
         if (!(living.getMainHandItem().getItem() instanceof SpikedClubItem)) return;
         if (!SpikedClubItem.canSmashAttack(living)) return;
-        event.setAmount(event.getAmount() + SpikedClubItem.smashBonusDamage(living.fallDistance));
+
+        float bonus = SpikedClubItem.smashBonusDamage(living.fallDistance);
+        bonus += SpikedClubItem.densityBonus(living.getMainHandItem(), living.fallDistance);
+        event.setAmount(event.getAmount() + bonus);
     }
 }
