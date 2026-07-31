@@ -97,6 +97,7 @@ public class HahUeuh {
     public static final SnapshotManager SNAPSHOT_MANAGER = new SnapshotManager();
     public static final Insanity INSANITY = new Insanity();
     public static final Morningstar MORNINGSTAR = new Morningstar();
+    public static final Guiltywhip GUILTYWHIP = new Guiltywhip();
     public static final SlothCompatibility SLOTH_COMPAT = new SlothCompatibility();
     public static final GreedCompatibility GREED_COMPAT = new GreedCompatibility();
     public static final LionsHeart LIONS_HEART = new LionsHeart();
@@ -157,6 +158,7 @@ public class HahUeuh {
         NeoForge.EVENT_BUS.register(SNAPSHOT_MANAGER);
         NeoForge.EVENT_BUS.register(INSANITY);
         NeoForge.EVENT_BUS.register(MORNINGSTAR);
+        NeoForge.EVENT_BUS.register(GUILTYWHIP);
         NeoForge.EVENT_BUS.register(MOB_WITCH_FACTOR);
         NeoForge.EVENT_BUS.register(MOB_ABILITY_AI);
         NeoForge.EVENT_BUS.register(DRAGON_SWORD_REID);
@@ -302,6 +304,28 @@ public class HahUeuh {
                         MORNINGSTAR.handleSwing(sp, payload.spin());
                     }
                 });
+
+        registrar.playToServer(
+                net.noiilive.hahueuh.network.GuiltywhipCrackPayload.TYPE,
+                net.noiilive.hahueuh.network.GuiltywhipCrackPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        GUILTYWHIP.handleCrack(sp, payload.sweep());
+                    }
+                });
+
+        registrar.playToClient(
+                net.noiilive.hahueuh.network.GuiltywhipCrackSyncPayload.TYPE,
+                net.noiilive.hahueuh.network.GuiltywhipCrackSyncPayload.STREAM_CODEC,
+                (payload, context) -> net.noiilive.hahueuh.client.GuiltywhipClient.applyRemoteCrack(payload.owner(), payload.sweep()));
+
+        registrar.playToClient(
+                net.noiilive.hahueuh.network.MorningstarHeadPayload.TYPE,
+                net.noiilive.hahueuh.network.MorningstarHeadPayload.STREAM_CODEC,
+                (payload, context) -> net.noiilive.hahueuh.client.MorningstarClient.applyHeadSync(
+                        payload.owner(),
+                        new net.minecraft.world.phys.Vec3(payload.x(), payload.y(), payload.z()),
+                        new net.minecraft.world.phys.Vec3(payload.vx(), payload.vy(), payload.vz())));
 
         registrar.playToClient(
                 net.noiilive.hahueuh.network.MorningstarSwingSyncPayload.TYPE,

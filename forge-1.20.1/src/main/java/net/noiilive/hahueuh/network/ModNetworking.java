@@ -424,6 +424,24 @@ public final class ModNetworking {
                 MorningstarSwingSyncPacket::encode,
                 MorningstarSwingSyncPacket::new,
                 MorningstarSwingSyncPacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                GuiltywhipCrackPacket.class,
+                GuiltywhipCrackPacket::encode,
+                GuiltywhipCrackPacket::new,
+                GuiltywhipCrackPacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                GuiltywhipCrackSyncPacket.class,
+                GuiltywhipCrackSyncPacket::encode,
+                GuiltywhipCrackSyncPacket::new,
+                GuiltywhipCrackSyncPacket::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                MorningstarHeadPacket.class,
+                MorningstarHeadPacket::encode,
+                MorningstarHeadPacket::new,
+                MorningstarHeadPacket::handle);
     }
 
     public static void sendToAll(Object packet) {

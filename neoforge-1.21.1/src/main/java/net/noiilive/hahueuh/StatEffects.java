@@ -81,6 +81,7 @@ public final class StatEffects {
         return stack.getItem() instanceof TieredItem
                 || stack.getItem() instanceof TridentItem
                 || stack.getItem() instanceof net.minecraft.world.item.MaceItem
+                || stack.getItem() instanceof GuiltywhipItem
                 || stack.getItem() instanceof net.minecraft.world.item.BowItem
                 || stack.getItem() instanceof net.minecraft.world.item.CrossbowItem;
     }

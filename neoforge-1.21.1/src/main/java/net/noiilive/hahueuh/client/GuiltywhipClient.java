@@ -46,6 +46,29 @@ public final class GuiltywhipClient {
         return player.getMainHandItem().getItem() instanceof GuiltywhipItem && !player.isSpectator();
     }
 
+    public static void applyRemoteCrack(UUID owner, boolean sweep) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        Player player = mc.level.getPlayerByUUID(owner);
+        GuiltywhipPhysics.State state = STATES.get(owner);
+        if (player == null || state == null) return;
+        GuiltywhipPhysics.crack(state, player, sweep, HandTracker.resolve(player, 1.0f));
+    }
+
+    @SubscribeEvent
+    public static void onClickInput(net.neoforged.neoforge.client.event.InputEvent.InteractionKeyMappingTriggered event) {
+        if (!event.isAttack()) return;
+        Minecraft mc = Minecraft.getInstance();
+        Player player = mc.player;
+        if (player == null || !holding(player)) return;
+        GuiltywhipPhysics.State state = STATES.get(player.getUUID());
+        if (state == null || !GuiltywhipPhysics.canCrack(state)) return;
+        boolean sweep = !player.isShiftKeyDown();
+        GuiltywhipPhysics.crack(state, player, sweep, HandTracker.resolve(player, 1.0f));
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                new net.noiilive.hahueuh.network.GuiltywhipCrackPayload(sweep));
+    }
+
     @SubscribeEvent
     public static void onRegisterLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
         event.registerLayerDefinition(WhipSegmentModel.LAYER, WhipSegmentModel::createBodyLayer);

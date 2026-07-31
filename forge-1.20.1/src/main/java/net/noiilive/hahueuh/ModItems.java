@@ -45,7 +45,7 @@ public final class ModItems {
 
     public static final RegistryObject<GuiltywhipItem> GUILTYWHIP =
             ITEMS.register("guiltywhip", () -> new GuiltywhipItem(
-                    new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
+                    new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON).durability(400)));
 
     public static final RegistryObject<SpikedClubItem> SPIKED_CLUB =
             ITEMS.register("spiked_club", () -> new SpikedClubItem(new Item.Properties().durability(500)));

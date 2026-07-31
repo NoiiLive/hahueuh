@@ -77,6 +77,7 @@ public final class StatEffects {
         return stack.getItem() instanceof TieredItem
                 || stack.getItem() instanceof TridentItem
                 || stack.getItem() instanceof SpikedClubItem
+                || stack.getItem() instanceof GuiltywhipItem
                 || stack.getItem() instanceof BowItem
                 || stack.getItem() instanceof CrossbowItem;
     }

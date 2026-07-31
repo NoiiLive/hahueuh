@@ -21,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class Morningstar {
 
+    private static final double HEAD_SYNC_RANGE = 64.0;
+
     private final Map<UUID, MorningstarPhysics.State> states = new ConcurrentHashMap<>();
 
     public void handleSwing(ServerPlayer player, boolean spin) {
@@ -80,6 +82,7 @@ public final class Morningstar {
 
             if (state.swingTicks > 0) {
                 sweepHit(player, state);
+                broadcastHead(player, state);
             }
         }
     }
@@ -99,6 +102,18 @@ public final class Morningstar {
                     SoundEvents.CHAIN_STEP, SoundSource.PLAYERS,
                     (float) Math.min(0.6, 0.12 + moved * 0.18),
                     0.9f + level.random.nextFloat() * 0.3f);
+        }
+    }
+
+    private void broadcastHead(ServerPlayer player, MorningstarPhysics.State state) {
+        net.noiilive.hahueuh.network.MorningstarHeadPayload payload =
+                new net.noiilive.hahueuh.network.MorningstarHeadPayload(
+                        player.getUUID(), state.pos.x, state.pos.y, state.pos.z,
+                        state.vel.x, state.vel.y, state.vel.z);
+        for (ServerPlayer viewer : player.serverLevel().players()) {
+            if (viewer.distanceToSqr(player) <= HEAD_SYNC_RANGE * HEAD_SYNC_RANGE) {
+                PacketDistributor.sendToPlayer(viewer, payload);
+            }
         }
     }
 

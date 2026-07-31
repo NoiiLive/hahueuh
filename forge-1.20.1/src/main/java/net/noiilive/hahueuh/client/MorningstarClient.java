@@ -59,6 +59,13 @@ public final class MorningstarClient {
         return player.getMainHandItem().getItem() instanceof MorningstarItem && !player.isSpectator();
     }
 
+    public static void applyHeadSync(UUID owner, Vec3 pos, Vec3 vel) {
+        MorningstarPhysics.State state = STATES.get(owner);
+        if (state == null || state.pendingThrow != null) return;
+        state.vel = vel;
+        state.pos = pos;
+    }
+
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
@@ -127,11 +134,16 @@ public final class MorningstarClient {
             Vec3 delta = head.subtract(anchor);
             if (delta.length() < 0.01) continue;
 
-            double headSpeed = state.pos.distanceTo(state.prevPos);
             Vec3 fallback = delta.normalize();
-            double target = RopeCurve.slackTarget(anchor, head, MorningstarPhysics.CHAIN_LENGTH,
-                    headSpeed, TAUT_SPEED);
-            java.util.List<Vec3> curve = RopeCurve.build(mc.level, player, anchor, head, target);
+            java.util.List<Vec3> curve = new java.util.ArrayList<>(MorningstarPhysics.CHAIN_NODES);
+            curve.add(anchor);
+            for (int i = 1; i < MorningstarPhysics.CHAIN_NODES - 1; i++) {
+                curve.add(new Vec3(
+                        Mth.lerp(pt, state.chainPrev[i].x, state.chain[i].x),
+                        Mth.lerp(pt, state.chainPrev[i].y, state.chain[i].y),
+                        Mth.lerp(pt, state.chainPrev[i].z, state.chain[i].z)));
+            }
+            curve.add(head);
             java.util.List<RopeCurve.Placement> links =
                     RopeCurve.layout(curve, ChainLinkModel.LINK_LENGTH, fallback);
             if (links.isEmpty()) continue;
@@ -148,7 +160,9 @@ public final class MorningstarClient {
                 pose.popPose();
             }
 
-            Vec3 lastDir = RopeCurve.endDirection(curve, fallback);
+            Vec3 tailRef = curve.get(Math.max(0, curve.size() - 4));
+            Vec3 lastDir = head.subtract(tailRef);
+            lastDir = lastDir.lengthSqr() < 1.0e-8 ? fallback : lastDir.normalize();
 
             VertexConsumer headBuffer = foil
                     ? net.minecraft.client.renderer.entity.ItemRenderer.getFoilBufferDirect(buffers,
@@ -166,8 +180,6 @@ public final class MorningstarClient {
         }
         buffers.endBatch();
     }
-
-    private static final double TAUT_SPEED = 0.55;
 
     private static boolean bakeModels() {
         if (bakeFailed) return false;

@@ -43,7 +43,8 @@ public final class ModItems {
     public static final DeferredItem<GuiltywhipItem> GUILTYWHIP = ITEMS.registerItem(
             "guiltywhip",
             GuiltywhipItem::new,
-            new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
+            new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON).durability(400)
+                    .attributes(GuiltywhipItem.attributes()));
 
     public static final DeferredItem<DragonSwordReidItem> DRAGON_SWORD_REID = ITEMS.registerItem(
             "dragon_sword_reid",

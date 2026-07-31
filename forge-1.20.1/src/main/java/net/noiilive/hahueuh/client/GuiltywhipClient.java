@@ -45,6 +45,29 @@ public final class GuiltywhipClient {
         return player.getMainHandItem().getItem() instanceof GuiltywhipItem && !player.isSpectator();
     }
 
+    public static void applyRemoteCrack(UUID owner, boolean sweep) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        Player player = mc.level.getPlayerByUUID(owner);
+        GuiltywhipPhysics.State state = STATES.get(owner);
+        if (player == null || state == null) return;
+        GuiltywhipPhysics.crack(state, player, sweep, HandTracker.resolve(player, 1.0f));
+    }
+
+    @SubscribeEvent
+    public static void onClickInput(net.minecraftforge.client.event.InputEvent.InteractionKeyMappingTriggered event) {
+        if (!event.isAttack()) return;
+        Minecraft mc = Minecraft.getInstance();
+        Player player = mc.player;
+        if (player == null || !holding(player)) return;
+        GuiltywhipPhysics.State state = STATES.get(player.getUUID());
+        if (state == null || !GuiltywhipPhysics.canCrack(state)) return;
+        boolean sweep = !player.isShiftKeyDown();
+        GuiltywhipPhysics.crack(state, player, sweep, HandTracker.resolve(player, 1.0f));
+        net.noiilive.hahueuh.network.ModNetworking.CHANNEL.sendToServer(
+                new net.noiilive.hahueuh.network.GuiltywhipCrackPacket(sweep));
+    }
+
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
